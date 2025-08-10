@@ -3,13 +3,22 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '../contexts/AuthContext';
 import styles from './Navbar.module.css';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleLogout = () => {
+    if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+      logout();
+    }
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -45,16 +54,38 @@ const Navbar = () => {
               </Link>
             </div>
             <div className={styles.desktopButtons}>
-              <Link href="/login" className={styles.userButton}>
-                <svg className={styles.userIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-              </Link>
+              {isAuthenticated() ? (
+                <div className="flex items-center gap-4">
+                  <Link href="/administrateur" className={styles.userButton}>
+                    <svg className={styles.userIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    <span className="ml-2">{user?.prenom}</span>
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium"
+                  >
+                    Déconnexion
+                  </button>
+                </div>
+              ) : (
+                <Link href="/login" className={styles.userButton}>
+                  <svg className={styles.userIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                </Link>
+              )}
               <Link href="/faireundon" className={styles.donateButton}>
                 Faire un don
               </Link>
@@ -103,17 +134,39 @@ const Navbar = () => {
             </Link>
 
             <div className={styles.mobileButtons}>
-              <Link href="/login" className={styles.mobileUserButton} onClick={() => setIsMobileMenuOpen(false)}>
-                <svg className={styles.mobileUserIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-                Connexion
-              </Link>
+              {isAuthenticated() ? (
+                <>
+                  <Link href="/administrateur" className={styles.mobileUserButton} onClick={() => setIsMobileMenuOpen(false)}>
+                    <svg className={styles.mobileUserIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    Espace {user?.role === 'Administrateur' ? 'Admin' : 'Rédacteur'}
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors duration-200 w-full text-left"
+                  >
+                    Déconnexion
+                  </button>
+                </>
+              ) : (
+                <Link href="/login" className={styles.mobileUserButton} onClick={() => setIsMobileMenuOpen(false)}>
+                  <svg className={styles.mobileUserIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                  Connexion
+                </Link>
+              )}
               <Link href="/faireundon" className={styles.mobileDonateButton} onClick={() => setIsMobileMenuOpen(false)}>
                 Faire un don
               </Link>

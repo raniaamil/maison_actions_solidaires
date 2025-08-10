@@ -4,8 +4,8 @@ import { Poppins } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { AuthProvider } from '@/contexts/AuthContext';
 
-// Charger Poppins
 const poppins = Poppins({
   weight: ['300', '400', '500', '600', '700'], 
   subsets: ['latin'],
@@ -25,9 +25,11 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={poppins.className}>
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
+        <AuthProvider>
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   )

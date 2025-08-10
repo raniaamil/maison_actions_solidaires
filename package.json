@@ -6,10 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "db:test": "curl http://localhost:3000/api/test-db",
+    "db:init": "mysql -u root -p < src/database/schema.sql",
     "lint": "next lint"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.525.0",
     "mysql2": "^3.14.3",
     "next": "15.4.3",
@@ -21,6 +24,8 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.11",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

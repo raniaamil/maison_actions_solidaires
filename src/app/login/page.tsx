@@ -1,6 +1,8 @@
+// 4. Page de login mise à jour - src/app/login/page.tsx
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import styles from './login.module.css';
 
 export default function LoginPage() {
@@ -11,17 +13,18 @@ export default function LoginPage() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  
+  const { login } = useAuth();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -31,7 +34,7 @@ export default function LoginPage() {
   };
 
   const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
+    const newErrors = {};
 
     if (!formData.email.trim()) {
       newErrors.email = 'L\'adresse e-mail est requise';
@@ -47,18 +50,20 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
       setIsLoading(true);
       try {
-        // Simulation d'une requête de connexion
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        console.log('Connexion:', { ...formData, rememberMe });
-        alert('Connexion réussie !');
+        const result = await login(formData.email, formData.password);
+        
+        if (!result.success) {
+          setErrors({ general: result.error });
+        }
       } catch (error) {
-        console.error('Erreur de connexion:', error);
+        console.error('Erreur lors de la connexion:', error);
+        setErrors({ general: 'Erreur de connexion' });
       } finally {
         setIsLoading(false);
       }
@@ -69,7 +74,7 @@ export default function LoginPage() {
     setShowPassword(!showPassword);
   };
 
-  const handleRememberMeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRememberMeChange = (e) => {
     setRememberMe(e.target.checked);
   };
 
@@ -77,6 +82,12 @@ export default function LoginPage() {
     <div className={styles.container}>
       <div className={styles.formCard}>
         <h1 className={styles.title}>Connexion</h1>
+        
+        {errors.general && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+            <span className="text-red-600 text-sm">{errors.general}</span>
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.inputGroup}>
@@ -135,17 +146,10 @@ export default function LoginPage() {
 
           <button 
             type="submit" 
-            className={`${styles.submitButton} ${isLoading ? styles.loading : ''}`}
+            className={styles.submitButton}
             disabled={isLoading}
           >
-            {isLoading ? (
-              <span className={styles.loadingContent}>
-                <span className={styles.spinner}></span>
-                Connexion...
-              </span>
-            ) : (
-              'Se connecter'
-            )}
+            {isLoading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
 

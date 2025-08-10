@@ -1,6 +1,6 @@
 // src/app/api/test-db/route.js
 export const runtime = 'nodejs';
-import db from '../../../../lib/db';
+import db from '../../../lib/db';
 
 export async function GET() {
   try {

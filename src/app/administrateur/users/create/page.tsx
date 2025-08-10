@@ -20,8 +20,8 @@ export default function CreateUserPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
   const [passwordCopied, setPasswordCopied] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const generateTempPassword = () => {
     const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
@@ -44,6 +44,14 @@ export default function CreateUserPage() {
       ...prev,
       [name]: value
     }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
   const handleGeneratePassword = () => {
@@ -62,14 +70,76 @@ export default function CreateUserPage() {
     }
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.prenom.trim()) {
+      newErrors.prenom = 'Le prénom est requis';
+    }
+
+    if (!formData.nom.trim()) {
+      newErrors.nom = 'Le nom est requis';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'L\'email est requis';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'L\'adresse e-mail n\'est pas valide';
+    }
+
+    if (!tempPassword) {
+      newErrors.password = 'Veuillez générer un mot de passe';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleCreateUser = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
     setIsCreating(true);
-    // Simulation création + envoi email
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setEmailSent(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsCreating(false);
-    setShowSuccessModal(true);
+
+    try {
+      const payload = {
+        prenom: formData.prenom,
+        nom: formData.nom,
+        email: formData.email,
+        password: tempPassword,
+        photo: formData.photo || null,
+        bio: formData.bio || null,
+        role: formData.role
+      };
+
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('✅ Utilisateur créé avec succès:', data);
+        setShowSuccessModal(true);
+      } else {
+        console.log('❌ Erreur du serveur:', data);
+        if (data.errors) {
+          setErrors(data.errors);
+        } else {
+          alert(data.message || 'Une erreur est survenue lors de la création de l\'utilisateur');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erreur réseau:', error);
+      alert('Erreur de connexion au serveur. Veuillez réessayer.');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleCloseSuccess = () => {
@@ -83,8 +153,8 @@ export default function CreateUserPage() {
       role: 'Rédacteur'
     });
     setTempPassword('');
-    setEmailSent(false);
     setPasswordCopied(false);
+    setErrors({});
   };
 
   const handleBackToList = () => {
@@ -144,6 +214,7 @@ export default function CreateUserPage() {
                     onChange={handleInputChange}
                     className="px-3 py-3 border border-gray-300 rounded-md text-base bg-white transition-all duration-200 focus:outline-none focus:border-blue-600 focus:ring-3 focus:ring-blue-100"
                     placeholder="https://exemple.com/photo.jpg"
+                    disabled={isCreating}
                   />
                   <p className="text-sm text-gray-600 mt-1">
                     L'utilisateur pourra modifier sa photo de profil après sa première connexion.
@@ -162,9 +233,11 @@ export default function CreateUserPage() {
                   name="prenom"
                   value={formData.prenom}
                   onChange={handleInputChange}
-                  className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
+                  className={`px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${errors.prenom ? 'border-red-500' : ''}`}
+                  disabled={isCreating}
                   required
                 />
+                {errors.prenom && <span className="text-red-500 text-sm mt-1">{errors.prenom}</span>}
               </div>
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-700 mb-2">
@@ -175,9 +248,11 @@ export default function CreateUserPage() {
                   name="nom"
                   value={formData.nom}
                   onChange={handleInputChange}
-                  className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
+                  className={`px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${errors.nom ? 'border-red-500' : ''}`}
+                  disabled={isCreating}
                   required
                 />
+                {errors.nom && <span className="text-red-500 text-sm mt-1">{errors.nom}</span>}
               </div>
             </div>
 
@@ -191,9 +266,11 @@ export default function CreateUserPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
+                  className={`px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${errors.email ? 'border-red-500' : ''}`}
+                  disabled={isCreating}
                   required
                 />
+                {errors.email && <span className="text-red-500 text-sm mt-1">{errors.email}</span>}
                 <p className="text-sm text-gray-600 mt-1">
                   Les identifiants de connexion seront envoyés à cette adresse.
                 </p>
@@ -205,6 +282,7 @@ export default function CreateUserPage() {
                   value={formData.role}
                   onChange={handleInputChange}
                   className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
+                  disabled={isCreating}
                 >
                   <option value="Rédacteur">Rédacteur</option>
                   <option value="Administrateur">Administrateur</option>
@@ -221,6 +299,7 @@ export default function CreateUserPage() {
                 rows={3}
                 className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 resize-vertical"
                 placeholder="Une courte description de l'utilisateur..."
+                disabled={isCreating}
               />
               <p className="text-sm text-gray-600 mt-1">
                 L'utilisateur pourra modifier sa biographie après sa première connexion.
@@ -256,7 +335,7 @@ export default function CreateUserPage() {
                     type={showPassword ? 'text' : 'password'}
                     value={tempPassword}
                     readOnly
-                    className="w-full px-3 py-3 pr-20 border border-gray-300 rounded-md text-base bg-gray-100 font-mono"
+                    className={`w-full px-3 py-3 pr-20 border border-gray-300 rounded-md text-base bg-gray-100 font-mono ${errors.password ? 'border-red-500' : ''}`}
                     placeholder="Cliquez sur 'Générer' pour créer un mot de passe"
                   />
                   {tempPassword && (
@@ -269,11 +348,13 @@ export default function CreateUserPage() {
                     </button>
                   )}
                 </div>
+                {errors.password && <span className="text-red-500 text-sm mt-1">{errors.password}</span>}
               </div>
               <button
                 type="button"
                 onClick={handleGeneratePassword}
                 className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
+                disabled={isCreating}
               >
                 Générer
               </button>
@@ -284,6 +365,7 @@ export default function CreateUserPage() {
                   className={`px-4 py-3 rounded-md transition-colors duration-200 ${
                     passwordCopied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
+                  disabled={isCreating}
                 >
                   {passwordCopied ? <Check size={16} /> : <Copy size={16} />}
                 </button>
@@ -305,6 +387,7 @@ export default function CreateUserPage() {
               type="button"
               className="px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
               onClick={handleBackToList}
+              disabled={isCreating}
             >
               Annuler
             </button>

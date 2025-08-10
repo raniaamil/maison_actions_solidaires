@@ -1,76 +1,211 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, FileText, X, Calendar, Image as ImageIcon, Upload } from 'lucide-react';
 import styles from './edit.module.css';
 import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 
 const ModifierActualite = () => {
+  const params = useParams();
+  const router = useRouter();
+  const actualiteId = params.id;
+
   const [formData, setFormData] = useState({
-    titre: 'Lancement de notre nouvelle application',
-    contenu: 'Nous sommes ravis d\'annoncer le lancement de notre nouvelle application mobile qui révolutionne l\'expérience utilisateur...',
-    statut: 'Publié',
-    datePublication: '15/01/2024',
-    categorie: 'numérique'
+    titre: '',
+    description: '',
+    contenu: '',
+    statut: 'Brouillon',
+    datePublication: '',
+    categorie: 'administratif',
+    image: '',
+    tags: [],
+    lieu: '',
+    places_disponibles: '',
+    inscription_requise: false
   });
 
-  const [hasImage, setHasImage] = useState(true);
+  const [hasImage, setHasImage] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState({});
+
+  // Charger les données de l'actualité
+  useEffect(() => {
+    const loadActualite = async () => {
+      try {
+        const response = await fetch(`/api/actualites/${actualiteId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setFormData({
+            titre: data.titre || data.title || '',
+            description: data.description || '',
+            contenu: data.contenu || data.content || '',
+            statut: data.statut || data.status || 'Brouillon',
+            datePublication: data.date_publication ? new Date(data.date_publication).toISOString().split('T')[0] : '',
+            categorie: data.type || 'administratif',
+            image: data.image || '',
+            tags: data.tags || [],
+            lieu: data.lieu || data.location || '',
+            places_disponibles: data.places_disponibles || data.places || '',
+            inscription_requise: data.inscription_requise || data.hasRegistration || false
+          });
+          setHasImage(!!data.image);
+        } else {
+          console.error('Erreur lors du chargement de l\'actualité');
+          alert('Actualité non trouvée');
+          router.push('/administrateur?tab=actualites');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors du chargement de l\'actualité');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (actualiteId) {
+      loadActualite();
+    }
+  }, [actualiteId, router]);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+
+    // Update hasImage when image URL changes
+    if (name === 'image') {
+      setHasImage(!!value);
+    }
   };
 
-  const handleReturn = () => {
-    console.log('Retour à la liste des actualités');
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.titre.trim()) {
+      newErrors.titre = 'Le titre est requis';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'La description est requise';
+    }
+
+    if (!formData.contenu.trim()) {
+      newErrors.contenu = 'Le contenu est requis';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
-    console.log('Sauvegarde:', formData);
+  const handleSave = async (statut = null) => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const payload = {
+        titre: formData.titre,
+        description: formData.description,
+        contenu: formData.contenu,
+        type: formData.categorie,
+        statut: statut || formData.statut,
+        image: formData.image || null,
+        date_publication: (statut === 'Publié' || formData.statut === 'Publié') ? formData.datePublication : null,
+        tags: formData.tags.length > 0 ? formData.tags : null,
+        lieu: formData.lieu || null,
+        places_disponibles: formData.places_disponibles ? parseInt(formData.places_disponibles) : null,
+        inscription_requise: formData.inscription_requise
+      };
+
+      const response = await fetch(`/api/actualites/${actualiteId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('✅ Actualité mise à jour avec succès:', data);
+        alert(`Actualité ${statut === 'Publié' ? 'publiée' : 'mise à jour'} avec succès !`);
+        router.push('/administrateur?tab=actualites');
+      } else {
+        console.log('❌ Erreur du serveur:', data);
+        alert(data.error || 'Une erreur est survenue lors de la mise à jour de l\'actualité');
+      }
+    } catch (error) {
+      console.error('❌ Erreur réseau:', error);
+      alert('Erreur de connexion au serveur. Veuillez réessayer.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handlePublish = () => {
-    console.log('Publication:', formData);
-  };
-
-  const handleSaveDraft = () => {
-    console.log('Sauvegarde en brouillon:', formData);
-  };
-
-  const handlePublishNow = () => {
-    console.log('Publier maintenant:', formData);
-  };
+  const handlePublish = () => handleSave('Publié');
+  const handleSaveDraft = () => handleSave('Brouillon');
 
   const handleRemoveImage = () => {
+    setFormData(prev => ({ ...prev, image: '' }));
     setHasImage(false);
   };
 
   const handleMediaUpload = () => {
-    console.log('Upload de média');
+    console.log('Upload de média - fonctionnalité à implémenter');
   };
+
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <Link href="/administrateur?tab=actualites" className={styles.backButton}>
-        <ArrowLeft className={styles.backIcon} />
-        Retour
-      </Link>
+          <ArrowLeft className={styles.backIcon} />
+          Retour
+        </Link>
         <div className={styles.titleSection}>
           <h1 className={styles.pageTitle}>Modifier l'actualité</h1>
           <p className={styles.pageSubtitle}>Modifiez votre article existant</p>
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.saveButton} onClick={handleSave}>
+          <button 
+            className={styles.saveButton} 
+            onClick={() => handleSave()}
+            disabled={isLoading}
+          >
             <Save className={styles.buttonIcon} />
-            Sauvegarder
+            {isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
           </button>
-          <button className={styles.publishButton} onClick={handlePublish}>
+          <button 
+            className={styles.publishButton} 
+            onClick={handlePublish}
+            disabled={isLoading}
+          >
             <FileText className={styles.buttonIcon} />
-            Publier
+            {isLoading ? 'Publication...' : 'Publier'}
           </button>
         </div>
       </div>
@@ -90,8 +225,25 @@ const ModifierActualite = () => {
                 name="titre"
                 value={formData.titre}
                 onChange={handleInputChange}
-                className={styles.input}
+                className={`${styles.input} ${errors.titre ? 'border-red-500' : ''}`}
+                disabled={isLoading}
               />
+              {errors.titre && <span className="text-red-500 text-sm mt-1">{errors.titre}</span>}
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>
+                Description <span className={styles.required}>*</span>
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                className={`${styles.textarea} ${errors.description ? 'border-red-500' : ''}`}
+                rows={3}
+                disabled={isLoading}
+              />
+              {errors.description && <span className="text-red-500 text-sm mt-1">{errors.description}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -102,24 +254,88 @@ const ModifierActualite = () => {
                 name="contenu"
                 value={formData.contenu}
                 onChange={handleInputChange}
-                className={styles.textarea}
+                className={`${styles.textarea} ${errors.contenu ? 'border-red-500' : ''}`}
                 rows={8}
+                disabled={isLoading}
               />
+              {errors.contenu && <span className="text-red-500 text-sm mt-1">{errors.contenu}</span>}
             </div>
+
+            {/* Informations pour les événements */}
+            {(formData.categorie === 'événement' || formData.categorie === 'numérique' || formData.categorie === 'bien-être') && (
+              <>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Lieu</label>
+                  <input
+                    type="text"
+                    name="lieu"
+                    value={formData.lieu}
+                    onChange={handleInputChange}
+                    placeholder="Lieu de l'événement"
+                    className={styles.input}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Nombre de places disponibles</label>
+                  <input
+                    type="number"
+                    name="places_disponibles"
+                    value={formData.places_disponibles}
+                    onChange={handleInputChange}
+                    placeholder="Ex: 25"
+                    className={styles.input}
+                    min="1"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="inscription_requise"
+                      checked={formData.inscription_requise}
+                      onChange={handleInputChange}
+                      disabled={isLoading}
+                    />
+                    <span className={styles.label}>Inscription requise</span>
+                  </label>
+                </div>
+              </>
+            )}
           </div>
 
           <div className={styles.mediaCard}>
             <h2 className={styles.sectionTitle}>Média</h2>
             <p className={styles.sectionSubtitle}>Ajoutez une image ou une vidéo à votre actualité</p>
 
-            {hasImage ? (
+            <div className={styles.formGroup}>
+              <label className={styles.label}>URL de l'image</label>
+              <input
+                type="url"
+                name="image"
+                value={formData.image}
+                onChange={handleInputChange}
+                placeholder="https://exemple.com/image.jpg"
+                className={styles.input}
+                disabled={isLoading}
+              />
+            </div>
+
+            {hasImage && formData.image ? (
               <div className={styles.imagePreview}>
                 <img 
-                  src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgNzVMMTI1IDEwMEg3NUwxMDAgNzVaIiBmaWxsPSIjOUNBM0FGIi8+CjxjaXJjbGUgY3g9IjE1MCIgY3k9IjUwIiByPSIxMCIgZmlsbD0iIzlDQTNBRiIvPgo8dGV4dCB4PSIxMDAiIHk9IjEzMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzZCNzI4MCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiPkFwZXLDp3U8L3RleHQ+Cjwvc3ZnPgo=" 
+                  src={formData.image} 
                   alt="Aperçu"
                   className={styles.previewImage}
                 />
-                <button className={styles.removeButton} onClick={handleRemoveImage}>
+                <button 
+                  className={styles.removeButton} 
+                  onClick={handleRemoveImage}
+                  disabled={isLoading}
+                >
                   <X className={styles.removeIcon} />
                 </button>
                 <div className={styles.imageInfo}>
@@ -149,6 +365,7 @@ const ModifierActualite = () => {
                 value={formData.statut}
                 onChange={handleInputChange}
                 className={styles.select}
+                disabled={isLoading}
               >
                 <option value="Brouillon">Brouillon</option>
                 <option value="Publié">Publié</option>
@@ -159,11 +376,12 @@ const ModifierActualite = () => {
               <label className={styles.label}>Date de publication</label>
               <div className={styles.dateInput}>
                 <input
-                  type="text"
+                  type="date"
                   name="datePublication"
                   value={formData.datePublication}
                   onChange={handleInputChange}
                   className={styles.input}
+                  disabled={isLoading}
                 />
                 <Calendar className={styles.calendarIcon} />
               </div>
@@ -181,6 +399,7 @@ const ModifierActualite = () => {
                 value={formData.categorie}
                 onChange={handleInputChange}
                 className={styles.select}
+                disabled={isLoading}
               >
                 <option value="administratif">Administratif</option>
                 <option value="numérique">Numérique</option>
@@ -196,14 +415,22 @@ const ModifierActualite = () => {
           <div className={styles.actionsCard}>
             <h2 className={styles.sectionTitle}>Actions</h2>
 
-            <button className={styles.draftButton} onClick={handleSaveDraft}>
+            <button 
+              className={styles.draftButton} 
+              onClick={handleSaveDraft}
+              disabled={isLoading}
+            >
               <Save className={styles.buttonIcon} />
-              Sauvegarder en brouillon
+              {isLoading ? 'Sauvegarde...' : 'Sauvegarder en brouillon'}
             </button>
 
-            <button className={styles.publishNowButton} onClick={handlePublishNow}>
+            <button 
+              className={styles.publishNowButton} 
+              onClick={handlePublish}
+              disabled={isLoading}
+            >
               <FileText className={styles.buttonIcon} />
-              Publier maintenant
+              {isLoading ? 'Publication...' : 'Publier maintenant'}
             </button>
           </div>
         </div>

@@ -19,6 +19,7 @@ const EspaceAdministrateurPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [articleToDelete, setArticleToDelete] = useState<any>(null);
   const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     prenom: 'Jean',
@@ -32,85 +33,57 @@ const EspaceAdministrateurPage = () => {
     confirmPassword: ''
   });
 
-  const [articles, setArticles] = useState([
-    {
-      id: 120,
-      title: 'Lancement de notre nouvelle application',
-      status: 'Publié',
-      date: '15/01/2024',
-      type: 'Image',
-      description:
-        "Nous sommes ravis d'annoncer le lancement de notre nouvelle application mobile qui révolutionne l'expérience utilisateur..."
-    },
-    {
-      id: 121,
-      title: 'Mise à jour importante des fonctionnalités',
-      status: 'Publié',
-      date: '10/01/2024',
-      type: 'Vidéo',
-      description:
-        'Cette mise à jour apporte de nombreuses améliorations demandées par nos utilisateurs...'
-    },
-    {
-      id: 122,
-      title: 'Article en brouillon',
-      status: 'Brouillon',
-      date: '20/01/2024',
-      type: null,
-      description: "Ceci est un brouillon d'article qui n'est pas encore publié..."
-    }
-  ]);
+  const [articles, setArticles] = useState([]);
+  const [users, setUsers] = useState([]);
 
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      photo:
-        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      prenom: 'Marie',
-      nom: 'Dubois',
-      bio: "Rédactrice passionnée par les nouvelles technologies et l'innovation digitale.",
-      email: 'marie.dubois@example.com',
-      role: 'Administrateur'
-    },
-    {
-      id: 2,
-      photo:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      prenom: 'Thomas',
-      nom: 'Martin',
-      bio: "Rédacteur spécialisé dans la communication et les événements de l'association.",
-      email: 'thomas.martin@example.com',
-      role: 'Rédacteur'
-    },
-    {
-      id: 3,
-      photo:
-        'https://images.unsplash.com/photo-1494790108755-2616b15259d4?w=150&h=150&fit=crop&crop=face',
-      prenom: 'Sophie',
-      nom: 'Bernard',
-      bio:
-        'Rédactrice en charge des actualités et de la promotion des activités associatives.',
-      email: 'sophie.bernard@example.com',
-      role: 'Rédacteur'
-    },
-    {
-      id: 4,
-      photo:
-        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-      prenom: 'Lucas',
-      nom: 'Petit',
-      bio:
-        'Rédacteur bénévole passionné par la vie associative et l’engagement social.',
-      email: 'lucas.petit@example.com',
-      role: 'Rédacteur'
-    }
-  ]);
-
-  // Lire l’onglet depuis l’URL
+  // Lire l'onglet depuis l'URL
   useEffect(() => {
     const tab = (searchParams.get('tab') as Tab) || 'informations';
     setActiveTab(tab);
   }, [searchParams]);
+
+  // Charger les données selon l'onglet actif
+  useEffect(() => {
+    if (activeTab === 'actualites') {
+      loadActualites();
+    } else if (activeTab === 'utilisateurs') {
+      loadUsers();
+    }
+  }, [activeTab]);
+
+  const loadActualites = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/actualites');
+      if (response.ok) {
+        const data = await response.json();
+        setArticles(data);
+      } else {
+        console.error('Erreur lors du chargement des actualités');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/users');
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
+      } else {
+        console.error('Erreur lors du chargement des utilisateurs');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const goTab = (tab: Tab) => {
     setActiveTab(tab);
@@ -145,15 +118,38 @@ const EspaceAdministrateurPage = () => {
     setShowDeleteModal(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (articleToDelete) {
-      setArticles(prev => prev.filter(a => a.id !== articleToDelete.id));
-    } else if (userToDelete) {
-      setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+  const handleConfirmDelete = async () => {
+    try {
+      if (articleToDelete) {
+        const response = await fetch(`/api/actualites/${articleToDelete.id}`, {
+          method: 'DELETE'
+        });
+        
+        if (response.ok) {
+          setArticles(prev => prev.filter((a: any) => a.id !== articleToDelete.id));
+          console.log('Actualité supprimée avec succès');
+        } else {
+          console.error('Erreur lors de la suppression de l\'actualité');
+        }
+      } else if (userToDelete) {
+        const response = await fetch(`/api/users/${userToDelete.id}`, {
+          method: 'DELETE'
+        });
+        
+        if (response.ok) {
+          setUsers(prev => prev.filter((u: any) => u.id !== userToDelete.id));
+          console.log('Utilisateur supprimé avec succès');
+        } else {
+          console.error('Erreur lors de la suppression de l\'utilisateur');
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+    } finally {
+      setShowDeleteModal(false);
+      setArticleToDelete(null);
+      setUserToDelete(null);
     }
-    setShowDeleteModal(false);
-    setArticleToDelete(null);
-    setUserToDelete(null);
   };
 
   const handleCancelDelete = () => {
@@ -171,6 +167,11 @@ const EspaceAdministrateurPage = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
   return (
@@ -434,58 +435,60 @@ const EspaceAdministrateurPage = () => {
               </Link>
             </div>
 
-            <div className="flex flex-col gap-6">
-              {articles.map(article => (
-                <div
-                  key={article.id}
-                  className="bg-white border border-gray-200 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1 mr-4">{article.title}</h3>
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        article.status === 'Publié' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {article.status}
-                    </span>
-                  </div>
-                  <div className="flex gap-4 mb-4">
-                    <span className="text-sm text-gray-600 flex items-center gap-2">{article.date}</span>
-                    {article.type && (
-                      <span className="text-sm text-gray-600 flex items-center gap-2">{article.type}</span>
-                    )}
-                  </div>
-                  <p className="text-gray-600 leading-relaxed mb-6">{article.description}</p>
-                  <div className="flex gap-4">
-                    <Link
-                      href={`/administrateur/actualites/edit/${article.id}`}
-                      className="flex items-center gap-2 px-4 py-2 bg-none border border-gray-300 rounded-md text-sm cursor-pointer transition-all duration-200 text-gray-700 hover:bg-gray-50 hover:border-gray-400 no-underline"
-                    >
-                      Modifier
-                    </Link>
-                    <button
-                      className="flex items-center gap-2 px-4 py-2 bg-none border border-red-200 rounded-md text-sm cursor-pointer transition-all duration-200 text-red-600 hover:bg-red-50 hover:border-red-300"
-                      onClick={() => handleDeleteClick(article)}
-                    >
-                      Supprimer
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              {articles.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-gray-600">
-                  <p className="mb-6 text-lg">Aucune actualité trouvée.</p>
-                  <Link
-                    href="/administrateur/actualites/create"
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white border-none rounded-md text-base font-medium transition-colors duration-200 hover:bg-blue-700 no-underline"
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                {articles.map((article: any) => (
+                  <div
+                    key={article.id}
+                    className="bg-white border border-gray-200 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
                   >
-                    Créer votre première actualité
-                  </Link>
-                </div>
-              )}
-            </div>
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 flex-1 mr-4">{article.titre || article.title}</h3>
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          (article.statut || article.status) === 'Publié' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {article.statut || article.status}
+                      </span>
+                    </div>
+                    <div className="flex gap-4 mb-4">
+                      <span className="text-sm text-gray-600 flex items-center gap-2">
+                        {formatDate(article.date_creation) || article.date}
+                      </span>
+                      <span className="text-sm text-gray-600 flex items-center gap-2">
+                        {article.type}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 leading-relaxed mb-6">{article.description}</p>
+                    <div className="flex gap-4">
+                      <Link
+                        href={`/administrateur/actualites/edit/${article.id}`}
+                        className="flex items-center gap-2 px-4 py-2 bg-none border border-gray-300 rounded-md text-sm cursor-pointer transition-all duration-200 text-gray-700 hover:bg-gray-50 hover:border-gray-400 no-underline"
+                      >
+                        Modifier
+                      </Link>
+                      <button
+                        className="flex items-center gap-2 px-4 py-2 bg-none border border-red-200 rounded-md text-sm cursor-pointer transition-all duration-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                        onClick={() => handleDeleteClick(article)}
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {articles.length === 0 && !loading && (
+                  <div className="flex flex-col items-center justify-center py-12 text-center text-gray-600">
+                    <p className="mb-6 text-lg">Aucune actualité trouvée.</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -503,82 +506,81 @@ const EspaceAdministrateurPage = () => {
                 </p>
               </div>
 
-              {/* ➜ Lien vers la page de création */}
               <Link
                 href="/administrateur/users/create"
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white border-none rounded-md text-base font-medium transition-colors duration-200 hover:bg-blue-700"
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white border-none rounded-md text-base font-medium transition-colors duration-200 hover:bg-blue-700 no-underline"
               >
                 + Nouvel utilisateur
               </Link>
             </div>
 
-            <div className="grid gap-6">
-              {users.map(user => (
-                <div
-                  key={user.id}
-                  className="bg-white border border-gray-200 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
-                >
-                  <div className="flex items-start gap-6">
-                    <img
-                      src={user.photo}
-                      alt={`Photo de ${user.prenom} ${user.nom}`}
-                      className="w-20 h-20 rounded-full object-cover border-2 border-gray-100"
-                    />
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : (
+              <div className="grid gap-6">
+                {users.map((user: any) => (
+                  <div
+                    key={user.id}
+                    className="bg-white border border-gray-200 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
+                  >
+                    <div className="flex items-start gap-6">
+                      <img
+                        src={user.photo || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'}
+                        alt={`Photo de ${user.prenom} ${user.nom}`}
+                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-100"
+                      />
 
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                            {user.prenom} {user.nom}
-                          </h3>
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(
-                              user.role
-                            )}`}
-                          >
-                            {user.role}
-                          </span>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                              {user.prenom} {user.nom}
+                            </h3>
+                            <span
+                              className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(
+                                user.role
+                              )}`}
+                            >
+                              {user.role}
+                            </span>
+                          </div>
                         </div>
-                      </div>
 
-                      <p className="text-gray-600 leading-relaxed mb-4">{user.bio}</p>
+                        <p className="text-gray-600 leading-relaxed mb-4">{user.bio || 'Aucune biographie renseignée'}</p>
 
-                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                        <Mail className="w-4 h-4" />
-                        <span>{user.email}</span>
-                      </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                          <Mail className="w-4 h-4" />
+                          <span>{user.email}</span>
+                        </div>
 
-                      <div className="flex gap-4">
-                        <Link
-                          href={`/administrateur/users/edit/${user.id}`}
-                          className="flex items-center gap-2 px-4 py-2 bg-none border border-gray-300 rounded-md text-sm cursor-pointer transition-all duration-200 text-gray-700 hover:bg-gray-50 hover:border-gray-400 no-underline"
-                        >
-                          Modifier
-                        </Link>
-                        <button
-                          className="flex items-center gap-2 px-4 py-2 bg-none border border-red-200 rounded-md text-sm cursor-pointer transition-all duration-200 text-red-600 hover:bg-red-50 hover:border-red-300"
-                          onClick={() => handleDeleteUserClick(user)}
-                        >
-                          Supprimer
-                        </button>
+                        <div className="flex gap-4">
+                          <Link
+                            href={`/administrateur/users/edit/${user.id}`}
+                            className="flex items-center gap-2 px-4 py-2 bg-none border border-gray-300 rounded-md text-sm cursor-pointer transition-all duration-200 text-gray-700 hover:bg-gray-50 hover:border-gray-400 no-underline"
+                          >
+                            Modifier
+                          </Link>
+                          <button
+                            className="flex items-center gap-2 px-4 py-2 bg-none border border-red-200 rounded-md text-sm cursor-pointer transition-all duration-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                            onClick={() => handleDeleteUserClick(user)}
+                          >
+                            Supprimer
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-              {users.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-gray-600">
-                  <p className="mb-6 text-lg">Aucun utilisateur trouvé.</p>
-                  <Link
-                    href="/administrateur/users/create"
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white border-none rounded-md text-base font-medium transition-colors duration-200 hover:bg-blue-700"
-                  >
-                    Ajouter le premier utilisateur
-                  </Link>
-                </div>
-              )}
-            </div>
+                {users.length === 0 && !loading && (
+                  <div className="flex flex-col items-center justify-center py-12 text-center text-gray-600">
+                    <p className="mb-6 text-lg">Aucun utilisateur trouvé.</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -599,7 +601,7 @@ const EspaceAdministrateurPage = () => {
             <div className="p-6">
               <p className="mb-4 text-gray-700 leading-relaxed">
                 {articleToDelete
-                  ? `Êtes-vous sûr de vouloir supprimer l'actualité "${articleToDelete.title}" ?`
+                  ? `Êtes-vous sûr de vouloir supprimer l'actualité "${articleToDelete.titre || articleToDelete.title}" ?`
                   : `Êtes-vous sûr de vouloir supprimer l'utilisateur "${userToDelete?.prenom} ${userToDelete?.nom}" ?`}
               </p>
               <p className="text-sm text-red-600 font-medium">Cette action est irréversible.</p>

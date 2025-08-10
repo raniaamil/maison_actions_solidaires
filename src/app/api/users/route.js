@@ -1,31 +1,87 @@
 // src/app/api/users/route.js
 export const runtime = 'nodejs';
-import db from '../../../../lib/db';
+import db from '../../../lib/db';
 import bcrypt from 'bcryptjs';
 
-export async function GET() {
+// GET - Récupérer tous les utilisateurs
+export async function GET(request) {
   try {
-    const [rows] = await db.execute('SELECT id, prenom, nom, email FROM users');
-    return Response.json(rows);
+    const { searchParams } = new URL(request.url);
+    const role = searchParams.get('role');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
+
+    let query = `
+      SELECT 
+        id, prenom, nom, email, photo, bio, role, 
+        date_inscription, date_modification, actif
+      FROM users 
+      WHERE actif = TRUE
+    `;
+    
+    const params = [];
+
+    if (role) {
+      query += ' AND role = ?';
+      params.push(role);
+    }
+
+    query += ' ORDER BY date_inscription DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+
+    const [rows] = await db.execute(query, params);
+
+    // Transformer les données pour correspondre au format attendu par le frontend
+    const users = rows.map(row => ({
+      id: row.id,
+      prenom: row.prenom,
+      nom: row.nom,
+      email: row.email,
+      photo: row.photo || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+      bio: row.bio || '',
+      role: row.role,
+      date_inscription: row.date_inscription,
+      date_modification: row.date_modification,
+      actif: row.actif
+    }));
+
+    return Response.json(users);
   } catch (error) {
-    console.error('Erreur base de données:', error);
-    return Response.json({ error: 'Erreur serveur' }, { status: 500 });
+    console.error('Erreur lors de la récupération des utilisateurs:', error);
+    return Response.json(
+      { error: 'Erreur serveur lors de la récupération des utilisateurs' },
+      { status: 500 }
+    );
   }
 }
 
-// POST pour l'inscription
+// POST - Créer un nouvel utilisateur (inscription ou création par admin)
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, password } = body;
+    const { 
+      firstName, 
+      lastName, 
+      prenom, 
+      nom, 
+      email, 
+      password, 
+      photo, 
+      bio, 
+      role = 'Rédacteur' 
+    } = body;
+
+    // Support pour les deux formats de noms (compatibilité)
+    const finalFirstName = firstName || prenom;
+    const finalLastName = lastName || nom;
 
     // Validation des données
-    if (!firstName || !lastName || !email || !password) {
+    if (!finalFirstName || !finalLastName || !email || !password) {
       return Response.json({ 
         message: 'Tous les champs sont requis',
         errors: {
-          firstName: !firstName ? 'Le prénom est requis' : '',
-          lastName: !lastName ? 'Le nom est requis' : '',
+          firstName: !finalFirstName ? 'Le prénom est requis' : '',
+          lastName: !finalLastName ? 'Le nom est requis' : '',
           email: !email ? 'L\'email est requis' : '',
           password: !password ? 'Le mot de passe est requis' : ''
         }
@@ -65,34 +121,44 @@ export async function POST(request) {
     // Hacher le mot de passe
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Insérer le nouvel utilisateur (en utilisant vos noms de colonnes français)
+    // Insérer le nouvel utilisateur
     const [result] = await db.execute(
-      `INSERT INTO users (prenom, nom, email, mot_de_passe, date_inscription) 
-       VALUES (?, ?, ?, ?, NOW())`,
+      `INSERT INTO users (prenom, nom, email, mot_de_passe, photo, bio, role, date_inscription) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
-        firstName.trim(),
-        lastName.trim(),
+        finalFirstName.trim(),
+        finalLastName.trim(),
         email.toLowerCase().trim(),
-        hashedPassword
+        hashedPassword,
+        photo || null,
+        bio || null,
+        role
       ]
     );
 
-    // Retourner une réponse de succès (sans le mot de passe)
+    // Récupérer l'utilisateur créé
+    const [newUser] = await db.execute(
+      'SELECT id, prenom, nom, email, photo, bio, role, date_inscription FROM users WHERE id = ?',
+      [result.insertId]
+    );
+
     return Response.json({
       message: 'Utilisateur créé avec succès',
       user: {
-        id: result.insertId,
-        prenom: firstName.trim(),
-        nom: lastName.trim(),
-        email: email.toLowerCase().trim(),
-        date_inscription: new Date()
+        id: newUser[0].id,
+        prenom: newUser[0].prenom,
+        nom: newUser[0].nom,
+        email: newUser[0].email,
+        photo: newUser[0].photo,
+        bio: newUser[0].bio,
+        role: newUser[0].role,
+        date_inscription: newUser[0].date_inscription
       }
     }, { status: 201 });
 
   } catch (error) {
-    console.error('Erreur lors de l\'inscription:', error);
+    console.error('Erreur lors de la création de l\'utilisateur:', error);
     
-    // Gérer les erreurs MySQL spécifiques
     if (error.code === 'ER_DUP_ENTRY') {
       return Response.json({ 
         message: 'Utilisateur déjà existant',

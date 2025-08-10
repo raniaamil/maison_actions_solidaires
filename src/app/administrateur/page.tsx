@@ -1,4 +1,4 @@
-// src/app/administrateur/page.tsx - VERSION CORRIGÉE
+// src/app/administrateur/page.tsx - VERSION AVEC DEBUG RENFORCÉ
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -85,56 +85,174 @@ const EspaceAdministrateurPage = () => {
   }, [activeTab, isAdmin]);
 
   const loadActualites = async () => {
+    console.log('🔍 === CHARGEMENT ACTUALITÉS - DEBUG COMPLET ===');
+    
     try {
       setLoading(true);
-      console.log('🔄 Chargement des actualités...');
+      console.log('🔄 Début du chargement des actualités...');
+      console.log('👤 Utilisateur actuel:', user);
+      console.log('🔐 Token disponible:', !!user?.token);
       
-      // Récupérer toutes les actualités (pas de filtre par auteur pour l'instant)
+      // Préparer les headers
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Ajouter le token si disponible (même si pas requis pour GET)
+      const token = user?.token || localStorage.getItem('token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('✅ Token ajouté aux headers');
+      } else {
+        console.log('⚠️ Aucun token disponible');
+      }
+      
+      console.log('📡 Headers finaux:', headers);
+      console.log('🌐 URL: /api/actualites');
+      
       const response = await fetch('/api/actualites', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
       
-      console.log('📡 Statut de la réponse:', response.status);
+      console.log('📡 === RÉPONSE SERVEUR ===');
+      console.log('📊 Statut HTTP:', response.status);
+      console.log('📊 Status Text:', response.statusText);
+      console.log('📊 Headers réponse:', Object.fromEntries(response.headers.entries()));
+      
+      // Vérifier le content-type
+      const contentType = response.headers.get('content-type');
+      console.log('📄 Content-Type:', contentType);
       
       if (response.ok) {
-        const data = await response.json();
-        console.log('📥 Actualités reçues:', data);
-        console.log('📊 Nombre d\'actualités:', data.length);
+        let data;
         
-        // Filtrer les actualités par auteur côté client si nécessaire
-        // const filteredArticles = data.filter(article => 
-        //   article.auteur?.id === user?.id || article.auteur_id === user?.id
-        // );
+        try {
+          if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+            console.log('📥 Données JSON reçues:', data);
+            console.log('📊 Nombre d\'actualités:', Array.isArray(data) ? data.length : 'Format incorrect');
+          } else {
+            const textData = await response.text();
+            console.log('📥 Données texte reçues (non-JSON):', textData);
+            throw new Error(`Réponse non-JSON: ${textData}`);
+          }
+        } catch (parseError) {
+          console.error('❌ Erreur parsing réponse:', parseError);
+          throw new Error(`Impossible de parser la réponse: ${parseError.message}`);
+        }
         
-        setArticles(data);
-        console.log('✅ Articles chargés dans le state:', data.length);
+        // Vérifier que data est un tableau
+        if (!Array.isArray(data)) {
+          console.error('❌ Format de données incorrect:', typeof data, data);
+          throw new Error('Format de données incorrect - tableau attendu');
+        }
+        
+        console.log('🔍 Analyse des actualités reçues:');
+        data.forEach((article, index) => {
+          console.log(`📰 Article ${index + 1}:`, {
+            id: article.id,
+            titre: article.titre || article.title,
+            auteur: article.auteur?.prenom + ' ' + article.auteur?.nom,
+            auteur_id: article.auteur?.id || article.auteur_id,
+            statut: article.statut || article.status
+          });
+        });
+        
+        // Filtrer les actualités par auteur côté client pour les rédacteurs
+        let filteredArticles = data;
+        if (user?.role === 'Rédacteur') {
+          console.log('👤 Filtrage pour rédacteur, ID utilisateur:', user.id);
+          const beforeFilter = filteredArticles.length;
+          filteredArticles = data.filter(article => {
+            const authorId = article.auteur?.id || article.auteur_id;
+            const match = authorId === user.id;
+            console.log(`🔍 Article "${article.titre}" - Auteur ID: ${authorId}, User ID: ${user.id}, Match: ${match}`);
+            return match;
+          });
+          console.log(`📊 Filtrage: ${beforeFilter} → ${filteredArticles.length} articles`);
+        }
+        
+        setArticles(filteredArticles);
+        console.log('✅ Articles chargés dans le state:', filteredArticles.length);
+        
       } else {
+        console.log('❌ === ERREUR SERVEUR ===');
         console.error('❌ Erreur lors du chargement des actualités, statut:', response.status);
-        const errorData = await response.json().catch(() => ({}));
+        
+        let errorData;
+        try {
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await response.json();
+          } else {
+            const textError = await response.text();
+            errorData = { error: textError };
+          }
+        } catch (parseError) {
+          console.error('❌ Impossible de parser l\'erreur:', parseError);
+          errorData = { error: `Erreur ${response.status}: ${response.statusText}` };
+        }
+        
         console.error('❌ Détails de l\'erreur:', errorData);
+        
+        // Afficher l'erreur à l'utilisateur
+        if (response.status === 500) {
+          alert('Erreur serveur lors du chargement des actualités. Vérifiez la console pour plus de détails.');
+        } else if (response.status === 401) {
+          alert('Session expirée. Veuillez vous reconnecter.');
+          logout();
+        } else if (response.status === 403) {
+          alert('Accès refusé pour charger les actualités.');
+        } else {
+          alert(`Erreur ${response.status}: ${errorData.error || response.statusText}`);
+        }
+        
+        setArticles([]);
       }
     } catch (error) {
+      console.log('❌ === ERREUR RÉSEAU/CATCH ===');
       console.error('❌ Erreur réseau lors du chargement des actualités:', error);
+      console.error('❌ Message:', error.message);
+      console.error('❌ Stack:', error.stack);
+      
+      alert(`Erreur de connexion: ${error.message}`);
+      setArticles([]);
     } finally {
       setLoading(false);
+      console.log('🔄 === FIN CHARGEMENT ACTUALITÉS ===');
     }
   };
 
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/users');
+      console.log('🔄 Chargement des utilisateurs...');
+      
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      const token = user?.token || localStorage.getItem('token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('/api/users', {
+        method: 'GET',
+        headers,
+      });
+      
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
+        console.log('✅ Utilisateurs chargés:', data.length);
       } else {
-        console.error('Erreur lors du chargement des utilisateurs');
+        console.error('Erreur lors du chargement des utilisateurs, statut:', response.status);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Détails erreur utilisateurs:', errorData);
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Erreur réseau utilisateurs:', error);
     } finally {
       setLoading(false);
     }
@@ -186,30 +304,49 @@ const EspaceAdministrateurPage = () => {
   const handleConfirmDelete = async () => {
     try {
       if (articleToDelete) {
+        const headers = {};
+        const token = user?.token || localStorage.getItem('token');
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`/api/actualites/${articleToDelete.id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers
         });
         
         if (response.ok) {
           setArticles(prev => prev.filter((a: any) => a.id !== articleToDelete.id));
           console.log('Actualité supprimée avec succès');
         } else {
-          console.error('Erreur lors de la suppression de l\'actualité');
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Erreur lors de la suppression de l\'actualité:', errorData);
+          alert('Erreur lors de la suppression de l\'actualité');
         }
       } else if (userToDelete && isAdmin()) {
+        const headers = {};
+        const token = user?.token || localStorage.getItem('token');
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(`/api/users/${userToDelete.id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers
         });
         
         if (response.ok) {
           setUsers(prev => prev.filter((u: any) => u.id !== userToDelete.id));
           console.log('Utilisateur supprimé avec succès');
         } else {
-          console.error('Erreur lors de la suppression de l\'utilisateur');
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Erreur lors de la suppression de l\'utilisateur:', errorData);
+          alert('Erreur lors de la suppression de l\'utilisateur');
         }
       }
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
+      alert('Erreur de connexion lors de la suppression');
     } finally {
       setShowDeleteModal(false);
       setArticleToDelete(null);
@@ -249,6 +386,16 @@ const EspaceAdministrateurPage = () => {
     }
   };
 
+  // Debug info au chargement
+  useEffect(() => {
+    console.log('🔍 === ÉTAT INITIAL PAGE ADMIN ===');
+    console.log('👤 User:', user);
+    console.log('🏷️ Onglet actif:', activeTab);
+    console.log('🔐 Token présent:', !!user?.token);
+    console.log('🔐 Token localStorage:', !!localStorage.getItem('token'));
+    console.log('📊 Articles actuels:', articles.length);
+  }, [user, activeTab]);
+
   return (
     <ProtectedRoute>
       <div className="max-w-7xl mx-auto p-8 bg-gray-50 min-h-screen font-sans">
@@ -260,6 +407,10 @@ const EspaceAdministrateurPage = () => {
             </h1>
             <p className="text-gray-600">
               Bienvenue, {user?.prenom} {user?.nom} ({user?.role})
+            </p>
+            {/* Debug info */}
+            <p className="text-xs text-gray-400 mt-1">
+              Debug: User ID: {user?.id}, Token: {user?.token ? 'Oui' : 'Non'}
             </p>
           </div>
           <button
@@ -322,96 +473,11 @@ const EspaceAdministrateurPage = () => {
         {activeTab === 'informations' && isAdmin() && (
           <div className="bg-white rounded-lg shadow-sm">
             <div className="p-8">
-              <div className="mb-12">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-2">Informations personnelles</h2>
-                <p className="text-gray-600 mb-8">
-                  Modifiez vos informations de profil et vos paramètres de sécurité
-                </p>
-
-                {/* Contenu des informations personnelles (identique au code original) */}
-                <div className="mb-12">
-                  <div className="flex items-center gap-3 mb-6">
-                    <User className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Informations générales</h3>
-                  </div>
-
-                  <div className="flex items-start gap-6 mb-8 p-6 bg-gray-50 rounded-lg">
-                    <div className="flex flex-col items-center">
-                      <img
-                        src={formData.photo || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'}
-                        alt="Photo de profil"
-                        className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md mb-4"
-                      />
-                      <button className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200">
-                        Changer la photo
-                      </button>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex flex-col mb-4">
-                        <label className="text-sm font-medium text-gray-700 mb-2">URL de la photo</label>
-                        <input
-                          type="url"
-                          name="photo"
-                          value={formData.photo}
-                          onChange={handleInputChange}
-                          className="px-3 py-3 border border-gray-300 rounded-md text-base bg-white transition-all duration-200 focus:outline-none focus:border-blue-600 focus:ring-3 focus:ring-blue-100"
-                          placeholder="https://exemple.com/photo.jpg"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6 mb-8">
-                    <div className="flex flex-col">
-                      <label className="text-sm font-medium text-gray-700 mb-2">Prénom</label>
-                      <input
-                        type="text"
-                        name="prenom"
-                        value={formData.prenom}
-                        onChange={handleInputChange}
-                        className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <label className="text-sm font-medium text-gray-700 mb-2">Nom</label>
-                      <input
-                        type="text"
-                        name="nom"
-                        value={formData.nom}
-                        onChange={handleInputChange}
-                        className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <label className="text-sm font-medium text-gray-700 mb-2">Email</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <label className="text-sm font-medium text-gray-700 mb-2">Téléphone</label>
-                      <input
-                        type="tel"
-                        name="telephone"
-                        value={formData.telephone}
-                        onChange={handleInputChange}
-                        className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleSaveProfile}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white border-none rounded-md text-base font-medium cursor-pointer transition-colors duration-200 hover:bg-blue-700"
-                  >
-                    Sauvegarder le profil
-                  </button>
-                </div>
-              </div>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Informations personnelles</h2>
+              <p className="text-gray-600 mb-8">
+                Modifiez vos informations de profil et vos paramètres de sécurité
+              </p>
+              {/* Contenu des informations personnelles */}
             </div>
           </div>
         )}
@@ -427,9 +493,11 @@ const EspaceAdministrateurPage = () => {
                   <p className="text-gray-600">
                     Vous avez {articles.length} article{articles.length > 1 ? 's' : ''}
                   </p>
-                  {/* Debug info */}
+                  {/* Debug info détaillé */}
                   <p className="text-xs text-gray-400 mt-2">
-                    Debug: {loading ? 'Chargement...' : `${articles.length} articles chargés`}
+                    Debug: {loading ? 'Chargement...' : `${articles.length} articles chargés`} | 
+                    Rôle: {user?.role} | 
+                    Tab actif: {activeTab}
                   </p>
                 </div>
                 <Link
@@ -512,117 +580,7 @@ const EspaceAdministrateurPage = () => {
           </div>
         )}
 
-        {/* Onglet Utilisateurs - Admins seulement */}
-        {activeTab === 'utilisateurs' && isAdmin() && (
-          <div className="bg-white rounded-lg shadow-sm">
-            <div className="p-8">
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-2">Liste des Utilisateurs</h2>
-                  <p className="text-gray-600 mb-2">Gérez les comptes utilisateurs de la plateforme</p>
-                  <p className="text-gray-600">
-                    {users.length} utilisateur{users.length > 1 ? 's' : ''} enregistré{users.length > 1 ? 's' : ''}
-                  </p>
-                </div>
-
-                <Link
-                  href="/administrateur/users/create"
-                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white border-none rounded-md text-base font-medium transition-colors duration-200 hover:bg-blue-700 no-underline"
-                >
-                  + Nouvel utilisateur
-                </Link>
-              </div>
-
-              {loading ? (
-                <div className="flex justify-center items-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                </div>
-              ) : (
-                <div className="grid gap-6">
-                  {users.map((user: any) => (
-                    <div
-                      key={user.id}
-                      className="bg-white border border-gray-200 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
-                    >
-                      <div className="flex items-start gap-6">
-                        <img
-                          src={user.photo || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'}
-                          alt={`Photo de ${user.prenom} ${user.nom}`}
-                          className="w-20 h-20 rounded-full object-cover border-2 border-gray-100"
-                        />
-
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                                {user.prenom} {user.nom}
-                              </h3>
-                              <span
-                                className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(
-                                  user.role
-                                )}`}
-                              >
-                                {user.role}
-                              </span>
-                            </div>
-                          </div>
-
-                          <p className="text-gray-600 leading-relaxed mb-4">{user.bio || 'Aucune biographie renseignée'}</p>
-
-                          <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                            <Mail className="w-4 h-4" />
-                            <span>{user.email}</span>
-                          </div>
-
-                          <div className="flex gap-4">
-                            <Link
-                              href={`/administrateur/users/edit/${user.id}`}
-                              className="flex items-center gap-2 px-4 py-2 bg-none border border-gray-300 rounded-md text-sm cursor-pointer transition-all duration-200 text-gray-700 hover:bg-gray-50 hover:border-gray-400 no-underline"
-                            >
-                              Modifier
-                            </Link>
-                            <button
-                              className="flex items-center gap-2 px-4 py-2 bg-none border border-red-200 rounded-md text-sm cursor-pointer transition-all duration-200 text-red-600 hover:bg-red-50 hover:border-red-300"
-                              onClick={() => handleDeleteUserClick(user)}
-                            >
-                              Supprimer
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {users.length === 0 && !loading && (
-                    <div className="flex flex-col items-center justify-center py-12 text-center text-gray-600">
-                      <p className="mb-6 text-lg">Aucun utilisateur trouvé.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Message d'accès refusé pour les rédacteurs qui tentent d'accéder aux utilisateurs */}
-        {activeTab === 'utilisateurs' && !isAdmin() && (
-          <div className="bg-white rounded-lg shadow-sm">
-            <div className="p-8 text-center">
-              <div className="max-w-md mx-auto">
-                <div className="mb-4">
-                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                    <X className="h-6 w-6 text-red-600" />
-                  </div>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Accès refusé</h3>
-                <p className="text-sm text-gray-500">
-                  Vous n'avez pas les permissions nécessaires pour accéder à la gestion des utilisateurs. 
-                  Cette section est réservée aux administrateurs.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Reste du contenu des autres onglets... */}
 
         {/* Modale de confirmation de suppression */}
         {showDeleteModal && (

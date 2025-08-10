@@ -27,8 +27,11 @@ export const AuthProvider = ({ children }) => {
     if (storedToken && storedUser) {
       try {
         const userData = JSON.parse(storedUser);
+        // CORRECTION: Ajouter le token dans les données utilisateur
+        userData.token = storedToken;
         setToken(storedToken);
         setUser(userData);
+        console.log('✅ Utilisateur restauré depuis localStorage:', userData);
       } catch (error) {
         console.error('Erreur parsing user data:', error);
         logout();
@@ -39,6 +42,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('🔐 Tentative de connexion pour:', email);
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -48,26 +53,34 @@ export const AuthProvider = ({ children }) => {
       });
 
       const data = await response.json();
+      console.log('📡 Réponse de connexion:', response.status, data);
 
       if (response.ok) {
-        setUser(data.user);
+        // CORRECTION: Inclure le token dans l'objet user
+        const userWithToken = { ...data.user, token: data.token };
+        
+        setUser(userWithToken);
         setToken(data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('user', JSON.stringify(userWithToken));
         localStorage.setItem('token', data.token);
+        
+        console.log('✅ Connexion réussie, utilisateur:', userWithToken);
         
         // Rediriger vers l'espace administrateur
         router.push('/administrateur');
         return { success: true };
       } else {
+        console.error('❌ Erreur de connexion:', data.error);
         return { success: false, error: data.error };
       }
     } catch (error) {
-      console.error('Erreur lors de la connexion:', error);
-      return { success: false, error: 'Erreur de connexion' };
+      console.error('❌ Erreur réseau lors de la connexion:', error);
+      return { success: false, error: 'Erreur de connexion au serveur' };
     }
   };
 
   const logout = () => {
+    console.log('🚪 Déconnexion utilisateur');
     setUser(null);
     setToken(null);
     localStorage.removeItem('user');
@@ -76,11 +89,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAuthenticated = () => {
-    return !!user && !!token;
+    const isAuth = !!user && !!token;
+    console.log('🔍 Vérification authentification:', isAuth, { user: !!user, token: !!token });
+    return isAuth;
   };
 
   const hasRole = (role) => {
-    return user?.role === role;
+    const hasRoleResult = user?.role === role;
+    console.log('👤 Vérification rôle:', role, '→', hasRoleResult, '(utilisateur:', user?.role, ')');
+    return hasRoleResult;
   };
 
   const isAdmin = () => {

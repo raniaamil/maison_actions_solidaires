@@ -1,5 +1,4 @@
--- database/schema.sql
--- Utilisation de la base de données existante
+
 USE maison_actions_solidaires;
 
 -- Table des utilisateurs

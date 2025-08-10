@@ -131,11 +131,20 @@ const ModifierActualite = () => {
         inscription_requise: formData.inscription_requise
       };
 
+      // AJOUTER l'en-tête d'autorisation
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+
+      // Récupérer le token depuis localStorage si pas dans user
+      const token = user?.token || localStorage.getItem('token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/actualites/${actualiteId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(payload)
       });
 

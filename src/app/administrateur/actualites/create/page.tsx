@@ -68,7 +68,9 @@ const NouvelleActualite = () => {
   };
 
   const handleSave = async (statut = 'Brouillon') => {
-    console.log('🔄 Tentative de sauvegarde avec statut:', statut);
+    console.log('🔄 === DÉBUT SAUVEGARDE ===');
+    console.log('📊 Statut demandé:', statut);
+    console.log('👤 Utilisateur connecté:', user);
     
     if (!validateForm()) {
       console.log('❌ Validation du formulaire échouée:', errors);
@@ -76,7 +78,8 @@ const NouvelleActualite = () => {
     }
 
     if (!user?.id) {
-      alert('Erreur : Utilisateur non connecté');
+      console.log('❌ Utilisateur non connecté');
+      alert('Erreur : Vous devez être connecté pour créer une actualité');
       return;
     }
 
@@ -98,40 +101,91 @@ const NouvelleActualite = () => {
         inscription_requise: formData.inscription_requise
       };
 
-      console.log('📤 Envoi du payload:', payload);
+      console.log('📤 Payload à envoyer:', JSON.stringify(payload, null, 2));
+
+      // Préparer les headers avec le token
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+
+      // Récupérer le token depuis user ou localStorage
+      const token = user?.token || localStorage.getItem('token');
+      console.log('🔐 Token disponible:', !!token);
+      console.log('🔐 Token (premiers caractères):', token ? token.substring(0, 20) + '...' : 'AUCUN');
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('✅ Header Authorization ajouté');
+      } else {
+        console.log('⚠️ Aucun token disponible - la requête risque d\'échouer');
+      }
+
+      console.log('📡 Headers finaux:', headers);
+      console.log('🌐 URL cible: /api/actualites');
 
       const response = await fetch('/api/actualites', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(payload)
       });
 
-      console.log('📡 Statut de la réponse:', response.status);
+      console.log('📡 === RÉPONSE SERVEUR ===');
+      console.log('📊 Statut HTTP:', response.status);
+      console.log('📊 Status Text:', response.statusText);
+      console.log('📊 Headers réponse:', Object.fromEntries(response.headers.entries()));
 
-      const data = await response.json();
-      console.log('📥 Données reçues:', data);
+      // Vérifier le Content-Type de la réponse
+      const contentType = response.headers.get('content-type');
+      console.log('📄 Content-Type:', contentType);
+
+      let data;
+      try {
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+          console.log('📥 Données JSON reçues:', data);
+        } else {
+          const textData = await response.text();
+          console.log('📥 Données texte reçues:', textData);
+          data = { error: `Réponse non-JSON reçue: ${textData}` };
+        }
+      } catch (parseError) {
+        console.error('❌ Erreur parsing réponse:', parseError);
+        data = { error: 'Impossible de parser la réponse du serveur' };
+      }
 
       if (response.ok) {
-        console.log('✅ Actualité créée avec succès:', data);
+        console.log('✅ === SUCCÈS ===');
+        console.log('🎉 Actualité créée avec succès:', data);
         alert(`Actualité ${statut === 'Publié' ? 'publiée' : 'sauvegardée'} avec succès !`);
         router.push('/administrateur?tab=actualites');
       } else {
-        console.error('❌ Erreur du serveur:', data);
+        console.log('❌ === ÉCHEC ===');
+        console.error('❌ Erreur du serveur (statut ' + response.status + '):', data);
         
         // Gestion des erreurs spécifiques
-        if (data.error) {
+        if (response.status === 401) {
+          alert('Erreur: Vous n\'êtes pas authentifié. Veuillez vous reconnecter.');
+          router.push('/login');
+        } else if (response.status === 403) {
+          alert('Erreur: Vous n\'avez pas les permissions pour créer une actualité.');
+        } else if (data?.error) {
           alert(`Erreur: ${data.error}`);
+        } else if (data?.message) {
+          alert(`Erreur: ${data.message}`);
         } else {
-          alert('Une erreur est survenue lors de la création de l\'actualité');
+          alert(`Erreur ${response.status}: ${response.statusText || 'Une erreur est survenue'}`);
         }
       }
     } catch (error) {
-      console.error('❌ Erreur réseau:', error);
-      alert('Erreur de connexion au serveur. Veuillez réessayer.');
+      console.log('❌ === ERREUR RÉSEAU ===');
+      console.error('❌ Erreur réseau complète:', error);
+      console.error('❌ Message:', error.message);
+      console.error('❌ Stack:', error.stack);
+      
+      alert('Erreur de connexion au serveur. Vérifiez votre connexion internet et réessayez.');
     } finally {
       setIsLoading(false);
+      console.log('🔄 === FIN SAUVEGARDE ===');
     }
   };
 
@@ -141,6 +195,22 @@ const NouvelleActualite = () => {
   const handleMediaUpload = () => {
     console.log('Upload de média - fonctionnalité à implémenter');
   };
+
+  // Vérifications de base au chargement du composant
+  React.useEffect(() => {
+    console.log('🔍 === VÉRIFICATIONS INITIALES ===');
+    console.log('👤 Utilisateur:', user);
+    console.log('🔐 Token dans user:', !!user?.token);
+    console.log('🔐 Token dans localStorage:', !!localStorage.getItem('token'));
+    
+    if (!user) {
+      console.log('⚠️ Aucun utilisateur connecté');
+    } else if (!user.id) {
+      console.log('⚠️ Utilisateur sans ID');
+    } else {
+      console.log('✅ Utilisateur valide avec ID:', user.id);
+    }
+  }, [user]);
 
   return (
     <div className={styles.container}>
@@ -379,6 +449,17 @@ const NouvelleActualite = () => {
           </div>
         </div>
       </div>
+
+      {/* Debug info en développement */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-4 left-4 p-4 bg-gray-800 text-white text-xs rounded max-w-sm">
+          <p><strong>Debug Info:</strong></p>
+          <p>User ID: {user?.id || 'N/A'}</p>
+          <p>Token: {user?.token ? 'Présent' : 'Absent'}</p>
+          <p>Role: {user?.role || 'N/A'}</p>
+          <p>Loading: {isLoading ? 'Oui' : 'Non'}</p>
+        </div>
+      )}
 
       {/* Afficher les erreurs de validation */}
       {errors.auteur && (

@@ -1,0 +1,230 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.title {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #8b7355;
+  margin-bottom: 3rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.articlesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.articleCard {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.articleCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.imageContainer {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.articleImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.articleCard:hover .articleImage {
+  transform: scale(1.05);
+}
+
+.typeTag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: lowercase;
+  color: white;
+}
+
+/* Couleurs des étiquettes par catégorie */
+.typeNumerique { background-color: #2196F3; }      
+.typeAdministratif { background-color: #e23922; } 
+.typeSoutien { background-color: #d6a81e; }        
+.typeBienEtre { background-color: #26d335; }       
+.typeJunior { background-color: #ec8768; }        
+.typeEvenement { background-color: #8c0c91; }      
+.typeTemoignage { background-color: #795548; }     
+
+
+.cardContent {
+  padding: 24px;
+}
+
+.dateContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.clockIcon {
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+.date {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.articleTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.articleDescription {
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+}
+
+.articleMeta {
+  margin-bottom: 16px;
+}
+
+.authorInfo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.authorName {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.age {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.updatedDate {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.eventDetails {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 12px 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+.location,
+.places {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.locationIcon,
+.placesIcon {
+  font-size: 0.875rem;
+}
+
+.registerButton {
+  background-color: #8b7355;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 100%;
+}
+
+.registerButton:hover {
+  background-color: #6d5a42;
+}
+
+.registerButton:active {
+  transform: translateY(1px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 16px;
+  }
+  
+  .title {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .articlesGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .cardContent {
+    padding: 20px;
+  }
+  
+  .eventDetails {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .articleCard {
+    border-radius: 8px;
+  }
+  
+  .imageContainer {
+    height: 160px;
+  }
+  
+  .cardContent {
+    padding: 16px;
+  }
+  
+  .articleTitle {
+    font-size: 1.1rem;
+  }
+}

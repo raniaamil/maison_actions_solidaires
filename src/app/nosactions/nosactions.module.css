@@ -1,0 +1,271 @@
+.nosActionsBody {
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background: #90B995;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.nosActionsContainer {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 20px 1rem;
+}
+
+@media (min-width: 640px) {
+  .nosActionsContainer {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+.nosActionsHeader {
+  text-align: center;
+  margin-bottom: 50px;
+  margin-top: 30px;
+  padding: 40px 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.nosActionsHeader h1 {
+  font-size: 3rem;
+  color: #ffffff;
+  margin-bottom: 15px;
+  font-weight: 700;
+  margin-top: 0px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.nosActionsHeader p {
+  font-size: 1.2rem;
+  color: #ffffff;
+  max-width: 800px;
+  margin: 0 auto;
+  font-weight: 400;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.polesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 30px;
+  margin-bottom: 50px;
+}
+
+.poleCard {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.poleCard:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.poleCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(135deg, #A1887F 0%, #D7CCC8 100%);
+}
+
+.poleIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.poleNumerique .poleIcon {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.poleAdministratif .poleIcon {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+}
+
+.poleSoutien .poleIcon {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+}
+
+.poleBienetre .poleIcon {
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
+}
+
+.poleJunior .poleIcon {
+  background: linear-gradient(135deg, #fa709a, #fee140);
+}
+
+.poleCard h3 {
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  color: #333;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  text-align: center;
+}
+
+.poleCard ul {
+  list-style: none;
+  margin-bottom: 20px;
+  padding: 0;
+}
+
+.poleCard li {
+  margin-bottom: 10px;
+  padding-left: 20px;
+  position: relative;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+}
+
+.poleCard li:before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #667eea;
+  font-weight: bold;
+}
+
+.objectif {
+  background: rgba(102, 126, 234, 0.1);
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 15px;
+  border-left: 4px solid #667eea;
+}
+
+.objectif h4 {
+  color: #667eea;
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+
+.objectif p {
+  color: #555;
+  font-size: 0.9rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  margin: 0;
+}
+
+.ctaSection {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ctaSection h2 {
+  color: #ffffff;
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.ctaSection p {
+  color: #ffffff;
+  font-size: 1.1rem;
+  margin-bottom: 30px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.nosActionsBtn {
+  display: inline-block;
+  background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
+  color: #ffffff;
+  padding: 15px 30px;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  font-family: 'Poppins', sans-serif;
+  margin-bottom: 15px;
+}
+
+.nosActionsBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  text-decoration: none;
+}
+
+@media (max-width: 768px) {
+  .nosActionsHeader h1 {
+    font-size: 2rem;
+  }
+  
+  .nosActionsHeader p {
+    font-size: 1rem;
+  }
+  
+  .polesGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .poleCard {
+    padding: 20px;
+  }
+  
+  .poleCard h3 {
+    font-size: 1.5rem;
+  }
+  
+  .ctaSection h2 {
+    font-size: 2rem;
+  }
+  
+  .nosActionsContainer {
+    padding: 15px 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .nosActionsHeader h1 {
+    font-size: 1.8rem;
+  }
+  
+  .nosActionsContainer {
+    padding: 10px 1rem;
+  }
+  
+  .poleCard {
+    padding: 15px;
+  }
+  
+  .poleIcon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
+}

@@ -1,0 +1,262 @@
+/* Navbar.module.css */
+
+.navbar {
+  background-color: white;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.50);
+  position: relative;
+  z-index: 50;
+}
+
+.container {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 4rem;
+}
+
+.logo .logoImage {
+    width: 62%;
+    cursor: pointer;
+    height: auto;
+}
+
+/* Menu Desktop */
+.desktopMenu {
+  display: none;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .desktopMenu {
+    display: flex;
+  }
+}
+
+@media (max-width: 450px) {
+    .logo .logoImage {
+    width: 50%;
+    }
+}
+
+.desktopMenuItems {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+}
+
+.navLink {
+  color: #838C58;
+  font-weight: 500;
+  font-size: 1em;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.navLink:hover {
+  color: #838C58;
+  border-bottom: 2px solid #838C58;
+}
+
+/* Boutons Desktop */
+.desktopButtons {
+  display: none;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .desktopButtons {
+    display: flex;
+  }
+}
+
+.userButton {
+  color: #4b5563;
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: color 0.2s ease-in-out;
+  padding-left: 37px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.userButton:hover {
+  color: #838C58;
+}
+
+.userIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.donateButton {
+  background-color: #facc15;
+  color: black;
+  font-weight: 600;
+  padding: 0.625rem 1.5rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.donateButton:hover {
+  background-color: #eab308;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Menu Hamburger */
+.hamburgerContainer {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .hamburgerContainer {
+    display: none;
+  }
+}
+
+.hamburgerButton {
+  color: #4b5563;
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: color 0.2s ease-in-out;
+}
+
+.hamburgerButton:hover,
+.hamburgerButton:focus {
+  color: #838C58;
+  outline: none;
+}
+
+.hamburgerIcon {
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Menu Mobile */
+.mobileMenu {
+  display: block;
+  transition: all 0.3s ease-in-out;
+}
+
+@media (min-width: 1024px) {
+  .mobileMenu {
+    display: none;
+  }
+}
+
+.mobileMenuOpen {
+  max-height: 24rem;
+  opacity: 1;
+}
+
+.mobileMenuClosed {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.mobileMenuContent {
+  padding: 0.5rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.75rem;
+  background-color: white;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mobileNavLink {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: #4b5563;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+  border-radius: 0.5rem;
+}
+
+.mobileNavLink:hover {
+  color: #838C58;
+  background-color: #f9fafb;
+}
+
+/* Boutons Mobile */
+.mobileButtons {
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mobileUserButton {
+  display: flex;
+  align-items: center;
+  padding: 0rem 1rem;
+  color: #4b5563;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s ease-in-out;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  padding-bottom: 10px;
+  text-decoration: none;
+}
+
+.mobileUserButton:hover {
+  color: #838C58;
+  background-color: #f9fafb;
+}
+
+.mobileUserIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.75rem;
+}
+
+.mobileDonateButton {
+  display: block;
+  background-color: #facc15;
+  color: black;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: 9999px;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 0.2s ease-in-out;
+  margin: 0 0.5rem;
+}
+
+.mobileDonateButton:hover {
+  background-color: #eab308;
+}

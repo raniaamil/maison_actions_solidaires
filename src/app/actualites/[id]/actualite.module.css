@@ -1,0 +1,450 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  margin-bottom: 2rem;
+}
+
+.breadcrumbLink {
+  color: #8b7355;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.breadcrumbLink:hover {
+  color: #6d5a42;
+  text-decoration: underline;
+}
+
+/* Article principal */
+.article {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Header de l'article */
+.articleHeader {
+  position: relative;
+}
+
+.imageContainer {
+  position: relative;
+  height: 300px;
+  overflow: hidden;
+}
+
+.articleImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.typeTag {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  padding: 8px 16px;
+  border-radius: 25px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: lowercase;
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+/* Couleurs des étiquettes par catégorie */
+.typeNumerique { background-color: #2196F3; }
+.typeAdministratif { background-color: #e23922; }
+.typeSoutien { background-color: #d6a81e; }
+.typeBienEtre { background-color: #26d335; }
+.typeJunior { background-color: #ec8768; }
+.typeEvenement { background-color: #8c0c91; }
+.typeTemoignage { background-color: #795548; }
+
+.headerContent {
+  padding: 2rem;
+}
+
+.articleTitle {
+  font-size: 2.25rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.2;
+}
+
+.articleMeta {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dateContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.clockIcon {
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+.date {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.updatedDate {
+  color: #9ca3af;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.authorContainer {
+  margin-top: 1rem;
+}
+
+.authorInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.authorName {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.authorBio {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Informations pratiques */
+.eventInfo {
+  background-color: #f3f4f6;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #8b7355;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.infoItem:last-child {
+  margin-bottom: 0;
+}
+
+.infoIcon {
+  font-size: 1rem;
+}
+
+/* Contenu de l'article */
+.articleContent {
+  padding: 0 2rem 2rem 2rem;
+}
+
+.leadParagraph {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: #f9fafb;
+  border-left: 4px solid #8b7355;
+  border-radius: 0 8px 8px 0;
+}
+
+.mainContent {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #374151;
+}
+
+.mainContent h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 2rem 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.mainContent p {
+  margin-bottom: 1.5rem;
+}
+
+.mainContent ul, .mainContent ol {
+  margin: 1.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.mainContent li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.mainContent strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.mainContent em {
+  font-style: italic;
+  color: #6b7280;
+  font-size: 1.05rem;
+}
+
+.mainContent blockquote {
+  border-left: 4px solid #8b7355;
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: #6b7280;
+}
+
+/* Tags */
+.tagsContainer {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.tagsLabel {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+  margin-right: 1rem;
+}
+
+.tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  background-color: #e5e7eb;
+  color: #6b7280;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Section d'inscription */
+.registrationSection {
+  padding: 2rem;
+  background-color: #f3f4f6;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.registerButton {
+  background-color: #8b7355;
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 1rem;
+}
+
+.registerButton:hover {
+  background-color: #6d5a42;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 115, 85, 0.3);
+}
+
+.registerButton:active {
+  transform: translateY(0);
+}
+
+.registrationNote {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+  
+  .articleTitle {
+    font-size: 1.75rem;
+  }
+  
+  .headerContent {
+    padding: 1.5rem;
+  }
+  
+  .articleContent {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+  }
+  
+  .imageContainer {
+    height: 250px;
+  }
+  
+  .typeTag {
+    top: 16px;
+    left: 16px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+  
+  .dateContainer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .eventInfo {
+    padding: 1rem;
+  }
+  
+  .infoItem {
+    font-size: 0.8rem;
+  }
+  
+  .leadParagraph {
+    font-size: 1rem;
+    padding: 1rem;
+  }
+  
+  .mainContent {
+    font-size: 0.95rem;
+  }
+  
+  .mainContent h3 {
+    font-size: 1.1rem;
+    margin: 1.5rem 0 0.75rem 0;
+  }
+  
+  .tagsContainer {
+    padding: 1rem 1.5rem;
+  }
+  
+  .registrationSection {
+    padding: 1.5rem;
+  }
+  
+  .registerButton {
+    padding: 14px 24px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 12px;
+  }
+  
+  .articleTitle {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .headerContent {
+    padding: 1rem;
+  }
+  
+  .articleContent {
+    padding: 0 1rem 1rem 1rem;
+  }
+  
+  .imageContainer {
+    height: 200px;
+  }
+  
+  .typeTag {
+    top: 12px;
+    left: 12px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+  
+  .leadParagraph {
+    font-size: 0.95rem;
+    padding: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .mainContent {
+    font-size: 0.9rem;
+  }
+  
+  .mainContent h3 {
+    font-size: 1rem;
+    margin: 1.25rem 0 0.5rem 0;
+  }
+  
+  .mainContent ul, .mainContent ol {
+    padding-left: 1rem;
+  }
+  
+  .tagsContainer {
+    padding: 0.75rem 1rem;
+  }
+  
+  .tags {
+    margin-top: 0.5rem;
+  }
+  
+  .tag {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+  }
+  
+  .registrationSection {
+    padding: 1rem;
+  }
+  
+  .registerButton {
+    padding: 12px 20px;
+    font-size: 0.9rem;
+    width: 100%;
+  }
+  
+  .authorBio {
+    font-size: 0.8rem;
+  }
+  
+  .eventInfo {
+    padding: 0.75rem;
+  }
+  
+  .infoItem {
+    font-size: 0.75rem;
+    margin-bottom: 6px;
+  }
+}

@@ -1,0 +1,305 @@
+/* association.module.css */
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #4ade80, #22c55e, #16a34a);
+}
+
+.heroSection {
+  position: relative;
+}
+
+.heroBackground {
+  height: 24rem;
+  background: #90B995;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.heroContent {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.heroText {
+  text-align: center;
+  color: white;
+  padding: 0 1.5rem;
+}
+
+.heroTitle {
+  font-size: 2.25rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1));
+}
+
+@media (min-width: 768px) {
+  .heroTitle {
+    font-size: 3.75rem;
+  }
+}
+
+.mainContent {
+  background-color: white;
+  border-radius: 1.5rem 1.5rem 0 0;
+  margin-top: -2rem;
+  position: relative;
+  z-index: 10;
+  padding: 3rem 1.5rem;
+}
+
+.contentWrapper {
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.sectionTitle {
+  font-size: 2.25rem;
+  font-weight: bold;
+  color: #4CAF50;
+  margin-bottom: 1.5rem;
+}
+
+.titleUnderline {
+  width: 4rem;
+  height: 0.25rem;
+  background-color: #4CAF50;
+  margin-top: 0.5rem;
+}
+
+.sectionDescription {
+  color: #374151;
+  font-size: 1.125rem;
+  line-height: 1.75;
+  margin-bottom: 3rem;
+  max-width: 64rem;
+}
+
+.subsectionTitle {
+  font-size: 1.875rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 2rem;
+}
+
+.valuesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+
+@media (min-width: 768px) {
+  .valuesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .valuesGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.valueCard {
+  background-color: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid #4CAF50;
+  transform: scale(1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.valueCard:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  background-color: white;
+}
+
+.valueTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #16a34a;
+  margin-bottom: 0.75rem;
+  transition: color 0.3s ease;
+}
+
+.valueCard:hover .valueTitle {
+  color: #15803d;
+}
+
+.valueDescription {
+  color: #374151;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  transition: color 0.3s ease;
+}
+
+.valueCard:hover .valueDescription {
+  color: #1f2937;
+}
+
+.teamGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 4rem;
+}
+
+@media (min-width: 768px) {
+  .teamGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.teamCard {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  transform: scale(1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.teamCard:hover {
+  transform: scale(1.05);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.teamAvatar {
+  width: 6rem;
+  height: 6rem;
+  background-color: #4CAF50;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  transition: all 0.3s ease;
+}
+
+.teamCard:hover .teamAvatar {
+  background-color: #4CAF50;
+  transform: scale(1.1);
+}
+
+.teamInitials {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.teamName {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.teamCard:hover .teamName {
+  color: #000000;
+}
+
+.teamRole {
+  color: #4CAF50;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  transition: color 0.3s ease;
+}
+
+.teamCard:hover .teamRole {
+  color: #4CAF50;
+}
+
+.teamBio {
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  transition: color 0.3s ease;
+}
+
+.teamCard:hover .teamBio {
+  color: #374151;
+}
+
+.objectivesCard {
+  background-color: #f9fafb;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  transform: scale(1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.objectivesCard:hover {
+  background-color: white;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.objectivesTitle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+  transition: color 0.3s ease;
+}
+
+.objectivesCard:hover .objectivesTitle {
+  color: #16a34a;
+}
+
+.objectivesDescription {
+  color: #374151;
+  line-height: 1.75;
+  transition: color 0.3s ease;
+}
+
+.objectivesCard:hover .objectivesDescription {
+  color: #1f2937;
+}
+
+.accessibilityButton {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 3rem;
+  height: 3rem;
+  background-color: #1f2937;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.accessibilityButton:hover {
+  background-color: #374151;
+  transform: scale(1.1);
+}
+
+.accessibilityIcon {
+  color: white;
+  font-size: 0.875rem;
+  font-weight: bold;
+  transition: transform 0.3s ease;
+}
+
+.accessibilityButton:hover .accessibilityIcon {
+  transform: rotate(12deg);
+}

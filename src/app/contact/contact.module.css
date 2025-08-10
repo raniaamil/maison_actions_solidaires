@@ -1,0 +1,208 @@
+.contactContainer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+    gap: 50px;
+    margin-top: 30px;
+}
+
+.contactInfo {
+    flex: 1;
+    min-width: 300px;
+    margin-top: 30px;
+}
+
+.title {
+    color: #838C58;
+    font-weight: bold;
+}
+
+.mainTitle {
+    font-size: 3em;
+    margin-bottom: 30px;
+    font-weight: bold;
+    color: #000000;
+}
+
+.description {
+    margin-bottom: 30px;
+}
+
+.contactItem {
+    display: flex;
+    align-items: center;
+    background-color: #eeeeee;
+    padding: 5px 10px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.50);
+}
+
+.iconBox {
+    font-size: 1.5em;
+    margin-right: 15px;
+}
+
+.emailIcon i { 
+    color: #838C58; 
+}
+
+.phoneIcon i { 
+    color: #838C58; 
+}
+
+.contactType {
+    font-weight: bold;
+    color: #666;
+}
+
+.contactDetail {
+    margin: 0;
+}
+
+.followUs {
+    margin-top: 20px;
+    font-weight: bold;
+}
+
+.socialIcons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+  
+.socialIcon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 50px;
+    height: 50px;
+    border: 1px solid #838C58;
+    border-radius: 12px;
+    transition: transform 0.3s ease;
+    text-decoration: none;
+}
+
+.socialIcon:hover {
+    transform: scale(1.1);
+}
+
+.socialIcon i {
+    color: #838C58;
+}
+
+/* Côté droit : formulaire de contact */
+
+.contactForm {
+    flex: 1; 
+    min-width: 300px;
+    background-color: #E9E9E9;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.50);
+}
+
+.contactForm form { 
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.contactForm label {
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+.contactForm input, 
+.contactForm textarea {
+    background-color: white;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.contactForm textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+.contactForm input::placeholder, 
+.contactForm textarea::placeholder {
+    font-size: 1em;
+    color: #B1ACAC;
+}
+
+.captcha {
+    background-color: #F5F5F5;
+    height: 90px;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin-right: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.checkbox {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #c1c1c1;
+    border-radius: 3px;
+    background-color: #ffffff;
+    margin-right: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+.checkboxText {
+    font-size: 0.8em;
+    font-weight: normal;
+    color: #333;
+    cursor: pointer;
+}
+
+.captcha img {
+    width: 13%;
+}
+
+.submitButton {
+    background-color: #838C58;
+    width: fit-content;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    font-size: 0.9em;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 15px;
+    display: flex;
+    justify-content: flex-start;
+    transition: background-color 0.3s ease;
+}
+
+.submitButton:hover {
+    background-color: #767E4F;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .contactContainer {
+        flex-direction: column;
+        gap: 30px;
+        padding: 15px;
+    }
+    
+    .mainTitle {
+        font-size: 2em;
+    }
+    
+    .socialIcons {
+        justify-content: flex-start;
+    }
+}

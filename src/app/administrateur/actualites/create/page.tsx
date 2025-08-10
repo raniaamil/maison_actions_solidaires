@@ -5,9 +5,11 @@ import { ArrowLeft, Save, FileText, Upload, Calendar } from 'lucide-react';
 import styles from './create.module.css';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 const NouvelleActualite = () => {
   const router = useRouter();
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState({
     titre: '',
@@ -57,12 +59,24 @@ const NouvelleActualite = () => {
       newErrors.contenu = 'Le contenu est requis';
     }
 
+    if (!user?.id) {
+      newErrors.auteur = 'Utilisateur non connecté';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSave = async (statut = 'Brouillon') => {
+    console.log('🔄 Tentative de sauvegarde avec statut:', statut);
+    
     if (!validateForm()) {
+      console.log('❌ Validation du formulaire échouée:', errors);
+      return;
+    }
+
+    if (!user?.id) {
+      alert('Erreur : Utilisateur non connecté');
       return;
     }
 
@@ -70,19 +84,21 @@ const NouvelleActualite = () => {
 
     try {
       const payload = {
-        titre: formData.titre,
-        description: formData.description,
-        contenu: formData.contenu,
+        titre: formData.titre.trim(),
+        description: formData.description.trim(),
+        contenu: formData.contenu.trim(),
         type: formData.categorie,
         statut: statut,
-        image: formData.image || null,
-        auteur_id: 1, // TODO: Récupérer l'ID de l'utilisateur connecté
+        image: formData.image.trim() || null,
+        auteur_id: user.id,
         date_publication: statut === 'Publié' ? formData.datePublication : null,
-        tags: formData.tags.length > 0 ? formData.tags : null,
-        lieu: formData.lieu || null,
+        tags: formData.tags.length > 0 ? formData.tags : [],
+        lieu: formData.lieu.trim() || null,
         places_disponibles: formData.places_disponibles ? parseInt(formData.places_disponibles) : null,
         inscription_requise: formData.inscription_requise
       };
+
+      console.log('📤 Envoi du payload:', payload);
 
       const response = await fetch('/api/actualites', {
         method: 'POST',
@@ -92,15 +108,24 @@ const NouvelleActualite = () => {
         body: JSON.stringify(payload)
       });
 
+      console.log('📡 Statut de la réponse:', response.status);
+
       const data = await response.json();
+      console.log('📥 Données reçues:', data);
 
       if (response.ok) {
         console.log('✅ Actualité créée avec succès:', data);
         alert(`Actualité ${statut === 'Publié' ? 'publiée' : 'sauvegardée'} avec succès !`);
         router.push('/administrateur?tab=actualites');
       } else {
-        console.log('❌ Erreur du serveur:', data);
-        alert(data.error || 'Une erreur est survenue lors de la création de l\'actualité');
+        console.error('❌ Erreur du serveur:', data);
+        
+        // Gestion des erreurs spécifiques
+        if (data.error) {
+          alert(`Erreur: ${data.error}`);
+        } else {
+          alert('Une erreur est survenue lors de la création de l\'actualité');
+        }
       }
     } catch (error) {
       console.error('❌ Erreur réseau:', error);
@@ -167,7 +192,7 @@ const NouvelleActualite = () => {
                 className={`${styles.input} ${errors.titre ? 'border-red-500' : ''}`}
                 disabled={isLoading}
               />
-              {errors.titre && <span className="text-red-500 text-sm mt-1">{errors.titre}</span>}
+              {errors.titre && <span className="text-red-500 text-sm mt-1 block">{errors.titre}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -183,7 +208,7 @@ const NouvelleActualite = () => {
                 rows={3}
                 disabled={isLoading}
               />
-              {errors.description && <span className="text-red-500 text-sm mt-1">{errors.description}</span>}
+              {errors.description && <span className="text-red-500 text-sm mt-1 block">{errors.description}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -199,7 +224,7 @@ const NouvelleActualite = () => {
                 rows={8}
                 disabled={isLoading}
               />
-              {errors.contenu && <span className="text-red-500 text-sm mt-1">{errors.contenu}</span>}
+              {errors.contenu && <span className="text-red-500 text-sm mt-1 block">{errors.contenu}</span>}
             </div>
 
             {/* Informations pour les événements */}
@@ -354,6 +379,13 @@ const NouvelleActualite = () => {
           </div>
         </div>
       </div>
+
+      {/* Afficher les erreurs de validation */}
+      {errors.auteur && (
+        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {errors.auteur}
+        </div>
+      )}
     </div>
   );
 };

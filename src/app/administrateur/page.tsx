@@ -1,4 +1,4 @@
-// src/app/administrateur/page.tsx - Page avec gestion des rôles
+// src/app/administrateur/page.tsx - VERSION CORRIGÉE
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -87,15 +87,37 @@ const EspaceAdministrateurPage = () => {
   const loadActualites = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/actualites');
+      console.log('🔄 Chargement des actualités...');
+      
+      // Récupérer toutes les actualités (pas de filtre par auteur pour l'instant)
+      const response = await fetch('/api/actualites', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('📡 Statut de la réponse:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('📥 Actualités reçues:', data);
+        console.log('📊 Nombre d\'actualités:', data.length);
+        
+        // Filtrer les actualités par auteur côté client si nécessaire
+        // const filteredArticles = data.filter(article => 
+        //   article.auteur?.id === user?.id || article.auteur_id === user?.id
+        // );
+        
         setArticles(data);
+        console.log('✅ Articles chargés dans le state:', data.length);
       } else {
-        console.error('Erreur lors du chargement des actualités');
+        console.error('❌ Erreur lors du chargement des actualités, statut:', response.status);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Détails de l\'erreur:', errorData);
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('❌ Erreur réseau lors du chargement des actualités:', error);
     } finally {
       setLoading(false);
     }
@@ -214,7 +236,11 @@ const EspaceAdministrateurPage = () => {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('fr-FR');
+    try {
+      return new Date(dateString).toLocaleDateString('fr-FR');
+    } catch {
+      return dateString; // Retourner la chaîne originale si le parsing échoue
+    }
   };
 
   const handleLogout = () => {
@@ -401,6 +427,10 @@ const EspaceAdministrateurPage = () => {
                   <p className="text-gray-600">
                     Vous avez {articles.length} article{articles.length > 1 ? 's' : ''}
                   </p>
+                  {/* Debug info */}
+                  <p className="text-xs text-gray-400 mt-2">
+                    Debug: {loading ? 'Chargement...' : `${articles.length} articles chargés`}
+                  </p>
                 </div>
                 <Link
                   href="/administrateur/actualites/create"
@@ -416,50 +446,64 @@ const EspaceAdministrateurPage = () => {
                 </div>
               ) : (
                 <div className="flex flex-col gap-6">
-                  {articles.map((article: any) => (
-                    <div
-                      key={article.id}
-                      className="bg-white border border-gray-200 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900 flex-1 mr-4">{article.titre || article.title}</h3>
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            (article.statut || article.status) === 'Publié' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {article.statut || article.status}
-                        </span>
+                  {articles.length > 0 ? (
+                    articles.map((article: any) => (
+                      <div
+                        key={article.id}
+                        className="bg-white border border-gray-200 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900 flex-1 mr-4">
+                            {article.titre || article.title}
+                          </h3>
+                          <span
+                            className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              (article.statut || article.status) === 'Publié' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {article.statut || article.status}
+                          </span>
+                        </div>
+                        <div className="flex gap-4 mb-4">
+                          <span className="text-sm text-gray-600 flex items-center gap-2">
+                            📅 {formatDate(article.date_creation) || article.date}
+                          </span>
+                          <span className="text-sm text-gray-600 flex items-center gap-2">
+                            🏷️ {article.type}
+                          </span>
+                          <span className="text-sm text-gray-600 flex items-center gap-2">
+                            👤 {article.auteur?.prenom} {article.auteur?.nom}
+                          </span>
+                        </div>
+                        <p className="text-gray-600 leading-relaxed mb-6">{article.description}</p>
+                        <div className="flex gap-4">
+                          <Link
+                            href={`/administrateur/actualites/edit/${article.id}`}
+                            className="flex items-center gap-2 px-4 py-2 bg-none border border-gray-300 rounded-md text-sm cursor-pointer transition-all duration-200 text-gray-700 hover:bg-gray-50 hover:border-gray-400 no-underline"
+                          >
+                            Modifier
+                          </Link>
+                          <button
+                            className="flex items-center gap-2 px-4 py-2 bg-none border border-red-200 rounded-md text-sm cursor-pointer transition-all duration-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                            onClick={() => handleDeleteClick(article)}
+                          >
+                            Supprimer
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-4 mb-4">
-                        <span className="text-sm text-gray-600 flex items-center gap-2">
-                          {formatDate(article.date_creation) || article.date}
-                        </span>
-                        <span className="text-sm text-gray-600 flex items-center gap-2">
-                          {article.type}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 leading-relaxed mb-6">{article.description}</p>
-                      <div className="flex gap-4">
-                        <Link
-                          href={`/administrateur/actualites/edit/${article.id}`}
-                          className="flex items-center gap-2 px-4 py-2 bg-none border border-gray-300 rounded-md text-sm cursor-pointer transition-all duration-200 text-gray-700 hover:bg-gray-50 hover:border-gray-400 no-underline"
-                        >
-                          Modifier
-                        </Link>
-                        <button
-                          className="flex items-center gap-2 px-4 py-2 bg-none border border-red-200 rounded-md text-sm cursor-pointer transition-all duration-200 text-red-600 hover:bg-red-50 hover:border-red-300"
-                          onClick={() => handleDeleteClick(article)}
-                        >
-                          Supprimer
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {articles.length === 0 && !loading && (
+                    ))
+                  ) : (
                     <div className="flex flex-col items-center justify-center py-12 text-center text-gray-600">
                       <p className="mb-6 text-lg">Aucune actualité trouvée.</p>
+                      <p className="text-sm text-gray-500 mb-4">
+                        {loading ? 'Chargement des actualités...' : 'Créez votre première actualité !'}
+                      </p>
+                      <Link
+                        href="/administrateur/actualites/create"
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white border-none rounded-md text-base font-medium transition-colors duration-200 hover:bg-blue-700 no-underline"
+                      >
+                        + Créer une actualité
+                      </Link>
                     </div>
                   )}
                 </div>

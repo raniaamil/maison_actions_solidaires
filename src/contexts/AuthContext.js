@@ -81,12 +81,8 @@ export const AuthProvider = ({ children }) => {
         
         console.log('✅ Connexion réussie:', userWithToken.email);
         
-        // Redirection selon le rôle
-        const redirectPath = userWithToken.role === 'Administrateur' 
-          ? '/administrateur' 
-          : '/administrateur?tab=actualites';
-        
-        router.push(redirectPath);
+        // Redirection vers l'espace administrateur (plus de distinction de rôle)
+        router.push('/administrateur');
         return { success: true };
       } else {
         console.error('❌ Erreur de connexion:', data.error);
@@ -113,11 +109,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = () => {
-    return hasRole('Administrateur');
-  };
-
-  const isRedacteur = () => {
-    return hasRole('Rédacteur');
+    // Maintenant tous les utilisateurs connectés sont des administrateurs
+    return isAuthenticated();
   };
 
   // Fonction pour obtenir le token actuel
@@ -133,7 +126,6 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     hasRole,
     isAdmin,
-    isRedacteur,
     getToken
   };
 

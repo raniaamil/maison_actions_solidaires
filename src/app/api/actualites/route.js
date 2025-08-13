@@ -1,3 +1,4 @@
+// src/app/api/actualites/route.js
 export const runtime = 'nodejs';
 import db from '../../../lib/db';
 
@@ -52,7 +53,7 @@ export async function GET(request) {
 
     const [rows] = await db.execute(query, params);
 
-    // Transformer les données pour correspondre au format attendu
+    // Transformer les données pour correspondre au format attendu par le frontend
     const actualites = rows.map(row => ({
       id: row.id,
       titre: row.titre,
@@ -63,17 +64,17 @@ export async function GET(request) {
       type: row.type,
       statut: row.statut,
       status: row.statut, // Alias pour compatibilité
-      image: row.image,
+      image: row.image || '/images/actualites/default.jpg', // Image par défaut si null
       date_creation: row.date_creation,
       date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
       date_publication: row.date_publication,
       date_modification: row.date_modification,
       updatedDate: row.date_modification ? new Date(row.date_modification).toLocaleDateString('fr-FR') : null,
       tags: row.tags ? (typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags) : [],
-      lieu: row.lieu,
-      location: row.lieu, // Alias pour compatibilité
-      places_disponibles: row.places_disponibles,
-      places: row.places_disponibles, // Alias pour compatibilité
+      lieu: row.lieu || '',
+      location: row.lieu || '', // Alias pour compatibilité
+      places_disponibles: row.places_disponibles || null,
+      places: row.places_disponibles || null, // Alias pour compatibilité
       inscription_requise: Boolean(row.inscription_requise),
       hasRegistration: Boolean(row.inscription_requise), // Alias pour compatibilité
       auteur: {
@@ -82,8 +83,8 @@ export async function GET(request) {
         firstName: row.auteur_prenom, // Alias pour compatibilité
         nom: row.auteur_nom,
         lastName: row.auteur_nom, // Alias pour compatibilité
-        photo: row.auteur_photo,
-        bio: row.auteur_bio
+        photo: row.auteur_photo || '/images/default-avatar.jpg',
+        bio: row.auteur_bio || ''
       },
       author: { // Alias pour compatibilité
         firstName: row.auteur_prenom,
@@ -137,6 +138,15 @@ export async function POST(request) {
       );
     }
 
+    // Validation des types autorisés
+    const typesAutorises = ['événement', 'témoignage', 'numérique', 'administratif', 'soutien', 'bien-être', 'junior'];
+    if (!typesAutorises.includes(type)) {
+      return Response.json(
+        { error: 'Type d\'actualité non valide' },
+        { status: 400 }
+      );
+    }
+
     // Conversion et validation de l'ID auteur
     const auteurIdNum = parseInt(auteur_id, 10);
     if (isNaN(auteurIdNum)) {
@@ -148,13 +158,13 @@ export async function POST(request) {
 
     // Vérifier que l'auteur existe
     const [auteurCheck] = await db.execute(
-      'SELECT id, prenom, nom FROM users WHERE id = ?',
+      'SELECT id, prenom, nom FROM users WHERE id = ? AND actif = TRUE',
       [auteurIdNum]
     );
 
     if (auteurCheck.length === 0) {
       return Response.json(
-        { error: 'Auteur non trouvé' },
+        { error: 'Auteur non trouvé ou inactif' },
         { status: 404 }
       );
     }
@@ -177,7 +187,12 @@ export async function POST(request) {
     if (statut === 'Publié') {
       if (date_publication) {
         try {
-          datePublicationValue = new Date(date_publication).toISOString().slice(0, 19).replace('T', ' ');
+          const dateObj = new Date(date_publication);
+          if (!isNaN(dateObj.getTime())) {
+            datePublicationValue = dateObj.toISOString().slice(0, 19).replace('T', ' ');
+          } else {
+            datePublicationValue = new Date().toISOString().slice(0, 19).replace('T', ' ');
+          }
         } catch (e) {
           datePublicationValue = new Date().toISOString().slice(0, 19).replace('T', ' ');
         }
@@ -236,9 +251,10 @@ export async function POST(request) {
       contenu: newActualite[0].contenu,
       type: newActualite[0].type,
       statut: newActualite[0].statut,
-      image: newActualite[0].image,
+      image: newActualite[0].image || '/images/actualites/default.jpg',
       date_creation: newActualite[0].date_creation,
       date_publication: newActualite[0].date_publication,
+      date_modification: newActualite[0].date_modification,
       tags: newActualite[0].tags ? JSON.parse(newActualite[0].tags) : [],
       lieu: newActualite[0].lieu,
       places_disponibles: newActualite[0].places_disponibles,
@@ -247,8 +263,8 @@ export async function POST(request) {
         id: newActualite[0].auteur_id,
         prenom: newActualite[0].auteur_prenom,
         nom: newActualite[0].auteur_nom,
-        photo: newActualite[0].auteur_photo,
-        bio: newActualite[0].auteur_bio
+        photo: newActualite[0].auteur_photo || '/images/default-avatar.jpg',
+        bio: newActualite[0].auteur_bio || ''
       }
     };
 
@@ -272,6 +288,9 @@ export async function POST(request) {
       errorMessage = 'Erreur de structure de base de données';
     } else if (error.code === 'ER_NO_REFERENCED_ROW_2') {
       errorMessage = 'Référence auteur invalide';
+      statusCode = 400;
+    } else if (error.code === 'ER_DATA_TOO_LONG') {
+      errorMessage = 'Données trop longues pour un ou plusieurs champs';
       statusCode = 400;
     }
     

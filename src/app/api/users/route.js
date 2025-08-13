@@ -7,28 +7,21 @@ import bcrypt from 'bcryptjs';
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const role = searchParams.get('role');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
+    // Simplification : plus de filtre par rôle puisque tous sont administrateurs
     let query = `
       SELECT 
         id, prenom, nom, email, photo, bio, role, 
         date_inscription, date_modification, actif
       FROM users 
       WHERE actif = TRUE
+      ORDER BY date_inscription DESC 
+      LIMIT ? OFFSET ?
     `;
     
-    const params = [];
-
-    if (role) {
-      query += ' AND role = ?';
-      params.push(role);
-    }
-
-    query += ' ORDER BY date_inscription DESC LIMIT ? OFFSET ?';
-    params.push(limit, offset);
-
+    const params = [limit, offset];
     const [rows] = await db.execute(query, params);
 
     // Transformer les données pour correspondre au format attendu par le frontend
@@ -37,25 +30,28 @@ export async function GET(request) {
       prenom: row.prenom,
       nom: row.nom,
       email: row.email,
-      photo: row.photo || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+      photo: row.photo || '/images/default-avatar.jpg',
       bio: row.bio || '',
       role: row.role,
       date_inscription: row.date_inscription,
       date_modification: row.date_modification,
-      actif: row.actif
+      actif: Boolean(row.actif)
     }));
 
     return Response.json(users);
   } catch (error) {
     console.error('Erreur lors de la récupération des utilisateurs:', error);
     return Response.json(
-      { error: 'Erreur serveur lors de la récupération des utilisateurs' },
+      { 
+        error: 'Erreur serveur lors de la récupération des utilisateurs',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
 }
 
-// POST - Créer un nouvel utilisateur (inscription ou création par admin)
+// POST - Créer un nouvel utilisateur (toujours administrateur)
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -67,8 +63,7 @@ export async function POST(request) {
       email, 
       password, 
       photo, 
-      bio, 
-      role = 'Rédacteur' 
+      bio 
     } = body;
 
     // Support pour les deux formats de noms (compatibilité)
@@ -76,21 +71,36 @@ export async function POST(request) {
     const finalLastName = lastName || nom;
 
     // Validation des données
-    if (!finalFirstName || !finalLastName || !email || !password) {
+    const errors = {};
+    
+    if (!finalFirstName || !finalFirstName.trim()) {
+      errors.firstName = 'Le prénom est requis';
+      errors.prenom = 'Le prénom est requis';
+    }
+    
+    if (!finalLastName || !finalLastName.trim()) {
+      errors.lastName = 'Le nom est requis';
+      errors.nom = 'Le nom est requis';
+    }
+    
+    if (!email || !email.trim()) {
+      errors.email = 'L\'email est requis';
+    }
+    
+    if (!password || !password.trim()) {
+      errors.password = 'Le mot de passe est requis';
+    }
+
+    if (Object.keys(errors).length > 0) {
       return Response.json({ 
-        message: 'Tous les champs sont requis',
-        errors: {
-          firstName: !finalFirstName ? 'Le prénom est requis' : '',
-          lastName: !finalLastName ? 'Le nom est requis' : '',
-          email: !email ? 'L\'email est requis' : '',
-          password: !password ? 'Le mot de passe est requis' : ''
-        }
+        message: 'Données manquantes ou invalides',
+        errors
       }, { status: 400 });
     }
 
     // Validation de l'email
     const emailRegex = /\S+@\S+\.\S+/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(email.trim())) {
       return Response.json({ 
         message: 'Format d\'email invalide',
         errors: { email: 'L\'adresse e-mail n\'est pas valide' }
@@ -121,44 +131,50 @@ export async function POST(request) {
     // Hacher le mot de passe
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Insérer le nouvel utilisateur
+    // Préparer les valeurs - Tous les nouveaux utilisateurs sont administrateurs
+    const photoValue = photo && photo.trim() !== '' ? photo.trim() : null;
+    const bioValue = bio && bio.trim() !== '' ? bio.trim() : null;
+
+    // Insérer le nouvel utilisateur (toujours avec le rôle Administrateur)
     const [result] = await db.execute(
       `INSERT INTO users (prenom, nom, email, mot_de_passe, photo, bio, role, date_inscription) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, 'Administrateur', NOW())`,
       [
         finalFirstName.trim(),
         finalLastName.trim(),
         email.toLowerCase().trim(),
         hashedPassword,
-        photo || null,
-        bio || null,
-        role
+        photoValue,
+        bioValue
       ]
     );
 
-    // Récupérer l'utilisateur créé
+    // Récupérer l'utilisateur créé (sans le mot de passe)
     const [newUser] = await db.execute(
       'SELECT id, prenom, nom, email, photo, bio, role, date_inscription FROM users WHERE id = ?',
       [result.insertId]
     );
 
+    const userCreated = {
+      id: newUser[0].id,
+      prenom: newUser[0].prenom,
+      nom: newUser[0].nom,
+      email: newUser[0].email,
+      photo: newUser[0].photo || '/images/default-avatar.jpg',
+      bio: newUser[0].bio || '',
+      role: newUser[0].role, // Toujours 'Administrateur'
+      date_inscription: newUser[0].date_inscription
+    };
+
     return Response.json({
-      message: 'Utilisateur créé avec succès',
-      user: {
-        id: newUser[0].id,
-        prenom: newUser[0].prenom,
-        nom: newUser[0].nom,
-        email: newUser[0].email,
-        photo: newUser[0].photo,
-        bio: newUser[0].bio,
-        role: newUser[0].role,
-        date_inscription: newUser[0].date_inscription
-      }
+      message: 'Administrateur créé avec succès',
+      user: userCreated
     }, { status: 201 });
 
   } catch (error) {
     console.error('Erreur lors de la création de l\'utilisateur:', error);
     
+    // Gestion des erreurs spécifiques MySQL
     if (error.code === 'ER_DUP_ENTRY') {
       return Response.json({ 
         message: 'Utilisateur déjà existant',
@@ -166,9 +182,23 @@ export async function POST(request) {
       }, { status: 409 });
     }
 
+    if (error.code === 'ER_DATA_TOO_LONG') {
+      return Response.json({ 
+        message: 'Données trop longues',
+        errors: { general: 'Un ou plusieurs champs contiennent trop de caractères' }
+      }, { status: 400 });
+    }
+
+    if (error.code === 'ER_BAD_NULL_ERROR') {
+      return Response.json({ 
+        message: 'Champ obligatoire manquant',
+        errors: { general: 'Un champ obligatoire est manquant' }
+      }, { status: 400 });
+    }
+
     return Response.json({ 
       message: 'Erreur interne du serveur',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Une erreur est survenue'
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Une erreur est survenue lors de la création de l\'utilisateur'
     }, { status: 500 });
   }
 }

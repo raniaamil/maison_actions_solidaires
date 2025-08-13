@@ -20,15 +20,11 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
       return;
     }
 
-    if (requiredRole && user?.role !== requiredRole) {
-      console.log(`❌ Rôle insuffisant. Requis: ${requiredRole}, Utilisateur: ${user?.role}`);
-      
-      // Rediriger selon le rôle de l'utilisateur
-      if (user?.role === 'Rédacteur') {
-        router.push('/administrateur?tab=actualites');
-      } else {
-        router.push('/administrateur');
-      }
+    // Maintenant que tous les utilisateurs sont administrateurs, 
+    // on simplifie la vérification des permissions
+    if (requiredRole && requiredRole === 'Administrateur' && !isAuth) {
+      console.log('❌ Accès administrateur requis');
+      router.push('/login');
       return;
     }
 
@@ -48,7 +44,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     );
   }
 
-  // Si l'utilisateur n'est pas authentifié ou n'a pas les bonnes permissions
+  // Si l'utilisateur n'est pas authentifié
   if (!shouldRender) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">

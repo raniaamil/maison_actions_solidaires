@@ -8,10 +8,15 @@ import styles from './Navbar.module.css';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const toggleUserDropdown = () => {
+    setIsUserDropdownOpen(!isUserDropdownOpen);
   };
 
   const handleLogout = () => {
@@ -19,6 +24,12 @@ const Navbar = () => {
       logout();
     }
     setIsMobileMenuOpen(false);
+    setIsUserDropdownOpen(false);
+  };
+
+  const closeMenus = () => {
+    setIsMobileMenuOpen(false);
+    setIsUserDropdownOpen(false);
   };
 
   return (
@@ -54,28 +65,16 @@ const Navbar = () => {
               </Link>
             </div>
             <div className={styles.desktopButtons}>
-              {isAuthenticated() ? (
-                <div className="flex items-center gap-4">
-                  <Link href="/administrateur" className={styles.userButton}>
-                    <svg className={styles.userIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                    <span className="ml-2">{user?.prenom}</span>
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium"
-                  >
-                    Déconnexion
-                  </button>
-                </div>
-              ) : (
-                <Link href="/login" className={styles.userButton}>
+              {/* Menu déroulant utilisateur pour desktop */}
+              <div className={styles.dropdown}>
+                <input 
+                  type="checkbox" 
+                  id="user-dropdown-checkbox" 
+                  className={styles.dropdownCheckbox}
+                  checked={isUserDropdownOpen}
+                  onChange={toggleUserDropdown}
+                />
+                <label htmlFor="user-dropdown-checkbox" className={styles.dropdownToggle}>
                   <svg className={styles.userIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -84,8 +83,31 @@ const Navbar = () => {
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
-                </Link>
-              )}
+                  <span className={styles.dropdownArrow}>▼</span>
+                </label>
+                <div className={styles.dropdownMenu}>
+                  {isAuthenticated() ? (
+                    <>
+                      <Link href="/administrateur" className={styles.dropdownItem} onClick={closeMenus}>
+                        Espace Admin
+                      </Link>
+                      <button onClick={handleLogout} className={styles.dropdownItem}>
+                        Déconnexion
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/register" className={styles.dropdownItem} onClick={closeMenus}>
+                        Inscription
+                      </Link>
+                      <Link href="/login" className={styles.dropdownItem} onClick={closeMenus}>
+                        Connexion
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </div>
+              
               <Link href="/faireundon" className={styles.donateButton}>
                 Faire un don
               </Link>
@@ -134,28 +156,16 @@ const Navbar = () => {
             </Link>
 
             <div className={styles.mobileButtons}>
-              {isAuthenticated() ? (
-                <>
-                  <Link href="/administrateur" className={styles.mobileUserButton} onClick={() => setIsMobileMenuOpen(false)}>
-                    <svg className={styles.mobileUserIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                    Espace {user?.role === 'Administrateur' ? 'Admin' : 'Rédacteur'}
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors duration-200 w-full text-left"
-                  >
-                    Déconnexion
-                  </button>
-                </>
-              ) : (
-                <Link href="/login" className={styles.mobileUserButton} onClick={() => setIsMobileMenuOpen(false)}>
+              {/* Menu déroulant utilisateur pour mobile */}
+              <div className={styles.mobileDropdown}>
+                <input 
+                  type="checkbox" 
+                  id="mobile-user-dropdown-checkbox" 
+                  className={styles.dropdownCheckbox}
+                  checked={isUserDropdownOpen}
+                  onChange={toggleUserDropdown}
+                />
+                <label htmlFor="mobile-user-dropdown-checkbox" className={styles.mobileDropdownToggle}>
                   <svg className={styles.mobileUserIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -164,9 +174,34 @@ const Navbar = () => {
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
-                  Connexion
-                </Link>
-              )}
+                  <span>
+                    {isAuthenticated() ? `${user?.prenom} ${user?.nom}` : 'Mon compte'}
+                  </span>
+                  <span className={styles.dropdownArrow}>▼</span>
+                </label>
+                <div className={styles.mobileDropdownMenu}>
+                  {isAuthenticated() ? (
+                    <>
+                      <Link href="/administrateur" className={styles.mobileDropdownItem} onClick={closeMenus}>
+                        Espace Admin
+                      </Link>
+                      <button onClick={handleLogout} className={styles.mobileDropdownItem}>
+                        Déconnexion
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/register" className={styles.mobileDropdownItem} onClick={closeMenus}>
+                        Inscription
+                      </Link>
+                      <Link href="/login" className={styles.mobileDropdownItem} onClick={closeMenus}>
+                        Connexion
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </div>
+              
               <Link href="/faireundon" className={styles.mobileDonateButton} onClick={() => setIsMobileMenuOpen(false)}>
                 Faire un don
               </Link>

@@ -88,12 +88,23 @@ const Page: React.FC = () => {
     }
   };
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = '/images/actualites/default.jpg';
+  };
+
   if (loading) {
     return (
       <div className={styles.container}>
         <h1 className={styles.title}>Nos Actualités</h1>
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '3rem 0' }}>
+          <div style={{ 
+            animation: 'spin 1s linear infinite', 
+            borderRadius: '50%', 
+            height: '3rem', 
+            width: '3rem', 
+            borderBottomWidth: '2px', 
+            borderBottomColor: '#2563eb' 
+          }}></div>
         </div>
       </div>
     );
@@ -103,11 +114,27 @@ const Page: React.FC = () => {
     return (
       <div className={styles.container}>
         <h1 className={styles.title}>Nos Actualités</h1>
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          padding: '3rem 0', 
+          textAlign: 'center' 
+        }}>
+          <p style={{ color: '#dc2626', marginBottom: '1rem' }}>{error}</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#2563eb',
+              color: 'white',
+              borderRadius: '0.375rem',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
           >
             Réessayer
           </button>
@@ -121,23 +148,32 @@ const Page: React.FC = () => {
       <h1 className={styles.title}>Nos Actualités</h1>
       
       {articles.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <p className="text-gray-600 text-lg">Aucune actualité publiée pour le moment.</p>
-          <p className="text-gray-500 text-sm mt-2">Revenez bientôt pour découvrir nos dernières nouvelles !</p>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          padding: '3rem 0', 
+          textAlign: 'center' 
+        }}>
+          <p style={{ color: '#6b7280', fontSize: '1.125rem' }}>
+            Aucune actualité publiée pour le moment.
+          </p>
+          <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+            Revenez bientôt pour découvrir nos dernières nouvelles !
+          </p>
         </div>
       ) : (
         <div className={styles.articlesGrid}>
           {articles.map((article) => (
             <article key={article.id} className={styles.articleCard}>
-              <Link href={`/actualites/${article.id}`} className="block">
+              <Link href={`/actualites/${article.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                 <div className={styles.imageContainer}>
                   <img 
                     src={article.image || '/images/actualites/default.jpg'} 
                     alt={article.titre || article.title}
                     className={styles.articleImage}
-                    onError={(e) => {
-                      e.currentTarget.src = '/images/actualites/default.jpg';
-                    }}
+                    onError={handleImageError}
                   />
                   <span className={`${styles.typeTag} ${getTypeColor(article.type)}`}>
                     {article.type}
@@ -148,7 +184,7 @@ const Page: React.FC = () => {
                   <div className={styles.dateContainer}>
                     <span className={styles.clockIcon}>🕐</span>
                     <span className={styles.date}>
-                      {formatDate(article.date_creation || article.date)}
+                      {formatDate(article.date_creation || article.date || '')}
                     </span>
                   </div>
                   
@@ -170,7 +206,7 @@ const Page: React.FC = () => {
                     
                     {(article.date_modification || article.updatedDate) && (
                       <div className={styles.updatedDate}>
-                        Mis à jour le {formatDate(article.date_modification || article.updatedDate)}
+                        Mis à jour le {formatDate(article.date_modification || article.updatedDate || '')}
                       </div>
                     )}
                   </div>
@@ -194,7 +230,14 @@ const Page: React.FC = () => {
                   )}
 
                   {(article.inscription_requise || article.hasRegistration) && (
-                    <button className={styles.registerButton} onClick={(e) => e.preventDefault()}>
+                    <button 
+                      className={styles.registerButton} 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // Logique d'inscription à implémenter
+                        alert('Fonctionnalité d\'inscription en cours de développement');
+                      }}
+                    >
                       S'inscrire
                     </button>
                   )}

@@ -5,11 +5,13 @@ import { ArrowLeft, Save, FileText, X, Calendar, Image as ImageIcon, Upload } fr
 import styles from './edit.module.css';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '../../../../../contexts/AuthContext';
 
 const ModifierActualite = () => {
   const params = useParams();
   const router = useRouter();
-  const actualiteId = params.id;
+  const { getToken } = useAuth();
+  const actualiteId = params.id as string;
 
   const [formData, setFormData] = useState({
     titre: '',
@@ -19,7 +21,7 @@ const ModifierActualite = () => {
     datePublication: '',
     categorie: 'administratif',
     image: '',
-    tags: [],
+    tags: [] as string[],
     lieu: '',
     places_disponibles: '',
     inscription_requise: false
@@ -28,7 +30,7 @@ const ModifierActualite = () => {
   const [hasImage, setHasImage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   // Charger les données de l'actualité
   useEffect(() => {
@@ -47,7 +49,7 @@ const ModifierActualite = () => {
             image: data.image || '',
             tags: data.tags || [],
             lieu: data.lieu || data.location || '',
-            places_disponibles: data.places_disponibles || data.places || '',
+            places_disponibles: data.places_disponibles?.toString() || data.places?.toString() || '',
             inscription_requise: data.inscription_requise || data.hasRegistration || false
           });
           setHasImage(!!data.image);
@@ -69,8 +71,10 @@ const ModifierActualite = () => {
     }
   }, [actualiteId, router]);
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -91,7 +95,7 @@ const ModifierActualite = () => {
   };
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: {[key: string]: string} = {};
 
     if (!formData.titre.trim()) {
       newErrors.titre = 'Le titre est requis';
@@ -109,7 +113,7 @@ const ModifierActualite = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = async (statut = null) => {
+  const handleSave = async (statut: string | null = null) => {
     if (!validateForm()) {
       return;
     }
@@ -131,13 +135,11 @@ const ModifierActualite = () => {
         inscription_requise: formData.inscription_requise
       };
 
-      // AJOUTER l'en-tête d'autorisation
-      const headers = {
+      const headers: {[key: string]: string} = {
         'Content-Type': 'application/json',
       };
 
-      // Récupérer le token depuis localStorage si pas dans user
-      const token = user?.token || localStorage.getItem('token');
+      const token = getToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
@@ -181,8 +183,15 @@ const ModifierActualite = () => {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '16rem' }}>
+          <div style={{ 
+            animation: 'spin 1s linear infinite', 
+            borderRadius: '50%', 
+            height: '3rem', 
+            width: '3rem', 
+            borderBottomWidth: '2px', 
+            borderBottomColor: '#2563eb' 
+          }}></div>
         </div>
       </div>
     );
@@ -234,10 +243,14 @@ const ModifierActualite = () => {
                 name="titre"
                 value={formData.titre}
                 onChange={handleInputChange}
-                className={`${styles.input} ${errors.titre ? 'border-red-500' : ''}`}
+                className={`${styles.input} ${errors.titre ? styles.inputError : ''}`}
                 disabled={isLoading}
               />
-              {errors.titre && <span className="text-red-500 text-sm mt-1">{errors.titre}</span>}
+              {errors.titre && (
+                <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                  {errors.titre}
+                </span>
+              )}
             </div>
 
             <div className={styles.formGroup}>
@@ -248,11 +261,15 @@ const ModifierActualite = () => {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className={`${styles.textarea} ${errors.description ? 'border-red-500' : ''}`}
+                className={`${styles.textarea} ${errors.description ? styles.inputError : ''}`}
                 rows={3}
                 disabled={isLoading}
               />
-              {errors.description && <span className="text-red-500 text-sm mt-1">{errors.description}</span>}
+              {errors.description && (
+                <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                  {errors.description}
+                </span>
+              )}
             </div>
 
             <div className={styles.formGroup}>
@@ -263,11 +280,15 @@ const ModifierActualite = () => {
                 name="contenu"
                 value={formData.contenu}
                 onChange={handleInputChange}
-                className={`${styles.textarea} ${errors.contenu ? 'border-red-500' : ''}`}
+                className={`${styles.textarea} ${errors.contenu ? styles.inputError : ''}`}
                 rows={8}
                 disabled={isLoading}
               />
-              {errors.contenu && <span className="text-red-500 text-sm mt-1">{errors.contenu}</span>}
+              {errors.contenu && (
+                <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                  {errors.contenu}
+                </span>
+              )}
             </div>
 
             {/* Informations pour les événements */}
@@ -301,7 +322,7 @@ const ModifierActualite = () => {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className="flex items-center gap-2">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <input
                       type="checkbox"
                       name="inscription_requise"

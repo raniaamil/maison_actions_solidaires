@@ -1,25 +1,19 @@
-// src/app/api/actualites/route.js - VERSION AVEC DEBUG RENFORCÉ
 export const runtime = 'nodejs';
 import db from '../../../lib/db';
 
 // GET - Récupérer toutes les actualités
 export async function GET(request) {
-  console.log('🔍 === API GET /api/actualites ===');
-  
   try {
     const { searchParams } = new URL(request.url);
     const statut = searchParams.get('statut');
     const type = searchParams.get('type');
     const auteur_id = searchParams.get('auteur_id');
     
-    // Conversion sécurisée des paramètres numériques
     const limitParam = searchParams.get('limit');
     const offsetParam = searchParams.get('offset');
     
     const limit = limitParam ? Math.max(1, Math.min(1000, parseInt(limitParam, 10))) : 50;
     const offset = offsetParam ? Math.max(0, parseInt(offsetParam, 10)) : 0;
-    
-    console.log('📊 Paramètres de requête:', { statut, type, auteur_id, limit, offset });
 
     let query = `
       SELECT 
@@ -56,63 +50,50 @@ export async function GET(request) {
     query += ' ORDER BY a.date_creation DESC LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
-    console.log('🔍 Requête SQL:', query);
-    console.log('📋 Paramètres:', params);
-
     const [rows] = await db.execute(query, params);
-    
-    console.log('✅ Requête exécutée avec succès, nombre de lignes:', rows.length);
 
-    // Transformer les données pour correspondre au format attendu par le frontend
-    const actualites = rows.map(row => {
-      const actualite = {
-        id: row.id,
-        titre: row.titre,
-        title: row.titre, // Alias pour compatibilité
-        description: row.description,
-        contenu: row.contenu,
-        content: row.contenu, // Alias pour compatibilité
-        type: row.type,
-        statut: row.statut,
-        status: row.statut, // Alias pour compatibilité
-        image: row.image,
-        date_creation: row.date_creation,
-        date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '', // Format pour l'affichage
-        date_publication: row.date_publication,
-        date_modification: row.date_modification,
-        updatedDate: row.date_modification ? new Date(row.date_modification).toLocaleDateString('fr-FR') : null,
-        tags: row.tags ? (typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags) : [],
-        lieu: row.lieu,
-        location: row.lieu, // Alias pour compatibilité
-        places_disponibles: row.places_disponibles,
-        places: row.places_disponibles, // Alias pour compatibilité
-        inscription_requise: Boolean(row.inscription_requise),
-        hasRegistration: Boolean(row.inscription_requise), // Alias pour compatibilité
-        auteur: {
-          id: row.auteur_id,
-          prenom: row.auteur_prenom,
-          firstName: row.auteur_prenom, // Alias pour compatibilité
-          nom: row.auteur_nom,
-          lastName: row.auteur_nom, // Alias pour compatibilité
-          photo: row.auteur_photo,
-          bio: row.auteur_bio
-        },
-        author: { // Alias pour compatibilité
-          firstName: row.auteur_prenom,
-          lastName: row.auteur_nom
-        }
-      };
-      
-      return actualite;
-    });
+    // Transformer les données pour correspondre au format attendu
+    const actualites = rows.map(row => ({
+      id: row.id,
+      titre: row.titre,
+      title: row.titre, // Alias pour compatibilité
+      description: row.description,
+      contenu: row.contenu,
+      content: row.contenu, // Alias pour compatibilité
+      type: row.type,
+      statut: row.statut,
+      status: row.statut, // Alias pour compatibilité
+      image: row.image,
+      date_creation: row.date_creation,
+      date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
+      date_publication: row.date_publication,
+      date_modification: row.date_modification,
+      updatedDate: row.date_modification ? new Date(row.date_modification).toLocaleDateString('fr-FR') : null,
+      tags: row.tags ? (typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags) : [],
+      lieu: row.lieu,
+      location: row.lieu, // Alias pour compatibilité
+      places_disponibles: row.places_disponibles,
+      places: row.places_disponibles, // Alias pour compatibilité
+      inscription_requise: Boolean(row.inscription_requise),
+      hasRegistration: Boolean(row.inscription_requise), // Alias pour compatibilité
+      auteur: {
+        id: row.auteur_id,
+        prenom: row.auteur_prenom,
+        firstName: row.auteur_prenom, // Alias pour compatibilité
+        nom: row.auteur_nom,
+        lastName: row.auteur_nom, // Alias pour compatibilité
+        photo: row.auteur_photo,
+        bio: row.auteur_bio
+      },
+      author: { // Alias pour compatibilité
+        firstName: row.auteur_prenom,
+        lastName: row.auteur_nom
+      }
+    }));
 
-    console.log('📤 Retour de', actualites.length, 'actualités');
-    
     return Response.json(actualites);
   } catch (error) {
     console.error('❌ Erreur lors de la récupération des actualités:', error);
-    console.error('❌ Code d\'erreur:', error.code);
-    console.error('❌ Message SQL:', error.sqlMessage);
     
     return Response.json(
       { 
@@ -130,29 +111,8 @@ export async function GET(request) {
 
 // POST - Créer une nouvelle actualité
 export async function POST(request) {
-  console.log('📝 === API POST /api/actualites ===');
-  
   try {
-    // Vérifier les headers
-    const headers = Object.fromEntries(request.headers.entries());
-    console.log('📡 Headers reçus:', headers);
-    
-    // Vérifier l'autorisation
-    const authHeader = request.headers.get('authorization');
-    console.log('🔐 Authorization header:', authHeader ? authHeader.substring(0, 20) + '...' : 'MANQUANT');
-    
-    // Lire le body
-    let body;
-    try {
-      body = await request.json();
-      console.log('📝 Body reçu:', JSON.stringify(body, null, 2));
-    } catch (bodyError) {
-      console.error('❌ Erreur parsing body:', bodyError);
-      return Response.json(
-        { error: 'Corps de requête JSON invalide' },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
     
     const {
       titre,
@@ -169,23 +129,8 @@ export async function POST(request) {
       inscription_requise = false
     } = body;
 
-    console.log('🔍 Données extraites du body:');
-    console.log('- Titre:', titre);
-    console.log('- Description:', description ? description.substring(0, 50) + '...' : 'VIDE');
-    console.log('- Contenu:', contenu ? contenu.substring(0, 50) + '...' : 'VIDE');
-    console.log('- Type:', type);
-    console.log('- Statut:', statut);
-    console.log('- Auteur ID:', auteur_id);
-
-    // Validation
+    // Validation des champs requis
     if (!titre || !description || !contenu || !type || !auteur_id) {
-      console.log('❌ Validation échouée - champs manquants');
-      console.log('- Titre présent:', !!titre);
-      console.log('- Description présente:', !!description);
-      console.log('- Contenu présent:', !!contenu);
-      console.log('- Type présent:', !!type);
-      console.log('- Auteur ID présent:', !!auteur_id);
-      
       return Response.json(
         { error: 'Les champs titre, description, contenu, type et auteur_id sont requis' },
         { status: 400 }
@@ -195,14 +140,11 @@ export async function POST(request) {
     // Conversion et validation de l'ID auteur
     const auteurIdNum = parseInt(auteur_id, 10);
     if (isNaN(auteurIdNum)) {
-      console.log('❌ ID auteur invalide:', auteur_id);
       return Response.json(
         { error: 'ID auteur invalide' },
         { status: 400 }
       );
     }
-
-    console.log('🔍 Vérification de l\'existence de l\'auteur...');
 
     // Vérifier que l'auteur existe
     const [auteurCheck] = await db.execute(
@@ -211,21 +153,17 @@ export async function POST(request) {
     );
 
     if (auteurCheck.length === 0) {
-      console.log('❌ Auteur non trouvé:', auteurIdNum);
       return Response.json(
         { error: 'Auteur non trouvé' },
         { status: 404 }
       );
     }
 
-    console.log('✅ Auteur trouvé:', auteurCheck[0]);
-
-    // Préparation des données pour l'insertion
+    // Préparation des données
     const tagsJson = tags && Array.isArray(tags) && tags.length > 0 ? JSON.stringify(tags) : null;
     const imageValue = image && typeof image === 'string' && image.trim() !== '' ? image.trim() : null;
     const lieuValue = lieu && typeof lieu === 'string' && lieu.trim() !== '' ? lieu.trim() : null;
     
-    // Conversion sécurisée du nombre de places
     let placesValue = null;
     if (places_disponibles !== null && places_disponibles !== undefined && places_disponibles !== '') {
       const placesNum = parseInt(places_disponibles, 10);
@@ -248,21 +186,7 @@ export async function POST(request) {
       }
     }
 
-    console.log('📊 Données préparées pour insertion:');
-    console.log('- Titre:', titre);
-    console.log('- Description:', description.substring(0, 50) + '...');
-    console.log('- Type:', type);
-    console.log('- Statut:', statut);
-    console.log('- Image:', imageValue);
-    console.log('- Auteur ID:', auteurIdNum);
-    console.log('- Date publication:', datePublicationValue);
-    console.log('- Tags:', tagsJson);
-    console.log('- Lieu:', lieuValue);
-    console.log('- Places:', placesValue);
-    console.log('- Inscription requise:', Boolean(inscription_requise));
-
-    console.log('💾 Insertion en base de données...');
-
+    // Insertion en base
     const [result] = await db.execute(
       `INSERT INTO actualites (
         titre, description, contenu, type, statut, image, auteur_id, 
@@ -284,11 +208,7 @@ export async function POST(request) {
       ]
     );
 
-    console.log('✅ Insertion réussie, ID généré:', result.insertId);
-
-    // Récupérer l'actualité créée avec les infos de l'auteur
-    console.log('🔍 Récupération de l\'actualité créée...');
-    
+    // Récupérer l'actualité créée
     const [newActualite] = await db.execute(
       `SELECT 
         a.*,
@@ -303,7 +223,6 @@ export async function POST(request) {
     );
 
     if (newActualite.length === 0) {
-      console.error('❌ Impossible de récupérer l\'actualité créée');
       return Response.json(
         { error: 'Actualité créée mais impossible de la récupérer' },
         { status: 500 }
@@ -333,9 +252,6 @@ export async function POST(request) {
       }
     };
 
-    console.log('✅ === SUCCÈS POST ===');
-    console.log('🎉 Actualité créée:', actualiteCreee);
-
     return Response.json(
       {
         message: 'Actualité créée avec succès',
@@ -344,12 +260,7 @@ export async function POST(request) {
       { status: 201 }
     );
   } catch (error) {
-    console.log('❌ === ERREUR POST ===');
     console.error('❌ Erreur lors de la création de l\'actualité:', error);
-    console.error('❌ Message:', error.message);
-    console.error('❌ Stack:', error.stack);
-    console.error('❌ Code SQL:', error.code);
-    console.error('❌ Message SQL:', error.sqlMessage);
     
     // Gestion des erreurs spécifiques
     let errorMessage = 'Erreur serveur lors de la création de l\'actualité';
@@ -370,8 +281,7 @@ export async function POST(request) {
         details: process.env.NODE_ENV === 'development' ? {
           message: error.message,
           code: error.code,
-          sqlMessage: error.sqlMessage,
-          stack: error.stack
+          sqlMessage: error.sqlMessage
         } : undefined
       },
       { status: statusCode }

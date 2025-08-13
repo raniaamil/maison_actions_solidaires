@@ -9,7 +9,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 
 const NouvelleActualite = () => {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   
   const [formData, setFormData] = useState({
     titre: '',
@@ -26,10 +26,12 @@ const NouvelleActualite = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -45,7 +47,7 @@ const NouvelleActualite = () => {
   };
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: {[key: string]: string} = {};
 
     if (!formData.titre.trim()) {
       newErrors.titre = 'Le titre est requis';
@@ -68,17 +70,11 @@ const NouvelleActualite = () => {
   };
 
   const handleSave = async (statut = 'Brouillon') => {
-    console.log('🔄 === DÉBUT SAUVEGARDE ===');
-    console.log('📊 Statut demandé:', statut);
-    console.log('👤 Utilisateur connecté:', user);
-    
     if (!validateForm()) {
-      console.log('❌ Validation du formulaire échouée:', errors);
       return;
     }
 
     if (!user?.id) {
-      console.log('❌ Utilisateur non connecté');
       alert('Erreur : Vous devez être connecté pour créer une actualité');
       return;
     }
@@ -101,27 +97,14 @@ const NouvelleActualite = () => {
         inscription_requise: formData.inscription_requise
       };
 
-      console.log('📤 Payload à envoyer:', JSON.stringify(payload, null, 2));
-
-      // Préparer les headers avec le token
-      const headers = {
+      const headers: {[key: string]: string} = {
         'Content-Type': 'application/json',
       };
 
-      // Récupérer le token depuis user ou localStorage
-      const token = user?.token || localStorage.getItem('token');
-      console.log('🔐 Token disponible:', !!token);
-      console.log('🔐 Token (premiers caractères):', token ? token.substring(0, 20) + '...' : 'AUCUN');
-
+      const token = getToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('✅ Header Authorization ajouté');
-      } else {
-        console.log('⚠️ Aucun token disponible - la requête risque d\'échouer');
       }
-
-      console.log('📡 Headers finaux:', headers);
-      console.log('🌐 URL cible: /api/actualites');
 
       const response = await fetch('/api/actualites', {
         method: 'POST',
@@ -129,40 +112,14 @@ const NouvelleActualite = () => {
         body: JSON.stringify(payload)
       });
 
-      console.log('📡 === RÉPONSE SERVEUR ===');
-      console.log('📊 Statut HTTP:', response.status);
-      console.log('📊 Status Text:', response.statusText);
-      console.log('📊 Headers réponse:', Object.fromEntries(response.headers.entries()));
-
-      // Vérifier le Content-Type de la réponse
-      const contentType = response.headers.get('content-type');
-      console.log('📄 Content-Type:', contentType);
-
-      let data;
-      try {
-        if (contentType && contentType.includes('application/json')) {
-          data = await response.json();
-          console.log('📥 Données JSON reçues:', data);
-        } else {
-          const textData = await response.text();
-          console.log('📥 Données texte reçues:', textData);
-          data = { error: `Réponse non-JSON reçue: ${textData}` };
-        }
-      } catch (parseError) {
-        console.error('❌ Erreur parsing réponse:', parseError);
-        data = { error: 'Impossible de parser la réponse du serveur' };
-      }
+      const data = await response.json();
 
       if (response.ok) {
-        console.log('✅ === SUCCÈS ===');
-        console.log('🎉 Actualité créée avec succès:', data);
         alert(`Actualité ${statut === 'Publié' ? 'publiée' : 'sauvegardée'} avec succès !`);
         router.push('/administrateur?tab=actualites');
       } else {
-        console.log('❌ === ÉCHEC ===');
-        console.error('❌ Erreur du serveur (statut ' + response.status + '):', data);
+        console.error('❌ Erreur du serveur:', data);
         
-        // Gestion des erreurs spécifiques
         if (response.status === 401) {
           alert('Erreur: Vous n\'êtes pas authentifié. Veuillez vous reconnecter.');
           router.push('/login');
@@ -170,22 +127,15 @@ const NouvelleActualite = () => {
           alert('Erreur: Vous n\'avez pas les permissions pour créer une actualité.');
         } else if (data?.error) {
           alert(`Erreur: ${data.error}`);
-        } else if (data?.message) {
-          alert(`Erreur: ${data.message}`);
         } else {
-          alert(`Erreur ${response.status}: ${response.statusText || 'Une erreur est survenue'}`);
+          alert(`Erreur ${response.status}: Une erreur est survenue`);
         }
       }
     } catch (error) {
-      console.log('❌ === ERREUR RÉSEAU ===');
-      console.error('❌ Erreur réseau complète:', error);
-      console.error('❌ Message:', error.message);
-      console.error('❌ Stack:', error.stack);
-      
+      console.error('❌ Erreur réseau:', error);
       alert('Erreur de connexion au serveur. Vérifiez votre connexion internet et réessayez.');
     } finally {
       setIsLoading(false);
-      console.log('🔄 === FIN SAUVEGARDE ===');
     }
   };
 
@@ -195,22 +145,6 @@ const NouvelleActualite = () => {
   const handleMediaUpload = () => {
     console.log('Upload de média - fonctionnalité à implémenter');
   };
-
-  // Vérifications de base au chargement du composant
-  React.useEffect(() => {
-    console.log('🔍 === VÉRIFICATIONS INITIALES ===');
-    console.log('👤 Utilisateur:', user);
-    console.log('🔐 Token dans user:', !!user?.token);
-    console.log('🔐 Token dans localStorage:', !!localStorage.getItem('token'));
-    
-    if (!user) {
-      console.log('⚠️ Aucun utilisateur connecté');
-    } else if (!user.id) {
-      console.log('⚠️ Utilisateur sans ID');
-    } else {
-      console.log('✅ Utilisateur valide avec ID:', user.id);
-    }
-  }, [user]);
 
   return (
     <div className={styles.container}>
@@ -259,10 +193,14 @@ const NouvelleActualite = () => {
                 value={formData.titre}
                 onChange={handleInputChange}
                 placeholder="Saisissez le titre de l'actualité"
-                className={`${styles.input} ${errors.titre ? 'border-red-500' : ''}`}
+                className={`${styles.input} ${errors.titre ? styles.inputError : ''}`}
                 disabled={isLoading}
               />
-              {errors.titre && <span className="text-red-500 text-sm mt-1 block">{errors.titre}</span>}
+              {errors.titre && (
+                <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
+                  {errors.titre}
+                </span>
+              )}
             </div>
 
             <div className={styles.formGroup}>
@@ -274,11 +212,15 @@ const NouvelleActualite = () => {
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Brève description de l'actualité..."
-                className={`${styles.textarea} ${errors.description ? 'border-red-500' : ''}`}
+                className={`${styles.textarea} ${errors.description ? styles.inputError : ''}`}
                 rows={3}
                 disabled={isLoading}
               />
-              {errors.description && <span className="text-red-500 text-sm mt-1 block">{errors.description}</span>}
+              {errors.description && (
+                <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
+                  {errors.description}
+                </span>
+              )}
             </div>
 
             <div className={styles.formGroup}>
@@ -290,11 +232,15 @@ const NouvelleActualite = () => {
                 value={formData.contenu}
                 onChange={handleInputChange}
                 placeholder="Rédigez le contenu de votre actualité..."
-                className={`${styles.textarea} ${errors.contenu ? 'border-red-500' : ''}`}
+                className={`${styles.textarea} ${errors.contenu ? styles.inputError : ''}`}
                 rows={8}
                 disabled={isLoading}
               />
-              {errors.contenu && <span className="text-red-500 text-sm mt-1 block">{errors.contenu}</span>}
+              {errors.contenu && (
+                <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
+                  {errors.contenu}
+                </span>
+              )}
             </div>
 
             {/* Informations pour les événements */}
@@ -328,7 +274,7 @@ const NouvelleActualite = () => {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className="flex items-center gap-2">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <input
                       type="checkbox"
                       name="inscription_requise"
@@ -450,20 +396,18 @@ const NouvelleActualite = () => {
         </div>
       </div>
 
-      {/* Debug info en développement */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-4 left-4 p-4 bg-gray-800 text-white text-xs rounded max-w-sm">
-          <p><strong>Debug Info:</strong></p>
-          <p>User ID: {user?.id || 'N/A'}</p>
-          <p>Token: {user?.token ? 'Présent' : 'Absent'}</p>
-          <p>Role: {user?.role || 'N/A'}</p>
-          <p>Loading: {isLoading ? 'Oui' : 'Non'}</p>
-        </div>
-      )}
-
       {/* Afficher les erreurs de validation */}
       {errors.auteur && (
-        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div style={{
+          position: 'fixed',
+          bottom: '1rem',
+          right: '1rem',
+          backgroundColor: '#fee2e2',
+          border: '1px solid #fca5a5',
+          color: '#dc2626',
+          padding: '0.75rem 1rem',
+          borderRadius: '0.375rem'
+        }}>
           {errors.auteur}
         </div>
       )}

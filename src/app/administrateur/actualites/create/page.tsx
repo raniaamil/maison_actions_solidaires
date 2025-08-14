@@ -243,50 +243,46 @@ const NouvelleActualite = () => {
               )}
             </div>
 
-            {/* Informations pour les événements */}
-            {(formData.categorie === 'événement' || formData.categorie === 'numérique' || formData.categorie === 'bien-être') && (
-              <>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Lieu</label>
-                  <input
-                    type="text"
-                    name="lieu"
-                    value={formData.lieu}
-                    onChange={handleInputChange}
-                    placeholder="Lieu de l'événement"
-                    className={styles.input}
-                    disabled={isLoading}
-                  />
-                </div>
+            {/* Informations complémentaires - toujours visibles */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Lieu (optionnel)</label>
+              <input
+                type="text"
+                name="lieu"
+                value={formData.lieu}
+                onChange={handleInputChange}
+                placeholder="Lieu de l'événement ou de l'activité"
+                className={styles.input}
+                disabled={isLoading}
+              />
+            </div>
 
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Nombre de places disponibles</label>
-                  <input
-                    type="number"
-                    name="places_disponibles"
-                    value={formData.places_disponibles}
-                    onChange={handleInputChange}
-                    placeholder="Ex: 25"
-                    className={styles.input}
-                    min="1"
-                    disabled={isLoading}
-                  />
-                </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Nombre de places disponibles (optionnel)</label>
+              <input
+                type="number"
+                name="places_disponibles"
+                value={formData.places_disponibles}
+                onChange={handleInputChange}
+                placeholder="Ex: 25"
+                className={styles.input}
+                min="1"
+                disabled={isLoading}
+              />
+            </div>
 
-                <div className={styles.formGroup}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input
-                      type="checkbox"
-                      name="inscription_requise"
-                      checked={formData.inscription_requise}
-                      onChange={handleInputChange}
-                      disabled={isLoading}
-                    />
-                    <span className={styles.label}>Inscription requise</span>
-                  </label>
-                </div>
-              </>
-            )}
+            <div className={styles.formGroup}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  name="inscription_requise"
+                  checked={formData.inscription_requise}
+                  onChange={handleInputChange}
+                  disabled={isLoading}
+                />
+                <span className={styles.label}>Inscription requise</span>
+              </label>
+            </div>
           </div>
 
           <div className={styles.mediaCard}>

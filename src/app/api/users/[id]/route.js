@@ -6,9 +6,10 @@ import bcrypt from 'bcryptjs';
 // GET - Récupérer un utilisateur par ID
 export async function GET(request, { params }) {
   try {
-    const id = parseInt(params.id);
+    const { id } = await params; // Correction: await params
+    const userId = parseInt(id);
 
-    if (isNaN(id)) {
+    if (isNaN(userId)) {
       return Response.json(
         { error: 'ID invalide' },
         { status: 400 }
@@ -21,7 +22,7 @@ export async function GET(request, { params }) {
         date_inscription, date_modification, actif
       FROM users 
       WHERE id = ? AND actif = TRUE`,
-      [id]
+      [userId]
     );
 
     if (rows.length === 0) {
@@ -60,10 +61,11 @@ export async function GET(request, { params }) {
 // PUT - Mettre à jour un utilisateur
 export async function PUT(request, { params }) {
   try {
-    const id = parseInt(params.id);
+    const { id } = await params; // Correction: await params
+    const userId = parseInt(id);
     const body = await request.json();
 
-    if (isNaN(id)) {
+    if (isNaN(userId)) {
       return Response.json(
         { error: 'ID invalide' },
         { status: 400 }
@@ -84,7 +86,7 @@ export async function PUT(request, { params }) {
     // Vérifier que l'utilisateur existe
     const [existingUser] = await db.execute(
       'SELECT id, email FROM users WHERE id = ? AND actif = TRUE',
-      [id]
+      [userId]
     );
 
     if (existingUser.length === 0) {
@@ -119,7 +121,7 @@ export async function PUT(request, { params }) {
       if (email.toLowerCase().trim() !== existingUser[0].email) {
         const [emailCheck] = await db.execute(
           'SELECT id FROM users WHERE email = ? AND id != ? AND actif = TRUE',
-          [email.toLowerCase().trim(), id]
+          [email.toLowerCase().trim(), userId]
         );
 
         if (emailCheck.length > 0) {
@@ -133,35 +135,35 @@ export async function PUT(request, { params }) {
 
     // Construire la requête de mise à jour dynamiquement
     const updates = [];
-    const params = [];
+    const updateParams = [];
 
     if (prenom !== undefined && prenom.trim() !== '') {
       updates.push('prenom = ?');
-      params.push(prenom.trim());
+      updateParams.push(prenom.trim());
     }
     if (nom !== undefined && nom.trim() !== '') {
       updates.push('nom = ?');
-      params.push(nom.trim());
+      updateParams.push(nom.trim());
     }
     if (email !== undefined && email.trim() !== '') {
       updates.push('email = ?');
-      params.push(email.toLowerCase().trim());
+      updateParams.push(email.toLowerCase().trim());
     }
     if (photo !== undefined) {
       updates.push('photo = ?');
-      params.push(photo && photo.trim() !== '' ? photo.trim() : null);
+      updateParams.push(photo && photo.trim() !== '' ? photo.trim() : null);
     }
     if (bio !== undefined) {
       updates.push('bio = ?');
-      params.push(bio && bio.trim() !== '' ? bio.trim() : null);
+      updateParams.push(bio && bio.trim() !== '' ? bio.trim() : null);
     }
     if (role !== undefined) {
       updates.push('role = ?');
-      params.push(role);
+      updateParams.push(role);
     }
     if (actif !== undefined) {
       updates.push('actif = ?');
-      params.push(Boolean(actif));
+      updateParams.push(Boolean(actif));
     }
 
     // Gestion du mot de passe
@@ -174,7 +176,7 @@ export async function PUT(request, { params }) {
       }
       const hashedPassword = await bcrypt.hash(password, 12);
       updates.push('mot_de_passe = ?');
-      params.push(hashedPassword);
+      updateParams.push(hashedPassword);
     }
 
     // Toujours mettre à jour la date de modification
@@ -187,11 +189,11 @@ export async function PUT(request, { params }) {
       );
     }
 
-    params.push(id);
+    updateParams.push(userId);
 
     await db.execute(
       `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
-      params
+      updateParams
     );
 
     // Récupérer l'utilisateur mis à jour (sans le mot de passe)
@@ -201,7 +203,7 @@ export async function PUT(request, { params }) {
         date_inscription, date_modification, actif
       FROM users 
       WHERE id = ?`,
-      [id]
+      [userId]
     );
 
     const userUpdated = {
@@ -251,9 +253,10 @@ export async function PUT(request, { params }) {
 // DELETE - Supprimer un utilisateur (suppression logique)
 export async function DELETE(request, { params }) {
   try {
-    const id = parseInt(params.id);
+    const { id } = await params; // Correction: await params
+    const userId = parseInt(id);
 
-    if (isNaN(id)) {
+    if (isNaN(userId)) {
       return Response.json(
         { error: 'ID invalide' },
         { status: 400 }
@@ -263,7 +266,7 @@ export async function DELETE(request, { params }) {
     // Vérifier que l'utilisateur existe
     const [existingUser] = await db.execute(
       'SELECT id, role FROM users WHERE id = ? AND actif = TRUE',
-      [id]
+      [userId]
     );
 
     if (existingUser.length === 0) {
@@ -291,7 +294,7 @@ export async function DELETE(request, { params }) {
     // Suppression logique : marquer comme inactif
     await db.execute(
       'UPDATE users SET actif = FALSE, date_modification = NOW() WHERE id = ?',
-      [id]
+      [userId]
     );
 
     return Response.json({

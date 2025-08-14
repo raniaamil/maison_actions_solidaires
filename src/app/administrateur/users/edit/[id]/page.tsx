@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Check, Save, User, Mail } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import ProtectedRoute from '../../../../../components/ProtectedRoute';
+import { useAuth } from '../../../../../contexts/AuthContext';
 
 type Role = 'Rédacteur' | 'Administrateur';
 
@@ -20,6 +21,7 @@ type UserRecord = {
 export default function EditUserPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const { getToken } = useAuth(); // Ajout de l'authentification
   const userId = useMemo(() => Number(params?.id), [params?.id]);
 
   const [loading, setLoading] = useState(true);
@@ -35,15 +37,29 @@ export default function EditUserPage() {
     role: 'Rédacteur',
   });
 
-  // Chargement depuis l'API
+  // Chargement depuis l'API avec token
   useEffect(() => {
     let mounted = true;
     async function load() {
       try {
-        const res = await fetch(`/api/users/${userId}`, { cache: 'no-store' });
+        const token = getToken();
+        const headers: any = { 'Content-Type': 'application/json' };
+        
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(`/api/users/${userId}`, { 
+          cache: 'no-store',
+          headers
+        });
+        
         if (res.ok) {
           const data = await res.json();
           if (mounted) setFormData(data);
+        } else if (res.status === 401) {
+          console.error('Token invalide ou expiré');
+          router.push('/login');
         } else {
           console.error('Utilisateur non trouvé');
           router.push('/administrateur?tab=utilisateurs');
@@ -59,7 +75,7 @@ export default function EditUserPage() {
     return () => {
       mounted = false;
     };
-  }, [userId, router]);
+  }, [userId, router, getToken]);
 
   const handleBackToList = () => {
     router.push('/administrateur?tab=utilisateurs');
@@ -78,14 +94,24 @@ export default function EditUserPage() {
     if (!isFormValid) return;
     setSaving(true);
     try {
+      const token = getToken();
+      const headers: any = { 'Content-Type': 'application/json' };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/users/${userId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(formData),
       });
 
       if (response.ok) {
         setShowSuccessModal(true);
+      } else if (response.status === 401) {
+        alert('Session expirée. Veuillez vous reconnecter.');
+        router.push('/login');
       } else {
         const data = await response.json();
         alert(data.error || 'Erreur lors de la mise à jour');

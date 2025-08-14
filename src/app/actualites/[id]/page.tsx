@@ -154,7 +154,6 @@ const Page: React.FC = () => {
             
             <div className={styles.articleMeta}>
               <div className={styles.dateContainer}>
-                <span className={styles.clockIcon}>🕐</span>
                 <span className={styles.date}>
                   Publié le {formatDate(article.date_creation || article.date || '')}
                 </span>

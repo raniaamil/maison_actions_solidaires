@@ -40,15 +40,40 @@ const Page: React.FC = () => {
   useEffect(() => {
     const loadActualites = async () => {
       try {
-        const response = await fetch('/api/actualites?statut=Publié');
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔄 Chargement des actualités publiques...');
+        
+        // Appel API pour récupérer uniquement les actualités publiées
+        const response = await fetch('/api/actualites?statut=Publié', {
+          cache: 'no-store' // Forcer le rechargement
+        });
+        
+        console.log('📡 Réponse API actualités publiques:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log(`✅ ${data.length} actualités publiques reçues`);
+          
+          // Log de la première actualité pour debug
+          if (data.length > 0) {
+            console.log('📄 Première actualité publique:', {
+              id: data[0].id,
+              titre: data[0].titre,
+              statut: data[0].statut,
+              type: data[0].type
+            });
+          }
+          
           setArticles(data);
         } else {
+          const errorText = await response.text();
+          console.error('❌ Erreur API:', response.status, errorText);
           setError('Erreur lors du chargement des actualités');
         }
       } catch (error) {
-        console.error('Erreur:', error);
+        console.error('❌ Erreur réseau:', error);
         setError('Erreur de connexion');
       } finally {
         setLoading(false);
@@ -92,6 +117,12 @@ const Page: React.FC = () => {
     e.currentTarget.src = '/images/actualites/default.jpg';
   };
 
+  // Force refresh
+  const handleRefresh = () => {
+    console.log('🔄 Rafraîchissement forcé des actualités publiques...');
+    window.location.reload();
+  };
+
   if (loading) {
     return (
       <div className={styles.container}>
@@ -124,7 +155,7 @@ const Page: React.FC = () => {
         }}>
           <p style={{ color: '#dc2626', marginBottom: '1rem' }}>{error}</p>
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={handleRefresh} 
             style={{
               padding: '0.5rem 1rem',
               backgroundColor: '#2563eb',
@@ -145,7 +176,40 @@ const Page: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Nos Actualités</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h1 className={styles.title}>Nos Actualités</h1>
+        {/* Bouton debug en mode développement */}
+        {process.env.NODE_ENV === 'development' && (
+          <button 
+            onClick={handleRefresh}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#10b981',
+              color: 'white',
+              borderRadius: '0.375rem',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.875rem'
+            }}
+          >
+            🔄 Actualiser
+          </button>
+        )}
+      </div>
+      
+      {/* Info debug en mode développement */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{
+          backgroundColor: '#fef3c7',
+          border: '1px solid #f59e0b',
+          borderRadius: '0.5rem',
+          padding: '1rem',
+          marginBottom: '2rem',
+          fontSize: '0.875rem'
+        }}>
+          <strong>Debug:</strong> {articles.length} actualités publiques chargées
+        </div>
+      )}
       
       {articles.length === 0 ? (
         <div style={{ 

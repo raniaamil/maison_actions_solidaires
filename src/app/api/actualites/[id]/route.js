@@ -1,4 +1,4 @@
-// src/app/api/actualites/[id]/route.js
+// src/app/api/actualites/[id]/route.js - CORRECTION MYSQL2
 export const runtime = 'nodejs';
 import db from '../../../../lib/db';
 
@@ -14,8 +14,8 @@ export async function GET(request, { params }) {
       );
     }
 
-    const [rows] = await db.execute(
-      `SELECT 
+    const query = `
+      SELECT 
         a.*,
         u.prenom as auteur_prenom,
         u.nom as auteur_nom,
@@ -23,9 +23,10 @@ export async function GET(request, { params }) {
         u.bio as auteur_bio
       FROM actualites a
       JOIN users u ON a.auteur_id = u.id
-      WHERE a.id = ?`,
-      [id]
-    );
+      WHERE a.id = ${id}
+    `;
+
+    const [rows] = await db.query(query);
 
     if (rows.length === 0) {
       return Response.json(
@@ -35,6 +36,17 @@ export async function GET(request, { params }) {
     }
 
     const row = rows[0];
+    
+    // Gestion sécurisée des tags JSON
+    let tags = [];
+    if (row.tags) {
+      try {
+        tags = typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags;
+      } catch (e) {
+        console.warn('Erreur parsing tags pour actualité', row.id, ':', e);
+        tags = [];
+      }
+    }
     
     // Formatage cohérent avec le frontend
     const actualite = {
@@ -53,7 +65,7 @@ export async function GET(request, { params }) {
       date_publication: row.date_publication,
       date_modification: row.date_modification,
       updatedDate: row.date_modification ? new Date(row.date_modification).toLocaleDateString('fr-FR') : null,
-      tags: row.tags ? (typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags) : [],
+      tags: tags,
       lieu: row.lieu || '',
       location: row.lieu || '', // Alias pour compatibilité
       places_disponibles: row.places_disponibles || null,
@@ -116,10 +128,8 @@ export async function PUT(request, { params }) {
     } = body;
 
     // Vérifier que l'actualité existe
-    const [existingActualite] = await db.execute(
-      'SELECT id, statut FROM actualites WHERE id = ?',
-      [id]
-    );
+    const checkQuery = `SELECT id, statut FROM actualites WHERE id = ${id}`;
+    const [existingActualite] = await db.query(checkQuery);
 
     if (existingActualite.length === 0) {
       return Response.json(
@@ -141,67 +151,56 @@ export async function PUT(request, { params }) {
 
     // Construire la requête de mise à jour dynamiquement
     const updates = [];
-    const params = [];
 
     if (titre !== undefined) {
-      updates.push('titre = ?');
-      params.push(titre.trim());
+      updates.push(`titre = ${db.escape(titre.trim())}`);
     }
     if (description !== undefined) {
-      updates.push('description = ?');
-      params.push(description.trim());
+      updates.push(`description = ${db.escape(description.trim())}`);
     }
     if (contenu !== undefined) {
-      updates.push('contenu = ?');
-      params.push(contenu.trim());
+      updates.push(`contenu = ${db.escape(contenu.trim())}`);
     }
     if (type !== undefined) {
-      updates.push('type = ?');
-      params.push(type);
+      updates.push(`type = ${db.escape(type)}`);
     }
     if (statut !== undefined) {
-      updates.push('statut = ?');
-      params.push(statut);
+      updates.push(`statut = ${db.escape(statut)}`);
       
       // Gestion de la date de publication
       if (statut === 'Publié' && existingActualite[0].statut !== 'Publié') {
-        updates.push('date_publication = ?');
         if (date_publication) {
           try {
             const dateObj = new Date(date_publication);
             if (!isNaN(dateObj.getTime())) {
-              params.push(dateObj.toISOString().slice(0, 19).replace('T', ' '));
+              updates.push(`date_publication = ${db.escape(dateObj.toISOString().slice(0, 19).replace('T', ' '))}`);
             } else {
-              params.push(new Date().toISOString().slice(0, 19).replace('T', ' '));
+              updates.push(`date_publication = ${db.escape(new Date().toISOString().slice(0, 19).replace('T', ' '))}`);
             }
           } catch (e) {
-            params.push(new Date().toISOString().slice(0, 19).replace('T', ' '));
+            updates.push(`date_publication = ${db.escape(new Date().toISOString().slice(0, 19).replace('T', ' '))}`);
           }
         } else {
-          params.push(new Date().toISOString().slice(0, 19).replace('T', ' '));
+          updates.push(`date_publication = ${db.escape(new Date().toISOString().slice(0, 19).replace('T', ' '))}`);
         }
       }
     }
     if (image !== undefined) {
-      updates.push('image = ?');
-      params.push(image && image.trim() !== '' ? image.trim() : null);
+      updates.push(`image = ${image && image.trim() !== '' ? db.escape(image.trim()) : 'NULL'}`);
     }
     if (tags !== undefined) {
-      updates.push('tags = ?');
-      params.push(tags && Array.isArray(tags) && tags.length > 0 ? JSON.stringify(tags) : null);
+      const tagsJson = tags && Array.isArray(tags) && tags.length > 0 ? JSON.stringify(tags) : null;
+      updates.push(`tags = ${tagsJson ? db.escape(tagsJson) : 'NULL'}`);
     }
     if (lieu !== undefined) {
-      updates.push('lieu = ?');
-      params.push(lieu && lieu.trim() !== '' ? lieu.trim() : null);
+      updates.push(`lieu = ${lieu && lieu.trim() !== '' ? db.escape(lieu.trim()) : 'NULL'}`);
     }
     if (places_disponibles !== undefined) {
-      updates.push('places_disponibles = ?');
       const placesNum = parseInt(places_disponibles, 10);
-      params.push(!isNaN(placesNum) && placesNum > 0 ? placesNum : null);
+      updates.push(`places_disponibles = ${!isNaN(placesNum) && placesNum > 0 ? placesNum : 'NULL'}`);
     }
     if (inscription_requise !== undefined) {
-      updates.push('inscription_requise = ?');
-      params.push(Boolean(inscription_requise));
+      updates.push(`inscription_requise = ${Boolean(inscription_requise) ? 1 : 0}`);
     }
 
     // Toujours mettre à jour la date de modification
@@ -214,16 +213,14 @@ export async function PUT(request, { params }) {
       );
     }
 
-    params.push(id);
+    const updateQuery = `UPDATE actualites SET ${updates.join(', ')} WHERE id = ${id}`;
+    console.log('Requête de mise à jour:', updateQuery);
 
-    await db.execute(
-      `UPDATE actualites SET ${updates.join(', ')} WHERE id = ?`,
-      params
-    );
+    await db.query(updateQuery);
 
     // Récupérer l'actualité mise à jour
-    const [updatedActualite] = await db.execute(
-      `SELECT 
+    const selectQuery = `
+      SELECT 
         a.*,
         u.prenom as auteur_prenom,
         u.nom as auteur_nom,
@@ -231,9 +228,10 @@ export async function PUT(request, { params }) {
         u.bio as auteur_bio
       FROM actualites a
       JOIN users u ON a.auteur_id = u.id
-      WHERE a.id = ?`,
-      [id]
-    );
+      WHERE a.id = ${id}
+    `;
+
+    const [updatedActualite] = await db.query(selectQuery);
 
     const actualiteUpdated = {
       id: updatedActualite[0].id,
@@ -299,10 +297,8 @@ export async function DELETE(request, { params }) {
     }
 
     // Vérifier que l'actualité existe
-    const [existingActualite] = await db.execute(
-      'SELECT id FROM actualites WHERE id = ?',
-      [id]
-    );
+    const checkQuery = `SELECT id FROM actualites WHERE id = ${id}`;
+    const [existingActualite] = await db.query(checkQuery);
 
     if (existingActualite.length === 0) {
       return Response.json(
@@ -311,7 +307,8 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    await db.execute('DELETE FROM actualites WHERE id = ?', [id]);
+    const deleteQuery = `DELETE FROM actualites WHERE id = ${id}`;
+    await db.query(deleteQuery);
 
     return Response.json({
       message: 'Actualité supprimée avec succès'

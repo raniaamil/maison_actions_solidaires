@@ -22,10 +22,10 @@ CREATE TABLE IF NOT EXISTS users (
   INDEX idx_actif (actif)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table des actualités
+-- Table des actualités avec types corrects
 CREATE TABLE IF NOT EXISTS actualites (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  titre VARCHAR(255) NOT NULL,
+  titre VARCHAR(500) NOT NULL,
   description TEXT NOT NULL,
   contenu LONGTEXT NOT NULL,
   type ENUM('événement', 'témoignage', 'numérique', 'administratif', 'soutien', 'bien-être', 'junior') NOT NULL,
@@ -48,18 +48,21 @@ CREATE TABLE IF NOT EXISTS actualites (
   FULLTEXT idx_recherche (titre, description, contenu)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Insertion d'un utilisateur administrateur par défaut
--- Mot de passe: admin123 (hashé avec bcrypt - $2a$12$)
-INSERT IGNORE INTO users (id, prenom, nom, email, mot_de_passe, role, bio, photo) VALUES
-(1, 'Jean', 'Dupont', 'admin@maacso.fr', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LeWqHv4WdFsaXhDfO', 'Administrateur', 'Administrateur principal de l\'association', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face');
+-- Nettoyage et insertion d'un utilisateur administrateur par défaut
+DELETE FROM users WHERE email = 'admin@maacso.fr';
+INSERT INTO users (id, prenom, nom, email, mot_de_passe, role, bio, photo) VALUES
+(1, 'Admin', 'MAACSO', 'admin@maacso.fr', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LeWqHv4WdFsaXhDfO', 'Administrateur', 'Administrateur principal de l\'association', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face');
 
 -- Insertion d'un rédacteur par défaut
--- Mot de passe: redacteur123
-INSERT IGNORE INTO users (id, prenom, nom, email, mot_de_passe, role, bio, photo) VALUES
+DELETE FROM users WHERE email = 'redacteur@maacso.fr';
+INSERT INTO users (id, prenom, nom, email, mot_de_passe, role, bio, photo) VALUES
 (2, 'Marie', 'Martin', 'redacteur@maacso.fr', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LeWqHv4WdFsaXhDfO', 'Rédacteur', 'Rédactrice en charge des actualités', 'https://images.unsplash.com/photo-1494790108755-2616b612b3ab?w=150&h=150&fit=crop&crop=face');
 
--- Insertion de quelques actualités d'exemple
-INSERT IGNORE INTO actualites (id, titre, description, contenu, type, statut, auteur_id, date_publication, image, lieu, places_disponibles, inscription_requise) VALUES
+-- Suppression des anciennes actualités de test
+DELETE FROM actualites WHERE id IN (1, 2, 3, 4);
+
+-- Insertion d'actualités d'exemple avec des types de données corrects
+INSERT INTO actualites (id, titre, description, contenu, type, statut, auteur_id, date_publication, image, lieu, places_disponibles, inscription_requise) VALUES
 (1, 'Atelier numérique : Découverte des tablettes', 'Un atelier interactif pour apprendre à utiliser les tablettes en toute autonomie. Places limitées !', 
 '<p>Dans un monde de plus en plus connecté, savoir utiliser les outils numériques devient essentiel pour maintenir son autonomie et rester en contact avec ses proches. Notre atelier "Découverte des tablettes" s\'adresse à toutes les personnes souhaitant s\'initier ou perfectionner leur utilisation de ces appareils intuitifs.</p>
 
@@ -114,5 +117,17 @@ INSERT IGNORE INTO actualites (id, titre, description, contenu, type, statut, au
 <p>Les séances sont animées par Dr. Claire Rousseau, psychologue clinicienne spécialisée dans l\'accompagnement des familles.</p>', 
 'bien-être', 'Publié', 2, '2024-02-20 16:00:00', '/images/actualites/burnoutparental.jpg', 'Centre MAACSO', 8, 1);
 
--- Vérification de l'insertion
+-- Afficher les données insérées pour vérification
 SELECT 'Tables créées et données insérées avec succès' as statut;
+
+-- Vérification des actualités
+SELECT 
+    id, 
+    titre, 
+    statut, 
+    type, 
+    auteur_id,
+    LENGTH(contenu) as taille_contenu,
+    date_creation 
+FROM actualites 
+ORDER BY date_creation DESC;

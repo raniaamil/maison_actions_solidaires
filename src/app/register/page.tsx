@@ -108,9 +108,6 @@ export default function RegisterPage() {
           localStorage.setItem('user', JSON.stringify(data.user));
         }
         
-        // Afficher un message de succès
-        alert('🎉 Inscription réussie ! Redirection vers votre espace administrateur...');
-        
         // Rediriger vers la page administrateur
         router.push('/administrateur');
         
@@ -238,7 +235,7 @@ export default function RegisterPage() {
           </div>
 
           <button type="submit" className={styles.submitButton} disabled={isLoading}>
-            {isLoading ? '⏳ Inscription en cours...' : 'S\'inscrire'}
+            {isLoading ? 'Inscription en cours...' : 'S\'inscrire'}
           </button>
         </form>
 

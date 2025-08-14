@@ -75,7 +75,7 @@ const NouvelleActualite = () => {
     }
 
     if (!user?.id) {
-      alert('Erreur : Vous devez être connecté pour créer une actualité');
+      router.push('/login');
       return;
     }
 
@@ -115,25 +115,22 @@ const NouvelleActualite = () => {
       const data = await response.json();
 
       if (response.ok) {
-        alert(`Actualité ${statut === 'Publié' ? 'publiée' : 'sauvegardée'} avec succès !`);
         router.push('/administrateur?tab=actualites');
       } else {
         console.error('❌ Erreur du serveur:', data);
         
         if (response.status === 401) {
-          alert('Erreur: Vous n\'êtes pas authentifié. Veuillez vous reconnecter.');
           router.push('/login');
         } else if (response.status === 403) {
-          alert('Erreur: Vous n\'avez pas les permissions pour créer une actualité.');
+          console.error('Erreur: Vous n\'avez pas les permissions pour créer une actualité.');
         } else if (data?.error) {
-          alert(`Erreur: ${data.error}`);
+          console.error(`Erreur: ${data.error}`);
         } else {
-          alert(`Erreur ${response.status}: Une erreur est survenue`);
+          console.error(`Erreur ${response.status}: Une erreur est survenue`);
         }
       }
     } catch (error) {
       console.error('❌ Erreur réseau:', error);
-      alert('Erreur de connexion au serveur. Vérifiez votre connexion internet et réessayez.');
     } finally {
       setIsLoading(false);
     }

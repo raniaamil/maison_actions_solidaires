@@ -55,12 +55,10 @@ const ModifierActualite = () => {
           setHasImage(!!data.image);
         } else {
           console.error('Erreur lors du chargement de l\'actualité');
-          alert('Actualité non trouvée');
           router.push('/administrateur?tab=actualites');
         }
       } catch (error) {
         console.error('Erreur:', error);
-        alert('Erreur lors du chargement de l\'actualité');
       } finally {
         setLoading(false);
       }
@@ -154,15 +152,12 @@ const ModifierActualite = () => {
 
       if (response.ok) {
         console.log('✅ Actualité mise à jour avec succès:', data);
-        alert(`Actualité ${statut === 'Publié' ? 'publiée' : 'mise à jour'} avec succès !`);
         router.push('/administrateur?tab=actualites');
       } else {
         console.log('❌ Erreur du serveur:', data);
-        alert(data.error || 'Une erreur est survenue lors de la mise à jour de l\'actualité');
       }
     } catch (error) {
       console.error('❌ Erreur réseau:', error);
-      alert('Erreur de connexion au serveur. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }

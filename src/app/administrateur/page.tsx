@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { User, FileText, Users, LogOut, Edit, Trash2, Plus, X } from 'lucide-react';
+import { User, FileText, Users, Edit, Trash2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
@@ -55,7 +55,6 @@ const EspaceAdministrateurPage = () => {
   const loadActualites = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Début du chargement des actualités...');
       
       const token = getToken();
       const headers: any = { 'Content-Type': 'application/json' };
@@ -64,49 +63,29 @@ const EspaceAdministrateurPage = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      console.log('📡 Appel API /api/actualites...');
       const response = await fetch('/api/actualites', { 
         headers,
-        cache: 'no-store' // Forcer le rechargement
+        cache: 'no-store'
       });
-      
-      console.log('📡 Réponse API:', response.status, response.statusText);
       
       if (response.ok) {
         const data = await response.json();
-        console.log(`✅ ${data.length} actualités reçues de l'API`);
-        
-        // Log détaillé des premières actualités
-        if (data.length > 0) {
-          console.log('📄 Première actualité reçue:', {
-            id: data[0].id,
-            titre: data[0].titre,
-            statut: data[0].statut,
-            type: data[0].type,
-            auteur: data[0].auteur
-          });
-        }
         
         // Filtrer les actualités par auteur pour les rédacteurs
         let filteredArticles = data;
         if (user?.role === 'Rédacteur') {
-          console.log('👤 Filtrage pour rédacteur, ID utilisateur:', user.id);
           filteredArticles = data.filter((article: any) => 
             (article.auteur?.id || article.auteur_id) === user.id
           );
-          console.log(`🔍 ${filteredArticles.length} actualités après filtrage`);
         }
         
         setArticles(filteredArticles);
-        console.log('✅ Articles mis en state:', filteredArticles.length);
       } else {
-        const errorData = await response.text();
-        console.error('❌ Erreur lors du chargement des actualités:', response.status, errorData);
-        alert('Erreur lors du chargement des actualités. Consultez la console pour plus de détails.');
+        const errorText = await response.text();
+        console.error('❌ Erreur lors du chargement des actualités:', response.status, errorText);
       }
     } catch (error) {
       console.error('❌ Erreur réseau lors du chargement des actualités:', error);
-      alert('Erreur de connexion. Vérifiez votre connexion internet.');
     } finally {
       setLoading(false);
     }
@@ -117,7 +96,6 @@ const EspaceAdministrateurPage = () => {
     
     try {
       setLoading(true);
-      console.log('🔄 Début du chargement des utilisateurs...');
       
       const token = getToken();
       const headers: any = { 'Content-Type': 'application/json' };
@@ -133,7 +111,6 @@ const EspaceAdministrateurPage = () => {
       
       if (response.ok) {
         const data = await response.json();
-        console.log(`✅ ${data.length} utilisateurs reçus`);
         setUsers(data);
       } else {
         console.error('❌ Erreur lors du chargement des utilisateurs');
@@ -148,7 +125,6 @@ const EspaceAdministrateurPage = () => {
   const goTab = (tab: Tab) => {
     // Vérifier les permissions avant de changer d'onglet
     if ((tab === 'utilisateurs' || tab === 'informations') && !isAdmin()) {
-      alert('Accès refusé : Vous n\'avez pas les permissions pour accéder à cette section.');
       return;
     }
     
@@ -188,14 +164,11 @@ const EspaceAdministrateurPage = () => {
         } else {
           setUsers(prev => prev.filter((u: any) => u.id !== itemToDelete.id));
         }
-        console.log(`✅ ${deleteType === 'article' ? 'Actualité' : 'Utilisateur'} supprimé avec succès`);
       } else {
         console.error('❌ Erreur lors de la suppression');
-        alert('Erreur lors de la suppression');
       }
     } catch (error) {
       console.error('❌ Erreur réseau:', error);
-      alert('Erreur de connexion lors de la suppression');
     } finally {
       setShowDeleteModal(false);
       setItemToDelete(null);
@@ -218,18 +191,6 @@ const EspaceAdministrateurPage = () => {
     }
   };
 
-  const handleLogout = () => {
-    if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-      logout();
-    }
-  };
-
-  // Force refresh des actualités
-  const handleRefreshActualites = () => {
-    console.log('🔄 Rafraîchissement forcé des actualités...');
-    loadActualites();
-  };
-
   return (
     <ProtectedRoute>
       <div className="max-w-7xl mx-auto p-8 bg-gray-50 min-h-screen font-sans">
@@ -242,23 +203,6 @@ const EspaceAdministrateurPage = () => {
             <p className="text-gray-600">
               Bienvenue, {user?.prenom} {user?.nom} ({user?.role})
             </p>
-          </div>
-          <div className="flex gap-4">
-            {activeTab === 'actualites' && (
-              <button
-                onClick={handleRefreshActualites}
-                className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors duration-200"
-              >
-                🔄 Actualiser
-              </button>
-            )}
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors duration-200"
-            >
-              <LogOut className="w-4 h-4" />
-              Déconnexion
-            </button>
           </div>
         </div>
 
@@ -307,19 +251,6 @@ const EspaceAdministrateurPage = () => {
             </button>
           )}
         </div>
-
-        {/* Debug info */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-            <h3 className="font-bold text-yellow-800">Debug Info:</h3>
-            <p className="text-yellow-700">
-              Articles en state: {articles.length} | 
-              Loading: {loading ? 'Oui' : 'Non'} | 
-              Onglet actif: {activeTab} |
-              Utilisateur: {user?.prenom} (ID: {user?.id})
-            </p>
-          </div>
-        )}
 
         {/* Contenu des onglets */}
         <div className="bg-white rounded-lg shadow-sm">

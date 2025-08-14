@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +10,29 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Gestionnaire pour fermer les dropdowns en cliquant en dehors
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsUserDropdownOpen(false);
+      }
+      if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target as Node)) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+
+    if (isUserDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isUserDropdownOpen]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -20,9 +43,7 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
-    if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-      logout();
-    }
+    logout();
     setIsMobileMenuOpen(false);
     setIsUserDropdownOpen(false);
   };
@@ -66,7 +87,7 @@ const Navbar = () => {
             </div>
             <div className={styles.desktopButtons}>
               {/* Menu déroulant utilisateur pour desktop */}
-              <div className={styles.dropdown}>
+              <div className={styles.dropdown} ref={dropdownRef}>
                 <input 
                   type="checkbox" 
                   id="user-dropdown-checkbox" 
@@ -157,7 +178,7 @@ const Navbar = () => {
 
             <div className={styles.mobileButtons}>
               {/* Menu déroulant utilisateur pour mobile */}
-              <div className={styles.mobileDropdown}>
+              <div className={styles.mobileDropdown} ref={mobileDropdownRef}>
                 <input 
                   type="checkbox" 
                   id="mobile-user-dropdown-checkbox" 

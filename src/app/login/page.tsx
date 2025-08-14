@@ -1,4 +1,3 @@
-// 4. Page de login mise à jour - src/app/login/page.tsx
 'use client';
 
 import { useState } from 'react';

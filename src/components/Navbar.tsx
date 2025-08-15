@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,28 +11,7 @@ const Navbar = () => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const mobileDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Gestionnaire pour fermer les dropdowns en cliquant en dehors
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsUserDropdownOpen(false);
-      }
-      if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target as Node)) {
-        setIsUserDropdownOpen(false);
-      }
-    };
-
-    if (isUserDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isUserDropdownOpen]);
+  // Suppression de la gestion des clics en dehors
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -43,6 +22,7 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
+    console.log('🚪 Clic sur déconnexion');
     logout();
     setIsMobileMenuOpen(false);
     setIsUserDropdownOpen(false);
@@ -50,6 +30,12 @@ const Navbar = () => {
 
   const closeMenus = () => {
     setIsMobileMenuOpen(false);
+    setIsUserDropdownOpen(false);
+  };
+
+  const handleDropdownItemClick = (action: () => void) => {
+    console.log('🖱️ Clic sur item dropdown');
+    action();
     setIsUserDropdownOpen(false);
   };
 
@@ -86,16 +72,13 @@ const Navbar = () => {
               </Link>
             </div>
             <div className={styles.desktopButtons}>
-              {/* Menu déroulant utilisateur pour desktop */}
-              <div className={styles.dropdown} ref={dropdownRef}>
-                <input 
-                  type="checkbox" 
-                  id="user-dropdown-checkbox" 
-                  className={styles.dropdownCheckbox}
-                  checked={isUserDropdownOpen}
-                  onChange={toggleUserDropdown}
-                />
-                <label htmlFor="user-dropdown-checkbox" className={styles.dropdownToggle}>
+              {/* Menu déroulant utilisateur pour desktop - VERSION SIMPLIFIÉE */}
+              <div className={styles.dropdown}>
+                <button 
+                  className={styles.dropdownToggle}
+                  onClick={toggleUserDropdown}
+                  type="button"
+                >
                   <svg className={styles.userIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -105,28 +88,46 @@ const Navbar = () => {
                     />
                   </svg>
                   <span className={styles.dropdownArrow}>▼</span>
-                </label>
-                <div className={styles.dropdownMenu}>
-                  {isAuthenticated() ? (
-                    <>
-                      <Link href="/administrateur" className={styles.dropdownItem} onClick={closeMenus}>
-                        Espace Admin
-                      </Link>
-                      <button onClick={handleLogout} className={styles.dropdownItem}>
-                        Déconnexion
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link href="/register" className={styles.dropdownItem} onClick={closeMenus}>
-                        Inscription
-                      </Link>
-                      <Link href="/login" className={styles.dropdownItem} onClick={closeMenus}>
-                        Connexion
-                      </Link>
-                    </>
-                  )}
-                </div>
+                </button>
+                {isUserDropdownOpen && (
+                  <div className={styles.dropdownMenu}>
+                    {isAuthenticated() ? (
+                      <>
+                        <Link 
+                          href="/administrateur" 
+                          className={styles.dropdownItem} 
+                          onClick={() => handleDropdownItemClick(() => {})}
+                        >
+                          Espace Admin
+                        </Link>
+                        <button 
+                          onClick={() => handleDropdownItemClick(handleLogout)} 
+                          className={styles.dropdownItem}
+                          type="button"
+                        >
+                          Déconnexion
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link 
+                          href="/register" 
+                          className={styles.dropdownItem} 
+                          onClick={() => handleDropdownItemClick(() => {})}
+                        >
+                          Inscription
+                        </Link>
+                        <Link 
+                          href="/login" 
+                          className={styles.dropdownItem} 
+                          onClick={() => handleDropdownItemClick(() => {})}
+                        >
+                          Connexion
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               
               <Link href="/faireundon" className={styles.donateButton}>
@@ -177,16 +178,13 @@ const Navbar = () => {
             </Link>
 
             <div className={styles.mobileButtons}>
-              {/* Menu déroulant utilisateur pour mobile */}
-              <div className={styles.mobileDropdown} ref={mobileDropdownRef}>
-                <input 
-                  type="checkbox" 
-                  id="mobile-user-dropdown-checkbox" 
-                  className={styles.dropdownCheckbox}
-                  checked={isUserDropdownOpen}
-                  onChange={toggleUserDropdown}
-                />
-                <label htmlFor="mobile-user-dropdown-checkbox" className={styles.mobileDropdownToggle}>
+              {/* Menu déroulant utilisateur pour mobile - VERSION SIMPLIFIÉE */}
+              <div className={styles.mobileDropdown}>
+                <button 
+                  className={styles.mobileDropdownToggle}
+                  onClick={toggleUserDropdown}
+                  type="button"
+                >
                   <svg className={styles.mobileUserIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -199,28 +197,46 @@ const Navbar = () => {
                     {isAuthenticated() ? `${user?.prenom} ${user?.nom}` : 'Mon compte'}
                   </span>
                   <span className={styles.dropdownArrow}>▼</span>
-                </label>
-                <div className={styles.mobileDropdownMenu}>
-                  {isAuthenticated() ? (
-                    <>
-                      <Link href="/administrateur" className={styles.mobileDropdownItem} onClick={closeMenus}>
-                        Espace Admin
-                      </Link>
-                      <button onClick={handleLogout} className={styles.mobileDropdownItem}>
-                        Déconnexion
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link href="/register" className={styles.mobileDropdownItem} onClick={closeMenus}>
-                        Inscription
-                      </Link>
-                      <Link href="/login" className={styles.mobileDropdownItem} onClick={closeMenus}>
-                        Connexion
-                      </Link>
-                    </>
-                  )}
-                </div>
+                </button>
+                {isUserDropdownOpen && (
+                  <div className={styles.mobileDropdownMenu}>
+                    {isAuthenticated() ? (
+                      <>
+                        <Link 
+                          href="/administrateur" 
+                          className={styles.mobileDropdownItem} 
+                          onClick={closeMenus}
+                        >
+                          Espace Admin
+                        </Link>
+                        <button 
+                          onClick={handleLogout} 
+                          className={styles.mobileDropdownItem}
+                          type="button"
+                        >
+                          Déconnexion
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link 
+                          href="/register" 
+                          className={styles.mobileDropdownItem} 
+                          onClick={closeMenus}
+                        >
+                          Inscription
+                        </Link>
+                        <Link 
+                          href="/login" 
+                          className={styles.mobileDropdownItem} 
+                          onClick={closeMenus}
+                        >
+                          Connexion
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               
               <Link href="/faireundon" className={styles.mobileDonateButton} onClick={() => setIsMobileMenuOpen(false)}>

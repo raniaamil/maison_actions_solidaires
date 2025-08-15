@@ -112,21 +112,12 @@
   background-color: rgba(131, 140, 88, 0.1);
 }
 
-.dropdownCheckbox {
-  display: none;
-}
-
 .dropdownArrow {
   font-size: 0.75rem;
   transition: transform 0.2s ease;
 }
 
-.dropdownCheckbox:checked + .dropdownToggle .dropdownArrow {
-  transform: rotate(180deg);
-}
-
 .dropdownMenu {
-  display: none;
   position: absolute;
   top: 100%;
   right: 0;
@@ -138,9 +129,6 @@
   z-index: 100;
   flex-direction: column;
   border: 1px solid #e5e7eb;
-}
-
-.dropdownCheckbox:checked + .dropdownToggle + .dropdownMenu {
   display: flex;
 }
 
@@ -309,16 +297,12 @@
 }
 
 .mobileDropdownMenu {
-  display: none;
   width: 100%;
   background-color: #f9fafb;
   border-radius: 0.5rem;
   margin-top: 0.5rem;
   flex-direction: column;
   overflow: hidden;
-}
-
-.dropdownCheckbox:checked ~ .mobileDropdownMenu {
   display: flex;
 }
 

@@ -103,13 +103,8 @@ export default function RegisterPage() {
       if (response.ok) {
         console.log('✅ Inscription réussie:', data);
         
-        // Stocker les infos utilisateur dans le localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('user', JSON.stringify(data.user));
-        }
-        
-        // Rediriger vers la page administrateur
-        router.push('/administrateur');
+        // Rediriger vers la page de connexion
+        router.push('/login');
         
       } else {
         console.log('❌ Erreur du serveur:', data);

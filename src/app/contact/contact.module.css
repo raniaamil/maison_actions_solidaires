@@ -1,13 +1,17 @@
+.pageWrapper {
+    background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 50%, #f8fdf8 100%);
+    min-height: 100vh;
+    padding: 0;
+}
+
 .contactContainer {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     max-width: 1200px;
     margin: auto;
-    padding: 20px;
+    padding: 50px 20px;
     gap: 50px;
-    margin-top: 30px;
-    margin-bottom: 30px;
 }
 
 .contactInfo {

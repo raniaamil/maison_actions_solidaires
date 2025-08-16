@@ -1,7 +1,5 @@
-
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #4ade80, #22c55e, #16a34a);
 }
 
 .heroSection {
@@ -10,7 +8,10 @@
 
 .heroBackground {
   height: 24rem;
-  background: #90B995;
+  background-image: url('/images/association/bannière_association.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   position: relative;
   overflow: hidden;
 }
@@ -158,6 +159,12 @@
 
 @media (min-width: 768px) {
   .teamGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .teamGrid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
@@ -166,7 +173,8 @@
   background-color: white;
   padding: 2rem;
   border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border-top: 1px solid #d2d3c5;
+  box-shadow: 0 10px 15px -3px rgba(131, 140, 88, 0.3), 0 4px 6px -2px rgba(131, 140, 88, 0.2);
   text-align: center;
   transform: scale(1);
   transition: all 0.3s ease;
@@ -174,7 +182,7 @@
 }
 
 .teamCard:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
@@ -188,6 +196,7 @@
   justify-content: center;
   margin: 0 auto 1rem;
   transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 .teamCard:hover .teamAvatar {
@@ -199,6 +208,13 @@
   color: white;
   font-size: 1.5rem;
   font-weight: bold;
+}
+
+.teamPhoto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .teamName {
@@ -233,6 +249,41 @@
 
 .teamCard:hover .teamBio {
   color: #374151;
+}
+
+/* Styles spécifiques pour la présentation étendue d'Alvine */
+.teamBioExtended {
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  transition: color 0.3s ease;
+  text-align: left;
+}
+
+.teamBioExtended p {
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.teamBioExtended p:last-child {
+  margin-bottom: 0;
+}
+
+.teamCard:hover .teamBioExtended {
+  color: #374151;
+}
+
+/* Ajustement pour la carte d'Alvine qui sera plus grande */
+.teamCard:first-child {
+  grid-column: 1 / -1;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .teamCard:first-child {
+    grid-column: 1 / -1;
+  }
 }
 
 .objectivesCard {

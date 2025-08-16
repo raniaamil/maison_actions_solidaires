@@ -142,33 +142,37 @@ export default function RegisterPage() {
         )}
         
         <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.inputGroup}>
-            <input
-              type="text"
-              name="firstName"
-              placeholder="Prénom"
-              value={formData.firstName}
-              onChange={handleInputChange}
-              className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`}
-              disabled={isLoading}
-            />
-            {errors.firstName && <span className={styles.errorText}>{errors.firstName}</span>}
+          {/* Première ligne : Prénom et Nom */}
+          <div className={styles.formGrid}>
+            <div className={styles.inputGroup}>
+              <input
+                type="text"
+                name="firstName"
+                placeholder="Prénom"
+                value={formData.firstName}
+                onChange={handleInputChange}
+                className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`}
+                disabled={isLoading}
+              />
+              {errors.firstName && <span className={styles.errorText}>{errors.firstName}</span>}
+            </div>
+
+            <div className={styles.inputGroup}>
+              <input
+                type="text"
+                name="lastName"
+                placeholder="Nom"
+                value={formData.lastName}
+                onChange={handleInputChange}
+                className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`}
+                disabled={isLoading}
+              />
+              {errors.lastName && <span className={styles.errorText}>{errors.lastName}</span>}
+            </div>
           </div>
 
-          <div className={styles.inputGroup}>
-            <input
-              type="text"
-              name="lastName"
-              placeholder="Nom"
-              value={formData.lastName}
-              onChange={handleInputChange}
-              className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`}
-              disabled={isLoading}
-            />
-            {errors.lastName && <span className={styles.errorText}>{errors.lastName}</span>}
-          </div>
-
-          <div className={styles.inputGroup}>
+          {/* Deuxième ligne : Email (pleine largeur) */}
+          <div className={`${styles.inputGroup} ${styles.formGridFull}`}>
             <input
               type="email"
               name="email"
@@ -181,52 +185,55 @@ export default function RegisterPage() {
             {errors.email && <span className={styles.errorText}>{errors.email}</span>}
           </div>
 
-          <div className={styles.inputGroup}>
-            <div className={styles.passwordWrapper}>
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="Mot de passe (min. 6 caractères)"
-                value={formData.password}
-                onChange={handleInputChange}
-                className={`${styles.input} ${styles.passwordInput} ${errors.password ? styles.inputError : ''}`}
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                className={styles.togglePassword}
-                onClick={() => togglePasswordVisibility('password')}
-                aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                disabled={isLoading}
-              >
-                {showPassword ? "👁️" : "👁️‍🗨️"}
-              </button>
+          {/* Troisième ligne : Mots de passe */}
+          <div className={styles.formGrid}>
+            <div className={styles.inputGroup}>
+              <div className={styles.passwordWrapper}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Mot de passe (min. 6 caractères)"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className={`${styles.input} ${styles.passwordInput} ${errors.password ? styles.inputError : ''}`}
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  className={styles.togglePassword}
+                  onClick={() => togglePasswordVisibility('password')}
+                  aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                  disabled={isLoading}
+                >
+                  {showPassword ? "👁️" : "👁️‍🗨️"}
+                </button>
+              </div>
+              {errors.password && <span className={styles.errorText}>{errors.password}</span>}
             </div>
-            {errors.password && <span className={styles.errorText}>{errors.password}</span>}
-          </div>
 
-          <div className={styles.inputGroup}>
-            <div className={styles.passwordWrapper}>
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                name="confirmPassword"
-                placeholder="Répétez le mot de passe"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                className={`${styles.input} ${styles.passwordInput} ${errors.confirmPassword ? styles.inputError : ''}`}
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                className={styles.togglePassword}
-                onClick={() => togglePasswordVisibility('confirmPassword')}
-                aria-label={showConfirmPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                disabled={isLoading}
-              >
-                {showConfirmPassword ? "👁️" : "👁️‍🗨️"}
-              </button>
+            <div className={styles.inputGroup}>
+              <div className={styles.passwordWrapper}>
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  placeholder="Répétez le mot de passe"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className={`${styles.input} ${styles.passwordInput} ${errors.confirmPassword ? styles.inputError : ''}`}
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  className={styles.togglePassword}
+                  onClick={() => togglePasswordVisibility('confirmPassword')}
+                  aria-label={showConfirmPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                  disabled={isLoading}
+                >
+                  {showConfirmPassword ? "👁️" : "👁️‍🗨️"}
+                </button>
+              </div>
+              {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword}</span>}
             </div>
-            {errors.confirmPassword && <span className={styles.errorText}>{errors.confirmPassword}</span>}
           </div>
 
           <button type="submit" className={styles.submitButton} disabled={isLoading}>

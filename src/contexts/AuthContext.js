@@ -29,15 +29,24 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      const storedUser = localStorage.getItem('user');
-      const storedToken = localStorage.getItem('token');
+      // Vérifier d'abord localStorage (se souvenir de moi activé)
+      let storedUser = localStorage.getItem('user');
+      let storedToken = localStorage.getItem('token');
+      let storageType = 'localStorage';
+
+      // Si pas trouvé dans localStorage, vérifier sessionStorage
+      if (!storedUser || !storedToken) {
+        storedUser = sessionStorage.getItem('user');
+        storedToken = sessionStorage.getItem('token');
+        storageType = 'sessionStorage';
+      }
 
       if (storedUser && storedToken) {
         const userData = JSON.parse(storedUser);
-        // Ajouter le token aux données utilisateur
         userData.token = storedToken;
+        userData.storageType = storageType; // Mémoriser le type de stockage utilisé
         setUser(userData);
-        console.log('✅ Utilisateur restauré depuis localStorage:', userData.email);
+        console.log(`✅ Utilisateur restauré depuis ${storageType}:`, userData.email);
       }
     } catch (error) {
       console.error('❌ Erreur lors de l\'initialisation de l\'auth:', error);
@@ -49,15 +58,18 @@ export const AuthProvider = ({ children }) => {
 
   const clearAuthData = () => {
     if (typeof window !== 'undefined') {
+      // Nettoyer les deux types de stockage
       localStorage.removeItem('user');
       localStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('token');
     }
     setUser(null);
   };
 
-  const login = async (email, password) => {
+  const login = async (email, password, rememberMe = false) => {
     try {
-      console.log('🔐 Tentative de connexion pour:', email);
+      console.log('🔐 Tentative de connexion pour:', email, '| Se souvenir:', rememberMe);
       
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -75,13 +87,22 @@ export const AuthProvider = ({ children }) => {
         setUser(userWithToken);
         
         if (typeof window !== 'undefined') {
-          localStorage.setItem('user', JSON.stringify(userWithToken));
-          localStorage.setItem('token', data.token);
+          if (rememberMe) {
+            // "Se souvenir de moi" activé : utiliser localStorage (persistant)
+            localStorage.setItem('user', JSON.stringify(userWithToken));
+            localStorage.setItem('token', data.token);
+            console.log('💾 Données stockées dans localStorage (persistant)');
+          } else {
+            // "Se souvenir de moi" désactivé : utiliser sessionStorage (temporaire)
+            sessionStorage.setItem('user', JSON.stringify(userWithToken));
+            sessionStorage.setItem('token', data.token);
+            console.log('💾 Données stockées dans sessionStorage (temporaire)');
+          }
         }
         
         console.log('✅ Connexion réussie:', userWithToken.email);
         
-        // Redirection vers l'espace administrateur (plus de distinction de rôle)
+        // Redirection vers l'espace administrateur
         router.push('/administrateur');
         return { success: true };
       } else {
@@ -115,7 +136,16 @@ export const AuthProvider = ({ children }) => {
 
   // Fonction pour obtenir le token actuel
   const getToken = () => {
-    return user?.token || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+    if (user?.token) {
+      return user.token;
+    }
+    
+    if (typeof window !== 'undefined') {
+      // Vérifier d'abord localStorage puis sessionStorage
+      return localStorage.getItem('token') || sessionStorage.getItem('token');
+    }
+    
+    return null;
   };
 
   const value = {

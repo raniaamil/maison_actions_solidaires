@@ -55,7 +55,7 @@ export default function LoginPage() {
     if (validateForm()) {
       setIsLoading(true);
       try {
-        const result = await login(formData.email, formData.password);
+        const result = await login(formData.email, formData.password, rememberMe);
         
         if (!result.success) {
           setErrors({ general: result.error });

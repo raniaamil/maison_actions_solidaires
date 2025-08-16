@@ -193,7 +193,8 @@ const EspaceAdministrateurPage = () => {
 
   return (
     <ProtectedRoute>
-      <div className="max-w-7xl mx-auto p-8 bg-gray-50 min-h-screen font-sans">
+      <div className="bg-gray-50 min-h-screen font-sans">
+        <div className="max-w-7xl mx-auto p-8">
         {/* Header */}
         <div className="mb-8 flex justify-between items-start">
           <div>
@@ -233,7 +234,7 @@ const EspaceAdministrateurPage = () => {
             onClick={() => goTab('actualites')}
           >
             <FileText className="w-5 h-5" />
-            Mes actualités
+            Actualités
           </button>
 
           {/* Onglet Utilisateurs - Visible pour les admins uniquement */}
@@ -262,7 +263,7 @@ const EspaceAdministrateurPage = () => {
                 <p className="text-gray-600 mb-8">
                   Modifiez vos informations de profil et vos paramètres de sécurité
                 </p>
-                <div className="bg-gray-50 p-8 rounded-lg">
+                <div className="bg-gray-100 p-8 rounded-lg">
                   <p className="text-gray-600">Fonctionnalité en cours de développement...</p>
                 </div>
               </div>
@@ -298,7 +299,7 @@ const EspaceAdministrateurPage = () => {
                       articles.map((article: any) => (
                         <div
                           key={article.id}
-                          className="bg-white border border-gray-200 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
+                          className="bg-white border border-gray-300 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
                         >
                           <div className="flex justify-between items-start mb-4">
                             <h3 className="text-lg font-semibold text-gray-900 flex-1 mr-4">
@@ -308,7 +309,7 @@ const EspaceAdministrateurPage = () => {
                               className={`px-3 py-1 rounded-full text-sm font-medium ${
                                 (article.statut || article.status) === 'Publié' 
                                   ? 'bg-green-100 text-green-800' 
-                                  : 'bg-gray-100 text-gray-800'
+                                  : 'bg-gray-200 text-gray-800'
                               }`}
                             >
                               {article.statut || article.status}
@@ -329,13 +330,13 @@ const EspaceAdministrateurPage = () => {
                           <div className="flex gap-4">
                             <Link
                               href={`/administrateur/actualites/edit/${article.id}`}
-                              className="flex items-center gap-2 px-4 py-2 bg-none border border-gray-300 rounded-md text-sm cursor-pointer transition-all duration-200 text-gray-700 hover:bg-gray-50 hover:border-gray-400 no-underline"
+                              className="flex items-center gap-2 px-4 py-2 bg-none border border-gray-400 rounded-md text-sm cursor-pointer transition-all duration-200 text-gray-700 hover:bg-gray-200 hover:border-gray-500 no-underline"
                             >
                               <Edit className="w-4 h-4" />
                               Modifier
                             </Link>
                             <button
-                              className="flex items-center gap-2 px-4 py-2 bg-none border border-red-200 rounded-md text-sm cursor-pointer transition-all duration-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                              className="flex items-center gap-2 px-4 py-2 bg-none border border-red-300 rounded-md text-sm cursor-pointer transition-all duration-200 text-red-600 hover:bg-red-50 hover:border-red-400"
                               onClick={() => handleDeleteClick(article, 'article')}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -393,9 +394,9 @@ const EspaceAdministrateurPage = () => {
                     {users.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {users.map((user: any) => (
-                          <div key={user.id} className="bg-white border border-gray-200 rounded-lg p-6">
+                          <div key={user.id} className="bg-gray-100 border border-gray-300 rounded-lg p-6">
                             <div className="flex items-center mb-4">
-                              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mr-4">
+                              <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center mr-4">
                                 {user.photo ? (
                                   <img src={user.photo} alt={user.prenom} className="w-12 h-12 rounded-full object-cover" />
                                 ) : (
@@ -421,7 +422,7 @@ const EspaceAdministrateurPage = () => {
                             <div className="flex gap-2">
                               <Link
                                 href={`/administrateur/users/edit/${user.id}`}
-                                className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 transition-colors no-underline"
+                                className="flex items-center gap-1 px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300 transition-colors no-underline"
                               >
                                 <Edit className="w-3 h-3" />
                                 Modifier
@@ -487,6 +488,7 @@ const EspaceAdministrateurPage = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
     </ProtectedRoute>
   );

@@ -1,9 +1,14 @@
 .container {
+  background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 50%, #f8fdf8 100%);
+  min-height: 100vh;
+  padding: 40px 0;
+  width: 100%;
+}
+
+.contentWrapper {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 20px;
-  background-color: #f8f9fa;
-  min-height: 100vh;
+  padding: 0 20px;
 }
 
 .title {
@@ -17,10 +22,11 @@
 
 .articlesGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
   gap: 2rem;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 0;
 }
 
 .articleCard {
@@ -74,9 +80,8 @@
 .typeEvenement { background-color: #8c0c91; }      
 .typeTemoignage { background-color: #795548; }     
 
-
 .cardContent {
-  padding: 24px;
+  padding: 28px;
 }
 
 .dateContainer {
@@ -187,7 +192,11 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .container {
-    padding: 20px 16px;
+    padding: 20px 0;
+  }
+  
+  .contentWrapper {
+    padding: 0 16px;
   }
   
   .title {
@@ -198,6 +207,7 @@
   .articlesGrid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+    max-width: 500px;
   }
   
   .cardContent {

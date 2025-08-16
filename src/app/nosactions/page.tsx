@@ -1,10 +1,11 @@
+import Image from 'next/image';
 import styles from './nosactions.module.css';
 
 export default function NosActionsPage() {
   const poles = [
     {
       id: 'numerique',
-      icon: 'N',
+      icon: '/images/nosactions/pôle-numérique.jpg',
       title: 'Pôle Numérique',
       items: [
         'Initiation informatique pour les novices',
@@ -20,7 +21,7 @@ export default function NosActionsPage() {
     },
     {
       id: 'administratif',
-      icon: 'A',
+      icon: '/images/nosactions/pôle-administratif.jpg',
       title: 'Pôle Administratif',
       items: [
         'Accompagnement individualisé',
@@ -36,7 +37,7 @@ export default function NosActionsPage() {
     },
     {
       id: 'soutien',
-      icon: 'S',
+      icon: '/images/nosactions/pôle-soutien.jpg',
       title: 'Pôle Soutien',
       items: [
         'Plateforme d\'écoute téléphonique',
@@ -52,7 +53,7 @@ export default function NosActionsPage() {
     },
     {
       id: 'bien-etre',
-      icon: 'B',
+      icon: '/images/nosactions/pôle-bien-être.jpg',
       title: 'Pôle Bien-être',
       items: [
         'Ateliers de relaxation et musicothérapie',
@@ -68,7 +69,7 @@ export default function NosActionsPage() {
     },
     {
       id: 'junior',
-      icon: 'J',
+      icon: '/images/nosactions/pôle-junior.jpg',
       title: 'Pôle Junior',
       items: [
         'Accompagnement AESH personnalisé',
@@ -99,16 +100,26 @@ export default function NosActionsPage() {
         <div className={styles.polesGrid}>
           {poles.map((pole) => (
             <div key={pole.id} className={`${styles.poleCard} ${styles[`pole${pole.id.charAt(0).toUpperCase() + pole.id.slice(1).replace('-', '')}`]}`}>
-              <div className={styles.poleIcon}>{pole.icon}</div>
-              <h3>{pole.title}</h3>
-              <ul>
-                {pole.items.map((item, index) => (
-                  <li key={index}>{item}</li>
-                ))}
-              </ul>
-              <div className={styles.objectif}>
-                <h4>{pole.objectif.title}</h4>
-                <p>{pole.objectif.description}</p>
+              <div className={styles.poleImageContainer}>
+                <Image
+                  src={pole.icon}
+                  alt={`${pole.title}`}
+                  width={400}
+                  height={180}
+                  className={styles.poleImage}
+                />
+              </div>
+              <div className={styles.poleCardContent}>
+                <h3>{pole.title}</h3>
+                <ul>
+                  {pole.items.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ul>
+                <div className={styles.objectif}>
+                  <h4>{pole.objectif.title}</h4>
+                  <p>{pole.objectif.description}</p>
+                </div>
               </div>
             </div>
           ))}

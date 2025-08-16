@@ -84,7 +84,7 @@ const MaisonActionsSolidaires = () => {
                 <span className={styles.teamInitials}>AN</span>
               </div>
               <h4 className={styles.teamName}>Alvine NGUEMCHE</h4>
-              <p className={styles.teamRole}>Présidente & Coordinatrice</p>
+              <p className={styles.teamRole}>Présidente & Fondatrice</p>
               <p className={styles.teamBio}>
                 Passionnée par l'accompagnement social, Alvine pilote les projets de 
                 l'association et coordonne les différents pôles d'activité. Elle veille à 

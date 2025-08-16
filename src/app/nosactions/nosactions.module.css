@@ -60,7 +60,7 @@
 .poleCard {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
-  padding: 30px;
+  padding: 0;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -73,47 +73,31 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
-.poleCard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(135deg, #A1887F 0%, #D7CCC8 100%);
-}
-
-.poleIcon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  margin-bottom: 20px;
+.poleImageContainer {
+  width: 100%;
+  height: 180px;
+  margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
-  color: #ffffff;
-  font-weight: bold;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
 }
 
-.poleNumerique .poleIcon {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+.poleImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
-.poleAdministratif .poleIcon {
-  background: linear-gradient(135deg, #f093fb, #f5576c);
+.poleCard:hover .poleImage {
+  transform: scale(1.05);
 }
 
-.poleSoutien .poleIcon {
-  background: linear-gradient(135deg, #4facfe, #00f2fe);
-}
-
-.poleBienetre .poleIcon {
-  background: linear-gradient(135deg, #43e97b, #38f9d7);
-}
-
-.poleJunior .poleIcon {
-  background: linear-gradient(135deg, #fa709a, #fee140);
+.poleCardContent {
+  padding: 30px;
 }
 
 .poleCard h3 {
@@ -233,12 +217,16 @@
     gap: 20px;
   }
   
-  .poleCard {
+  .poleCardContent {
     padding: 20px;
   }
   
   .poleCard h3 {
     font-size: 1.5rem;
+  }
+  
+  .poleImageContainer {
+    height: 150px;
   }
   
   .ctaSection h2 {
@@ -259,13 +247,11 @@
     padding: 10px 1rem;
   }
   
-  .poleCard {
+  .poleCardContent {
     padding: 15px;
   }
   
-  .poleIcon {
-    width: 50px;
-    height: 50px;
-    font-size: 1.5rem;
+  .poleImageContainer {
+    height: 120px;
   }
 }

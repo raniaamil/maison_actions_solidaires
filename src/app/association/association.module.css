@@ -353,3 +353,15 @@
 .accessibilityButton:hover .accessibilityIcon {
   transform: rotate(12deg);
 }
+.teamAvatar {
+  background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 50%, #f8fdf8 100%);
+}
+
+.memberRole {
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.teamInitials {
+  font-size: 3em;
+}

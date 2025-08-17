@@ -887,7 +887,7 @@ const EspaceAdministrateurPage = () => {
                       {users.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {users.map((user: any) => (
-                            <div key={user.id} className="bg-gray-100 border border-gray-300 rounded-lg p-6">
+                            <div key={user.id} className="bg-white border border-gray-300 rounded-lg p-6">
                               <div className="flex items-center mb-4">
                                 <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center mr-4">
                                   {user.photo ? (

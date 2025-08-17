@@ -1,3 +1,6 @@
+// Modifications à apporter au fichier src/contexts/AuthContext.js
+// Ajout d'une fonction de mise à jour des données utilisateur
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -44,7 +47,7 @@ export const AuthProvider = ({ children }) => {
       if (storedUser && storedToken) {
         const userData = JSON.parse(storedUser);
         userData.token = storedToken;
-        userData.storageType = storageType; // Mémoriser le type de stockage utilisé
+        userData.storageType = storageType;
         setUser(userData);
         console.log(`✅ Utilisateur restauré depuis ${storageType}:`, userData.email);
       }
@@ -58,7 +61,6 @@ export const AuthProvider = ({ children }) => {
 
   const clearAuthData = () => {
     if (typeof window !== 'undefined') {
-      // Nettoyer les deux types de stockage
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       sessionStorage.removeItem('user');
@@ -88,12 +90,10 @@ export const AuthProvider = ({ children }) => {
         
         if (typeof window !== 'undefined') {
           if (rememberMe) {
-            // "Se souvenir de moi" activé : utiliser localStorage (persistant)
             localStorage.setItem('user', JSON.stringify(userWithToken));
             localStorage.setItem('token', data.token);
             console.log('💾 Données stockées dans localStorage (persistant)');
           } else {
-            // "Se souvenir de moi" désactivé : utiliser sessionStorage (temporaire)
             sessionStorage.setItem('user', JSON.stringify(userWithToken));
             sessionStorage.setItem('token', data.token);
             console.log('💾 Données stockées dans sessionStorage (temporaire)');
@@ -101,8 +101,6 @@ export const AuthProvider = ({ children }) => {
         }
         
         console.log('✅ Connexion réussie:', userWithToken.email);
-        
-        // Redirection vers l'espace administrateur
         router.push('/administrateur');
         return { success: true };
       } else {
@@ -112,6 +110,29 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('❌ Erreur réseau lors de la connexion:', error);
       return { success: false, error: 'Erreur de connexion au serveur' };
+    }
+  };
+
+  // NOUVELLE FONCTION : Mise à jour des données utilisateur
+  const updateUser = (updatedData) => {
+    if (!user) return;
+
+    try {
+      const updatedUser = { ...user, ...updatedData };
+      setUser(updatedUser);
+      
+      if (typeof window !== 'undefined') {
+        // Déterminer quel type de stockage utiliser
+        const useLocalStorage = localStorage.getItem('user') !== null;
+        const storage = useLocalStorage ? localStorage : sessionStorage;
+        
+        // Mettre à jour les données stockées
+        storage.setItem('user', JSON.stringify(updatedUser));
+        
+        console.log('✅ Données utilisateur mises à jour dans le contexte');
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour des données utilisateur:', error);
     }
   };
 
@@ -130,18 +151,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = () => {
-    // Maintenant tous les utilisateurs connectés sont des administrateurs
     return isAuthenticated();
   };
 
-  // Fonction pour obtenir le token actuel
   const getToken = () => {
     if (user?.token) {
       return user.token;
     }
     
     if (typeof window !== 'undefined') {
-      // Vérifier d'abord localStorage puis sessionStorage
       return localStorage.getItem('token') || sessionStorage.getItem('token');
     }
     
@@ -153,6 +171,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
+    updateUser, 
     isAuthenticated,
     hasRole,
     isAdmin,

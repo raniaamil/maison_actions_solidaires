@@ -356,7 +356,7 @@ export default function CreateUserPage() {
                   <button
                     type="button"
                     onClick={handleGeneratePassword}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
+                    className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 cursor-pointer"
                     disabled={isCreating}
                   >
                     Générer
@@ -388,7 +388,7 @@ export default function CreateUserPage() {
               <div className="flex justify-between items-center pt-6 border-t px-8 pb-8">
                 <button
                   type="button"
-                  className="px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
+                  className="px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
                   onClick={handleBackToList}
                   disabled={isCreating}
                 >
@@ -464,7 +464,7 @@ export default function CreateUserPage() {
                         handleCloseSuccess();
                         handleBackToList();
                       }}
-                      className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
+                      className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
                     >
                       Retour à la liste
                     </button>

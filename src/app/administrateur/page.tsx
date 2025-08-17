@@ -256,15 +256,189 @@ const EspaceAdministrateurPage = () => {
         {/* Contenu des onglets */}
         <div className="bg-white rounded-lg shadow-sm">
           <div className="p-8">
-            {/* Onglet Informations */}
-            {activeTab === 'informations' && isAdmin() && (
+
+            {/* Onglet Informations - Maintenant visible pour TOUS les utilisateurs */}
+            {activeTab === 'informations' && (
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900 mb-2">Informations personnelles</h2>
                 <p className="text-gray-600 mb-8">
                   Modifiez vos informations de profil et vos paramètres de sécurité
                 </p>
-                <div className="bg-gray-100 p-8 rounded-lg">
-                  <p className="text-gray-600">Fonctionnalité en cours de développement...</p>
+
+                {/* Section Informations générales */}
+                <div className="mb-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <User className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">Informations générales</h3>
+                  </div>
+
+                  {/* Section Avatar */}
+                  <div className="flex items-start gap-6 mb-8 p-6 bg-gray-50 rounded-lg">
+                    <div className="flex flex-col items-center">
+                      <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-md mb-4 flex items-center justify-center overflow-hidden">
+                        {user?.photo ? (
+                          <img 
+                            src={user.photo} 
+                            alt="Avatar" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-8 h-8 text-gray-400" />
+                        )}
+                      </div>
+                      <span className="text-sm text-gray-600">Photo de profil</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex flex-col">
+                        <label className="text-sm font-medium text-gray-700 mb-2">URL de la photo</label>
+                        <input
+                          type="url"
+                          defaultValue={user?.photo || ''}
+                          placeholder="https://exemple.com/photo.jpg"
+                          className="px-3 py-3 border border-gray-300 rounded-md text-base bg-white transition-all duration-200 focus:outline-none focus:border-blue-600 focus:ring-3 focus:ring-blue-100"
+                        />
+                        <p className="text-sm text-gray-600 mt-1">
+                          Vous pouvez utiliser une URL d'image existante ou télécharger une nouvelle photo.
+                        </p>
+                      </div>
+                      <button className="mt-3 flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Télécharger une image
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Prénom</label>
+                      <input
+                        type="text"
+                        defaultValue={user?.prenom || ''}
+                        className="w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nom</label>
+                      <input
+                        type="text"
+                        defaultValue={user?.nom || ''}
+                        className="w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        defaultValue={user?.email || ''}
+                        className="w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        Téléphone
+                      </label>
+                      <input
+                        type="tel"
+                        placeholder="+33 6 12 34 56 78"
+                        className="w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Section Biographie */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Biographie</label>
+                    <textarea
+                      defaultValue={user?.bio || ''}
+                      rows={4}
+                      placeholder="Parlez-nous un peu de vous, votre rôle dans l'association, vos expériences..."
+                      className="w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 resize-vertical"
+                    />
+                    <p className="text-sm text-gray-600 mt-1">
+                      Cette biographie sera visible dans vos articles.
+                    </p>
+                  </div>
+
+                  <button className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 cursor-pointer">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    Sauvegarder le profil
+                  </button>
+                </div>
+
+                {/* Section Sécurité */}
+                <div className="border-t pt-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <h3 className="text-xl font-semibold text-gray-900">Sécurité</h3>
+                  </div>
+                  <p className="text-gray-600 mb-6">Modifiez votre mot de passe pour sécuriser votre compte</p>
+
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Mot de passe actuel</label>
+                      <div className="relative">
+                        <input
+                          type="password"
+                          className="w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
+                        />
+                        <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nouveau mot de passe</label>
+                        <div className="relative">
+                          <input
+                            type="password"
+                            className="w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
+                          />
+                          <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Confirmer le mot de passe</label>
+                        <input
+                          type="password"
+                          className="w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 cursor-pointer">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Changer le mot de passe
+                  </button>
                 </div>
               </div>
             )}

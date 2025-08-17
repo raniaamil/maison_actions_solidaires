@@ -172,7 +172,7 @@ export default function CreateUserPage() {
           <div className="mb-8">
             <div className="flex items-center gap-4 mb-4">
               <button
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 cursor-pointer"
                 onClick={handleBackToList}
                 type="button"
               >
@@ -400,7 +400,7 @@ export default function CreateUserPage() {
                   onClick={handleCreateUser}
                   disabled={!isFormValid || isCreating}
                   className={`px-8 py-3 rounded-md font-medium transition-all duration-200 ${
-                    isFormValid && !isCreating ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    isFormValid && !isCreating ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
                   {isCreating ? (

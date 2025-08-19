@@ -119,6 +119,7 @@
 .contactForm label {
     font-weight: bold;
     font-size: 0.8em;
+    margin-bottom: 5px;
 }
 
 .contactForm input, 
@@ -127,6 +128,27 @@
     padding: 10px;
     border-radius: 5px;
     border: 1px solid #ccc;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.contactForm input:focus,
+.contactForm textarea:focus {
+    outline: none;
+    border-color: #838C58;
+    box-shadow: 0 0 0 2px rgba(131, 140, 88, 0.2);
+}
+
+/* États d'erreur */
+.contactForm input.error,
+.contactForm textarea.error {
+    border-color: #dc2626;
+    background-color: #fef2f2;
+}
+
+.contactForm input.error:focus,
+.contactForm textarea.error:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
 }
 
 .contactForm textarea {
@@ -142,7 +164,7 @@
 
 .captcha {
     background-color: #F5F5F5;
-    height: 90px;
+    min-height: 90px;
     padding: 10px;
     border-radius: 5px;
     border: 1px solid #ccc;
@@ -152,6 +174,7 @@
     justify-content: center;
     gap: 10px;
     margin-top: 10px;
+    flex-wrap: wrap;
 }
 
 .checkbox {
@@ -163,6 +186,17 @@
     margin-right: 10px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
     cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.checkbox:checked {
+    background-color: #838C58;
+    border-color: #838C58;
+}
+
+.checkbox:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .checkboxText {
@@ -188,11 +222,84 @@
     margin-top: 15px;
     display: flex;
     justify-content: flex-start;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
+    min-width: 150px;
+    align-items: center;
+    justify-content: center;
 }
 
-.submitButton:hover {
+.submitButton:hover:not(:disabled) {
     background-color: #767E4F;
+    transform: translateY(-1px);
+}
+
+.submitButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.submitButton:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Messages de statut */
+.statusMessage {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.statusMessage.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.statusMessage.error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+/* Messages d'erreur inline */
+.errorMessage {
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin-top: 4px;
+    display: block;
+    font-weight: 500;
+}
+
+/* Animation pour les messages */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.statusMessage {
+    animation: slideDown 0.3s ease-out;
+}
+
+/* Loading state pour le formulaire */
+.contactForm.loading {
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+.contactForm input:disabled,
+.contactForm textarea:disabled,
+.contactForm .checkbox:disabled {
+    background-color: #f5f5f5;
+    color: #999;
 }
 
 /* Responsive design */
@@ -209,5 +316,41 @@
     
     .socialIcons {
         justify-content: flex-start;
+    }
+
+    .captcha {
+        margin-right: 0;
+        flex-direction: column;
+        text-align: center;
+        min-height: auto;
+        padding: 15px;
+    }
+
+    .captcha img {
+        width: 20%;
+        margin-top: 10px;
+    }
+
+    .submitButton {
+        width: 100%;
+        margin-top: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .contactContainer {
+        padding: 10px;
+    }
+
+    .contactForm {
+        padding: 15px;
+    }
+
+    .captcha img {
+        width: 25%;
+    }
+
+    .mainTitle {
+        font-size: 1.8em;
     }
 }

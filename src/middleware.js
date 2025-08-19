@@ -11,7 +11,8 @@ export function middleware(request) {
   const publicRoutes = [
     '/api/test-db',
     '/api/auth/login',
-    '/api/register' // Route d'inscription alternative
+    '/api/register',
+    '/api/contact' // AJOUT: Route contact publique
   ];
 
   // Permettre toutes les routes publiques
@@ -26,7 +27,7 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  // NOUVEAU : Permettre POST /api/users pour l'inscription (création de compte)
+  // Permettre POST /api/users pour l'inscription (création de compte)
   if (pathname === '/api/users' && method === 'POST') {
     console.log('✅ Inscription utilisateur autorisée sans token');
     return NextResponse.next();

@@ -14,18 +14,110 @@ const Contact = () => {
     notRobot: false
   });
 
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null); // 'success', 'error', null
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.firstname.trim()) {
+      newErrors.firstname = 'Le prénom est requis';
+    }
+
+    if (!formData.surname.trim()) {
+      newErrors.surname = 'Le nom est requis';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'L\'email est requis';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'L\'adresse e-mail n\'est pas valide';
+    }
+
+    if (!formData.subject.trim()) {
+      newErrors.subject = 'Le sujet est requis';
+    }
+
+    if (!formData.message.trim()) {
+      newErrors.message = 'Le message est requis';
+    }
+
+    if (!formData.notRobot) {
+      newErrors.notRobot = 'Veuillez confirmer que vous n\'êtes pas un robot';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Traitement du formulaire ici
-    console.log('Form submitted:', formData);
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+
+    try {
+      console.log('📤 Envoi du formulaire de contact...');
+      
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        console.log('✅ Message envoyé avec succès');
+        setSubmitStatus('success');
+        
+        // Réinitialiser le formulaire
+        setFormData({
+          firstname: '',
+          surname: '',
+          email: '',
+          subject: '',
+          message: '',
+          notRobot: false
+        });
+        setErrors({});
+      } else {
+        console.error('❌ Erreur lors de l\'envoi:', data);
+        setSubmitStatus('error');
+        
+        if (data.errors) {
+          setErrors(data.errors);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erreur réseau:', error);
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -64,16 +156,39 @@ const Contact = () => {
             <a href="#" className={styles.socialIcon}>
               <FaFacebookF size={24} color="#838C58"/>
             </a>
-            {/* <a href="#" className={styles.socialIcon}>
-              <FaTwitter size={24} />
-            </a>
-            <a href="#" className={styles.socialIcon}>
-              <FaInstagram size={24} />
-            </a> */}
           </div>
         </div>
 
         <div className={styles.contactForm}>
+          {/* Messages de statut */}
+          {submitStatus === 'success' && (
+            <div style={{
+              backgroundColor: '#d4edda',
+              border: '1px solid #c3e6cb',
+              color: '#155724',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              textAlign: 'center'
+            }}>
+              ✅ Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.
+            </div>
+          )}
+
+          {submitStatus === 'error' && (
+            <div style={{
+              backgroundColor: '#f8d7da',
+              border: '1px solid #f5c6cb',
+              color: '#721c24',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              textAlign: 'center'
+            }}>
+              ❌ Une erreur est survenue lors de l'envoi de votre message. Veuillez réessayer.
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             <label htmlFor="firstname">Prénom</label>
             <input
@@ -83,8 +198,15 @@ const Contact = () => {
               placeholder="Votre prénom"
               value={formData.firstname}
               onChange={handleInputChange}
+              className={errors.firstname ? 'error' : ''}
+              disabled={isSubmitting}
               required
             />
+            {errors.firstname && (
+              <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px', display: 'block' }}>
+                {errors.firstname}
+              </span>
+            )}
 
             <label htmlFor="surname">Nom</label>
             <input
@@ -94,8 +216,15 @@ const Contact = () => {
               placeholder="Votre nom"
               value={formData.surname}
               onChange={handleInputChange}
+              className={errors.surname ? 'error' : ''}
+              disabled={isSubmitting}
               required
             />
+            {errors.surname && (
+              <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px', display: 'block' }}>
+                {errors.surname}
+              </span>
+            )}
 
             <label htmlFor="email">Email</label>
             <input
@@ -105,8 +234,15 @@ const Contact = () => {
               placeholder="Votre adresse email"
               value={formData.email}
               onChange={handleInputChange}
+              className={errors.email ? 'error' : ''}
+              disabled={isSubmitting}
               required
             />
+            {errors.email && (
+              <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px', display: 'block' }}>
+                {errors.email}
+              </span>
+            )}
 
             <label htmlFor="subject">Sujet</label>
             <input
@@ -116,8 +252,15 @@ const Contact = () => {
               placeholder="Votre sujet"
               value={formData.subject}
               onChange={handleInputChange}
+              className={errors.subject ? 'error' : ''}
+              disabled={isSubmitting}
               required
             />
+            {errors.subject && (
+              <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px', display: 'block' }}>
+                {errors.subject}
+              </span>
+            )}
 
             <label htmlFor="message">Laissez-nous un message</label>
             <textarea
@@ -126,8 +269,15 @@ const Contact = () => {
               placeholder="Écrivez votre message ici..."
               value={formData.message}
               onChange={handleInputChange}
+              className={errors.message ? 'error' : ''}
+              disabled={isSubmitting}
               required
             />
+            {errors.message && (
+              <span style={{ color: '#dc2626', fontSize: '0.875rem', marginTop: '4px', display: 'block' }}>
+                {errors.message}
+              </span>
+            )}
 
             <div className={styles.captcha}>
               <input
@@ -137,6 +287,7 @@ const Contact = () => {
                 name="notRobot"
                 checked={formData.notRobot}
                 onChange={handleInputChange}
+                disabled={isSubmitting}
                 required
               />
               <label htmlFor="notRobot" className={styles.checkboxText}>
@@ -146,10 +297,30 @@ const Contact = () => {
                 src="/images/contact/recaptcha_sans_fond-removebg-preview.png" 
                 alt="image recaptcha" 
               />
+              {errors.notRobot && (
+                <span style={{ 
+                  color: '#dc2626', 
+                  fontSize: '0.875rem', 
+                  marginTop: '4px', 
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'center'
+                }}>
+                  {errors.notRobot}
+                </span>
+              )}
             </div>
 
-            <button type="submit" className={styles.submitButton}>
-              Envoyer le message
+            <button 
+              type="submit" 
+              className={styles.submitButton}
+              disabled={isSubmitting}
+              style={{
+                opacity: isSubmitting ? 0.6 : 1,
+                cursor: isSubmitting ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {isSubmitting ? 'Envoi en cours...' : 'Envoyer le message'}
             </button>
           </form>
         </div>

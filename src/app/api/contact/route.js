@@ -128,9 +128,9 @@ export async function POST(request) {
       const mailOptions = {
         from: `"Site Web MAACSO" <${process.env.SMTP_USER}>`,
         to: process.env.CONTACT_EMAIL,
-        subject: `🆕 Nouveau message de contact: ${subject.trim()}`,
+        subject: ` Nouveau message de contact: ${subject.trim()}`,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto;">
             <h2 style="color: #838C58; border-bottom: 2px solid #838C58; padding-bottom: 10px;">
               Nouveau message de contact
             </h2>
@@ -151,7 +151,7 @@ export async function POST(request) {
             <div style="font-size: 12px; color: #666; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
               <p>ID du message : ${result.insertId}</p>
               <p>IP : ${ipAddress}</p>
-              <p>Ce message a été envoyé via le formulaire de contact du site web de MAACSO.</p>
+              <p>Ce message a été envoyé via le formulaire de contact du site web de Maison d\'Actions Solidaires.</p>
             </div>
           </div>
         `
@@ -164,9 +164,9 @@ export async function POST(request) {
       const confirmationOptions = {
         from: `"Maison d'Actions Solidaires" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: '✅ Confirmation de réception de votre message - MAACSO',
+        subject: '✅ Confirmation de réception de votre message - Maison d\'Actions Solidaires',
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto;">
             <h2 style="color: #838C58; border-bottom: 2px solid #838C58; padding-bottom: 10px;">
               Merci pour votre message !
             </h2>
@@ -190,12 +190,22 @@ export async function POST(request) {
             
             <div style="font-size: 14px; color: #666;">
               <p><strong>Maison d'Actions Solidaires</strong></p>
-              <p>📧 Email : maisondactionsolidaire@gmail.com</p>
-              <p>📞 Téléphone : 07 82 16 90 08</p>
-              <p>📍 Adresse : 12 rue de la Corne de Bœuf, 94500 Champigny-sur-Marne</p>
+              <div style="display: flex; align-items: flex-start; margin-top: 15px;">
+                <img src="cid:logo" alt="Logo MAACSO" style="width: 120px; height: auto; margin-right: 20px; flex-shrink: 0;">
+                <div style="flex: 1; padding-top: 10px;">
+                  <p style="margin: 6px 0; line-height: 1.4;"> Email : maisondactionsolidaire@gmail.com</p>
+                  <p style="margin: 6px 0; line-height: 1.4;"> Téléphone : 07 82 16 90 08</p>
+                  <p style="margin: 6px 0; line-height: 1.4;"> Adresse : 12 rue de la Corne de Bœuf, 94500 Champigny-sur-Marne</p>
+                </div>
+              </div>
             </div>
           </div>
-        `
+        `,
+        attachments: [{
+          filename: 'logo_mas.png',
+          path: './public/images/navbar/logo_mas.png',
+          cid: 'logo'
+        }]
       };
 
       await transporter.sendMail(confirmationOptions);

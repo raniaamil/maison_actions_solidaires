@@ -20,6 +20,112 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* Section des filtres */
+.filtersSection {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(139, 115, 85, 0.1);
+}
+
+.filtersContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.filtersLeft {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: end;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.filterLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.filterSelect {
+  padding: 10px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  background-color: #f9fafb;
+  color: #374151;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 10px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #8b7355;
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.1);
+}
+
+.filterSelect:hover {
+  border-color: #d1d5db;
+  background-color: white;
+}
+
+.resetButton {
+  background: linear-gradient(135deg, #8b7355 0%, #a4845e 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  height: fit-content;
+  box-shadow: 0 2px 8px rgba(139, 115, 85, 0.2);
+}
+
+.resetButton:hover {
+  background: linear-gradient(135deg, #6d5a42 0%, #826b4a 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 115, 85, 0.3);
+}
+
+.resetButton:active {
+  transform: translateY(0);
+}
+
+.resultsCounter {
+  font-size: 0.9rem;
+  color: #6b7280;
+  font-weight: 500;
+  padding: 8px 12px;
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  white-space: nowrap;
+  height: fit-content;
+  align-self: end;
+}
+
 .articlesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
@@ -27,6 +133,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 0;
+  transition: all 0.3s ease;
 }
 
 .articleCard {
@@ -35,6 +142,9 @@
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  max-width: 600px;
+  width: 100%;
+  justify-self: start;
 }
 
 .articleCard:hover {
@@ -209,11 +319,53 @@
     font-size: 2rem;
     margin-bottom: 2rem;
   }
+
+  .filtersSection {
+    padding: 20px;
+    margin-bottom: 1.5rem;
+  }
+
+  .filtersContainer {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .filtersLeft {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .filterGroup {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .filterSelect {
+    padding: 12px 14px;
+    padding-right: 40px;
+  }
+
+  .resetButton {
+    width: 100%;
+    padding: 12px 20px;
+  }
+
+  .resultsCounter {
+    text-align: center;
+    align-self: stretch;
+    width: 100%;
+  }
   
   .articlesGrid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
     max-width: 500px;
+  }
+
+  .articleCard {
+    max-width: none;
   }
   
   .cardContent {
@@ -228,6 +380,27 @@
 }
 
 @media (max-width: 480px) {
+  .filtersSection {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .filterSelect {
+    font-size: 0.9rem;
+    padding: 10px 12px;
+    padding-right: 36px;
+  }
+
+  .resetButton {
+    font-size: 0.85rem;
+    padding: 10px 16px;
+  }
+
+  .resultsCounter {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+
   .articleCard {
     border-radius: 8px;
   }

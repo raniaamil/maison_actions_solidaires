@@ -8,33 +8,57 @@ interface Article {
   id: number;
   type: 'événement' | 'témoignage' | 'numérique' | 'administratif' | 'soutien' | 'bien-être' | 'junior';
   titre: string;
-  title?: string; // Alias pour compatibilité
+  title?: string;
   description: string;
   date_creation?: string;
-  date?: string; // Alias pour compatibilité
+  date?: string;
   date_modification?: string;
-  updatedDate?: string; // Alias pour compatibilité
+  updatedDate?: string;
   auteur: {
     prenom: string;
     nom: string;
   };
-  author?: { // Alias pour compatibilité
+  author?: {
     firstName: string;
     lastName: string;
   };
   image: string;
   lieu?: string;
-  location?: string; // Alias pour compatibilité
+  location?: string;
   places_disponibles?: number;
-  places?: number; // Alias pour compatibilité
+  places?: number;
   inscription_requise?: boolean;
-  hasRegistration?: boolean; // Alias pour compatibilité
+  hasRegistration?: boolean;
 }
 
 const Page: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
+  const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // États des filtres
+  const [selectedCategory, setSelectedCategory] = useState<string>('toutes');
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>('toutes');
+
+  // Options des filtres
+  const categories = [
+    { value: 'toutes', label: 'Toutes les catégories' },
+    { value: 'numérique', label: 'Numérique' },
+    { value: 'administratif', label: 'Administratif' },
+    { value: 'soutien', label: 'Soutien' },
+    { value: 'bien-être', label: 'Bien-être' },
+    { value: 'junior', label: 'Junior' },
+    { value: 'événement', label: 'Événement' },
+    { value: 'témoignage', label: 'Témoignage' }
+  ];
+
+  const dateFilters = [
+    { value: 'toutes', label: 'Toutes les dates' },
+    { value: 'semaine', label: 'Cette semaine' },
+    { value: 'mois', label: 'Ce mois' },
+    { value: 'trimestre', label: 'Ce trimestre' }
+  ];
 
   // Charger les actualités depuis l'API
   useEffect(() => {
@@ -43,16 +67,15 @@ const Page: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        // Appel API pour récupérer uniquement les actualités publiées
         const response = await fetch('/api/actualites?statut=Publié', {
-          cache: 'no-store' // Forcer le rechargement
+          cache: 'no-store'
         });
         
         if (response.ok) {
           const data = await response.json();
           setArticles(data);
+          setFilteredArticles(data);
         } else {
-          const errorText = await response.text();
           setError('Erreur lors du chargement des actualités');
         }
       } catch (error) {
@@ -64,6 +87,41 @@ const Page: React.FC = () => {
 
     loadActualites();
   }, []);
+
+  // Fonction pour filtrer les articles
+  useEffect(() => {
+    let filtered = [...articles];
+
+    // Filtre par catégorie
+    if (selectedCategory !== 'toutes') {
+      filtered = filtered.filter(article => article.type === selectedCategory);
+    }
+
+    // Filtre par date
+    if (selectedDateFilter !== 'toutes') {
+      const now = new Date();
+      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfQuarter = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+
+      filtered = filtered.filter(article => {
+        const articleDate = new Date(article.date_creation || article.date || '');
+        
+        switch (selectedDateFilter) {
+          case 'semaine':
+            return articleDate >= startOfWeek;
+          case 'mois':
+            return articleDate >= startOfMonth;
+          case 'trimestre':
+            return articleDate >= startOfQuarter;
+          default:
+            return true;
+        }
+      });
+    }
+
+    setFilteredArticles(filtered);
+  }, [articles, selectedCategory, selectedDateFilter]);
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -91,12 +149,17 @@ const Page: React.FC = () => {
     try {
       return new Date(dateString).toLocaleDateString('fr-FR');
     } catch {
-      return dateString; // Retourner la chaîne originale si le parsing échoue
+      return dateString;
     }
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     e.currentTarget.src = '/images/actualites/default.jpg';
+  };
+
+  const resetFilters = () => {
+    setSelectedCategory('toutes');
+    setSelectedDateFilter('toutes');
   };
 
   if (loading) {
@@ -159,7 +222,56 @@ const Page: React.FC = () => {
       <div className={styles.contentWrapper}>
         <h1 className={styles.title}>Nos Actualités</h1>
         
-        {articles.length === 0 ? (
+{/* Section des filtres */}
+        <div className={styles.filtersSection}>
+          <div className={styles.filtersContainer}>
+            <div className={styles.filtersLeft}>
+              <div className={styles.filterGroup}>
+                <label className={styles.filterLabel}>Catégorie :</label>
+                <select 
+                  value={selectedCategory} 
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className={styles.filterSelect}
+                >
+                  {categories.map(category => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.filterGroup}>
+                <label className={styles.filterLabel}>Période :</label>
+                <select 
+                  value={selectedDateFilter} 
+                  onChange={(e) => setSelectedDateFilter(e.target.value)}
+                  className={styles.filterSelect}
+                >
+                  {dateFilters.map(filter => (
+                    <option key={filter.value} value={filter.value}>
+                      {filter.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button 
+                onClick={resetFilters}
+                className={styles.resetButton}
+              >
+                Réinitialiser
+              </button>
+            </div>
+
+            {/* Compteur de résultats */}
+            <div className={styles.resultsCounter}>
+              {filteredArticles.length} actualité{filteredArticles.length !== 1 ? 's' : ''} trouvée{filteredArticles.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+        </div>
+        
+        {filteredArticles.length === 0 ? (
           <div style={{ 
             display: 'flex', 
             flexDirection: 'column', 
@@ -169,15 +281,15 @@ const Page: React.FC = () => {
             textAlign: 'center' 
           }}>
             <p style={{ color: '#6b7280', fontSize: '1.125rem' }}>
-              Aucune actualité publiée pour le moment.
+              Aucune actualité ne correspond à vos critères.
             </p>
             <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-              Revenez bientôt pour découvrir nos dernières nouvelles !
+              Essayez de modifier vos filtres ou de les réinitialiser.
             </p>
           </div>
         ) : (
           <div className={styles.articlesGrid}>
-            {articles.map((article) => (
+            {filteredArticles.map((article) => (
               <article key={article.id} className={styles.articleCard}>
                 <Link href={`/actualites/${article.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                   <div className={styles.imageContainer}>
@@ -243,7 +355,7 @@ const Page: React.FC = () => {
                   </div>
                 </Link>
 
-                {/* Bouton S'inscrire en dehors du Link pour éviter les liens imbriqués */}
+                {/* Bouton S'inscrire */}
                 {(article.inscription_requise || article.hasRegistration) && (
                   <div style={{ padding: '0 28px 28px 28px' }}>
                     <Link 

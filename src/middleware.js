@@ -1,4 +1,4 @@
-// src/middleware.js - VERSION CORRIGÉE
+// src/middleware.js - VERSION MISE À JOUR
 import { NextResponse } from 'next/server';
 
 export function middleware(request) {
@@ -11,8 +11,11 @@ export function middleware(request) {
   const publicRoutes = [
     '/api/test-db',
     '/api/auth/login',
+    '/api/auth/forgot-password',
+    '/api/auth/verify-reset-token',
+    '/api/auth/reset-password',
     '/api/register',
-    '/api/contact' // AJOUT: Route contact publique
+    '/api/contact'
   ];
 
   // Permettre toutes les routes publiques

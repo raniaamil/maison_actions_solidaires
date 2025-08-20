@@ -191,7 +191,7 @@
 .typeTemoignage { background-color: #795548; }     
 
 .cardContent {
-  padding: 28px;
+  padding: 25px;
 }
 
 .dateContainer {
@@ -259,7 +259,6 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 20px;
   padding: 12px 0;
   border-top: 1px solid #e5e7eb;
 }

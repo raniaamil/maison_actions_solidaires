@@ -354,21 +354,6 @@ const Page: React.FC = () => {
                     )}
                   </div>
                 </Link>
-
-                {/* Bouton S'inscrire */}
-                {(article.inscription_requise || article.hasRegistration) && (
-                  <div style={{ padding: '0 28px 28px 28px' }}>
-                    <Link 
-                      href="/contact" 
-                      className={styles.registerButton}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                    >
-                      S'inscrire
-                    </Link>
-                  </div>
-                )}
               </article>
             ))}
           </div>

@@ -123,10 +123,10 @@ const Page: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      {/* Breadcrumb */}
+      {/* Breadcrumb redesigné */}
       <nav className={styles.breadcrumb}>
         <Link href="/actualites" className={styles.breadcrumbLink}>
-          ← Retour aux actualités
+          Retour aux actualités
         </Link>
       </nav>
 
@@ -221,21 +221,13 @@ const Page: React.FC = () => {
           />
         </div>
 
-        {/* Section d'inscription pour les événements */}
+        {/* Section d'inscription pour les événements - Redesignée */}
         {article.inscription_requise && (
           <div className={styles.registrationSection}>
-            <h3>Inscription à l'événement</h3>
-            <button 
-              className={styles.registerButton}
-              onClick={() => {
-                alert('Fonctionnalité d\'inscription en cours de développement. Veuillez nous contacter par téléphone ou email.');
-              }}
-            >
+            <h3> Inscription à l'événement</h3>
+            <Link href="/contact" className={styles.registerButton}>
               S'inscrire maintenant
-            </button>
-            <p className={styles.registrationNote}>
-              Vous pouvez également nous contacter directement pour vous inscrire.
-            </p>
+            </Link>
           </div>
         )}
       </article>

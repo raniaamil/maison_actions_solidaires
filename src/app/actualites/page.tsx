@@ -240,21 +240,23 @@ const Page: React.FC = () => {
                         )}
                       </div>
                     )}
-
-                    {(article.inscription_requise || article.hasRegistration) && (
-                      <button 
-                        className={styles.registerButton} 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          // Logique d'inscription à implémenter
-                          alert('Fonctionnalité d\'inscription en cours de développement');
-                        }}
-                      >
-                        S'inscrire
-                      </button>
-                    )}
                   </div>
                 </Link>
+
+                {/* Bouton S'inscrire en dehors du Link pour éviter les liens imbriqués */}
+                {(article.inscription_requise || article.hasRegistration) && (
+                  <div style={{ padding: '0 28px 28px 28px' }}>
+                    <Link 
+                      href="/contact" 
+                      className={styles.registerButton}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                    >
+                      S'inscrire
+                    </Link>
+                  </div>
+                )}
               </article>
             ))}
           </div>

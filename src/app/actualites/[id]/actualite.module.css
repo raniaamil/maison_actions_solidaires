@@ -1,34 +1,53 @@
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  background-color: #f8f9fa;
+  background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 50%, #f8fdf8 100%);
   min-height: 100vh;
+  padding: 40px 0;
 }
 
-/* Breadcrumb */
+/* Breadcrumb amélioré */
 .breadcrumb {
-  margin-bottom: 2rem;
+  max-width: 1200px;
+  margin: 0 auto 2rem auto;
+  padding: 0 20px;
 }
 
 .breadcrumbLink {
-  color: #8b7355;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #8b7355 0%, #a4845e 100%);
+  padding: 12px 24px;
   text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(139, 115, 85, 0.2);
 }
 
 .breadcrumbLink:hover {
-  color: #6d5a42;
-  text-decoration: underline;
+  background: linear-gradient(135deg, #6d5a42 0%, #826b4a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 115, 85, 0.3);
+  text-decoration: none;
+  color: #ffffff;
+}
+
+.breadcrumbLink::before {
+  content: '←';
+  font-size: 1.2rem;
+  font-weight: bold;
 }
 
 /* Article principal */
 .article {
   background: white;
-  border-radius: 12px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 /* Header de l'article */
@@ -136,12 +155,14 @@
   line-height: 1.4;
 }
 
-/* Informations pratiques */
+/* Informations pratiques améliorées */
 .eventInfo {
-  background-color: #f3f4f6;
+  background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 100%);
   padding: 1.5rem;
-  border-radius: 8px;
+  border-radius: 15px;
   border-left: 4px solid #8b7355;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 15px rgba(139, 115, 85, 0.1);
 }
 
 .infoItem {
@@ -173,9 +194,10 @@
   line-height: 1.6;
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background-color: #f9fafb;
+  background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 100%);
   border-left: 4px solid #8b7355;
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 15px 15px 0;
+  box-shadow: 0 4px 15px rgba(139, 115, 85, 0.1);
 }
 
 .mainContent {
@@ -226,11 +248,11 @@
   color: #6b7280;
 }
 
-/* Tags */
+/* Tags améliorés */
 .tagsContainer {
   padding: 1.5rem 2rem;
   border-top: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  background: linear-gradient(135deg, #f8fdf8 0%, #f0f9f0 100%);
 }
 
 .tagsLabel {
@@ -255,48 +277,105 @@
   font-weight: 500;
 }
 
-/* Section d'inscription */
+/* Section d'inscription redesignée */
 .registrationSection {
-  padding: 2rem;
-  background-color: #f3f4f6;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-top: 1px solid #e5e7eb;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.registrationSection::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #8b7355, #6d5a42, #8b7355);
+}
+
+.registrationSection h3 {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .registerButton {
-  background-color: #8b7355;
+  display: inline-block;
+  background: linear-gradient(135deg, #8b7355 0%, #a4845e 100%);
   color: white;
   border: none;
-  padding: 16px 32px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 1rem;
+  padding: 20px 40px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 6px 20px rgba(139, 115, 85, 0.3);
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  text-align: center;
+}
+
+.registerButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.registerButton:hover::before {
+  left: 100%;
 }
 
 .registerButton:hover {
-  background-color: #6d5a42;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 115, 85, 0.3);
+  background: linear-gradient(135deg, #6d5a42 0%, #826b4a 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(139, 115, 85, 0.4);
+  text-decoration: none;
+  color: white;
 }
 
 .registerButton:active {
-  transform: translateY(0);
+  transform: translateY(-1px);
 }
 
 .registrationNote {
   color: #6b7280;
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   margin: 0;
   font-style: italic;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 12px 20px;
+  border-radius: 15px;
+  display: inline-block;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .container {
-    padding: 16px;
+    padding: 20px 0;
+  }
+  
+  .breadcrumb {
+    padding: 0 16px;
+  }
+  
+  .breadcrumbLink {
+    padding: 10px 20px;
+    font-size: 0.9rem;
   }
   
   .articleTitle {
@@ -355,18 +434,22 @@
   }
   
   .registrationSection {
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
+  }
+  
+  .registrationSection h3 {
+    font-size: 1.5rem;
   }
   
   .registerButton {
-    padding: 14px 24px;
-    font-size: 0.95rem;
+    padding: 16px 32px;
+    font-size: 1rem;
   }
 }
 
 @media (max-width: 480px) {
   .container {
-    padding: 12px;
+    padding: 12px 0;
   }
   
   .articleTitle {

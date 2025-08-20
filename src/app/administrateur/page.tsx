@@ -1,5 +1,3 @@
-// Version finale mise à jour de src/app/administrateur/page.tsx
-// Utilisant la nouvelle fonction updateUser du contexte
 
 'use client';
 
@@ -9,6 +7,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import ProtectedRoute from '../../components/ProtectedRoute';
+import AdminActualitesFilters from '../../components/AdminActualitesFilters';
 
 type Tab = 'informations' | 'actualites' | 'utilisateurs';
 
@@ -24,6 +23,7 @@ const EspaceAdministrateurPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [deleteType, setDeleteType] = useState<'article' | 'user' | null>(null);
+  const [filteredArticles, setFilteredArticles] = useState([]);
 
   // États pour le profil utilisateur
   const [profileData, setProfileData] = useState({
@@ -762,16 +762,13 @@ const EspaceAdministrateurPage = () => {
                 </div>
               )}
 
-              {/* Onglet Actualités */}
+{/* Onglet Actualités */}
               {activeTab === 'actualites' && (
                 <div>
                   <div className="flex justify-between items-start mb-8">
                     <div>
-                      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Mes actualités</h2>
-                      <p className="text-gray-600 mb-2">Gérez vos articles et actualités</p>
-                      <p className="text-gray-600">
-                        Vous avez {articles.length} article{articles.length > 1 ? 's' : ''}
-                      </p>
+                      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Les actualités</h2>
+                      <p className="text-gray-600 mb-2">Gérez les articles et actualités</p>
                     </div>
                     <Link
                       href="/administrateur/actualites/create"
@@ -782,17 +779,25 @@ const EspaceAdministrateurPage = () => {
                     </Link>
                   </div>
 
+                  {/* Barre de filtres */}
+                  <AdminActualitesFilters
+                    articles={articles}
+                    onFilteredArticlesChange={setFilteredArticles}
+                    currentUser={user}
+                    loading={loading}
+                  />
+
                   {loading ? (
                     <div className="flex justify-center items-center py-12">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-6">
-                      {articles.length > 0 ? (
-                        articles.map((article: any) => (
+                      {filteredArticles.length > 0 ? (
+                        filteredArticles.map((article: any) => (
                           <div
                             key={article.id}
-                            className="bg-white border border-gray-300 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
+                            className="bg-white border border-green-500 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
                           >
                             <div className="flex justify-between items-start mb-4">
                               <h3 className="text-lg font-semibold text-gray-900 flex-1 mr-4">
@@ -840,17 +845,18 @@ const EspaceAdministrateurPage = () => {
                         ))
                       ) : (
                         <div className="flex flex-col items-center justify-center py-12 text-center text-gray-600">
-                          <p className="mb-6 text-lg">Aucune actualité trouvée.</p>
-                          <p className="text-sm text-gray-500 mb-4">
-                            Vos actualités apparaîtront ici une fois créées.
+                          <p className="mb-6 text-lg">
+                            {articles.length === 0 
+                              ? "Aucune actualité trouvée." 
+                              : "Aucune actualité ne correspond à vos critères."
+                            }
                           </p>
-                          <Link
-                            href="/administrateur/actualites/create"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors no-underline"
-                          >
-                            <Plus className="w-4 h-4" />
-                            Créer votre première actualité
-                          </Link>
+                          <p className="text-sm text-gray-500 mb-4">
+                            {articles.length === 0 
+                              ? "Vos actualités apparaîtront ici une fois créées."
+                              : "Modifiez vos filtres ou créez une nouvelle actualité."
+                            }
+                          </p>
                         </div>
                       )}
                     </div>

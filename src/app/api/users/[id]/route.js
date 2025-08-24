@@ -291,11 +291,7 @@ export async function DELETE(request, { params }) {
       }
     }
 
-    // Suppression logique : marquer comme inactif
-    await db.execute(
-      'UPDATE users SET actif = FALSE, date_modification = NOW() WHERE id = ?',
-      [userId]
-    );
+    await db.execute('DELETE FROM users WHERE id = ?', [userId]);
 
     return Response.json({
       message: 'Utilisateur supprimé avec succès'

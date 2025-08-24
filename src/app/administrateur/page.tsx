@@ -14,7 +14,7 @@ type Tab = 'informations' | 'actualites' | 'utilisateurs';
 const EspaceAdministrateurPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, logout, isAdmin, getToken, updateUser } = useAuth(); // Ajout d'updateUser
+  const { user, logout, isAdmin, getToken, updateUser, isAuthenticated } = useAuth();
 
   const [activeTab, setActiveTab] = useState<Tab>('informations');
   const [articles, setArticles] = useState([]);
@@ -274,22 +274,15 @@ const EspaceAdministrateurPage = () => {
 
   // Initialiser l'onglet selon les paramètres URL et les permissions
   useEffect(() => {
+    // Si pas connecté, rediriger vers login
+    if (!isAuthenticated()) {
+      router.replace('/login');
+      return;
+    }
+    
     const tab = (searchParams.get('tab') as Tab) || 'informations';
-    
-    if (!isAdmin() && (tab === 'utilisateurs' || tab === 'informations')) {
-      setActiveTab('actualites');
-      router.replace('/administrateur?tab=actualites');
-      return;
-    }
-    
-    if (!isAdmin() && tab === 'informations') {
-      setActiveTab('actualites');
-      router.replace('/administrateur?tab=actualites');
-      return;
-    }
-    
     setActiveTab(tab);
-  }, [searchParams, isAdmin, router]);
+  }, [searchParams, isAuthenticated, router]);
 
   // Charger les données selon l'onglet actif
   useEffect(() => {
@@ -319,14 +312,8 @@ const EspaceAdministrateurPage = () => {
       if (response.ok) {
         const data = await response.json();
         
-        let filteredArticles = data;
-        if (user?.role === 'Rédacteur') {
-          filteredArticles = data.filter((article: any) => 
-            (article.auteur?.id || article.auteur_id) === user.id
-          );
-        }
-        
-        setArticles(filteredArticles);
+        // Plus de filtrage par rôle - tous les utilisateurs voient toutes les actualités
+        setArticles(data);
       } else {
         const errorText = await response.text();
         console.error('❌ Erreur lors du chargement des actualités:', response.status, errorText);
@@ -457,10 +444,10 @@ const EspaceAdministrateurPage = () => {
           <div className="mb-8 flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Espace {isAdmin() ? 'Administrateur' : 'Rédacteur'}
+                Espace Administrateur
               </h1>
               <p className="text-gray-600">
-                Bienvenue, {user?.prenom} {user?.nom} ({user?.role})
+                Bienvenue, {user?.prenom} {user?.nom}
               </p>
             </div>
           </div>

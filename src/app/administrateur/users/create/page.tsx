@@ -14,7 +14,7 @@ export default function CreateUserPage() {
     email: '',
     photo: '',
     bio: '',
-    role: 'Rédacteur'
+    role: 'Administrateur'
   });
 
   const [tempPassword, setTempPassword] = useState('');
@@ -151,7 +151,7 @@ export default function CreateUserPage() {
       email: '',
       photo: '',
       bio: '',
-      role: 'Rédacteur'
+      role: 'Administrateur'
     });
     setTempPassword('');
     setPasswordCopied(false);
@@ -280,16 +280,13 @@ export default function CreateUserPage() {
                   </div>
                   <div className="flex flex-col">
                     <label className="text-sm font-medium text-gray-700 mb-2">Rôle</label>
-                    <select
+                    <input
+                      type="text"
                       name="role"
                       value={formData.role}
-                      onChange={handleInputChange}
-                      className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
-                      disabled={isCreating}
-                    >
-                      <option value="Rédacteur">Rédacteur</option>
-                      <option value="Administrateur">Administrateur</option>
-                    </select>
+                      readOnly
+                      className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-100 cursor-not-allowed"
+                    />
                   </div>
                 </div>
 

@@ -1,6 +1,3 @@
-// Modifications à apporter au fichier src/contexts/AuthContext.js
-// Ajout d'une fonction de mise à jour des données utilisateur
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -113,7 +110,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // NOUVELLE FONCTION : Mise à jour des données utilisateur
+  // Mise à jour des données utilisateur
   const updateUser = (updatedData) => {
     if (!user) return;
 
@@ -146,12 +143,14 @@ export const AuthProvider = ({ children }) => {
     return !!user && !!user.token;
   };
 
-  const hasRole = (role) => {
-    return user?.role === role;
-  };
-
+  // SIMPLIFIÉ : Plus de vérification de rôle - tous les utilisateurs connectés sont admins
   const isAdmin = () => {
     return isAuthenticated();
+  };
+
+  // SIMPLIFIÉ : Fonction hasRole toujours vraie pour les utilisateurs connectés
+  const hasRole = (role) => {
+    return isAuthenticated(); // Tous les utilisateurs connectés ont tous les rôles
   };
 
   const getToken = () => {

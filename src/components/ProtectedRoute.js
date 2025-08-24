@@ -20,15 +20,9 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
       return;
     }
 
-    // Maintenant que tous les utilisateurs sont administrateurs, 
-    // on simplifie la vérification des permissions
-    if (requiredRole && requiredRole === 'Administrateur' && !isAuth) {
-      console.log('❌ Accès administrateur requis');
-      router.push('/login');
-      return;
-    }
-
-    // Si toutes les vérifications passent, autoriser le rendu
+    // SIMPLIFIÉ : Plus de vérification de rôles
+    // Tous les utilisateurs connectés ont accès à tout
+    console.log('✅ Utilisateur authentifié, accès autorisé');
     setShouldRender(true);
   }, [loading, user, isAuthenticated, requiredRole, router]);
 

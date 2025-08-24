@@ -1,4 +1,4 @@
-// src/middleware.js - VERSION MISE À JOUR
+// src/middleware.js - VERSION SIMPLIFIÉE SANS RÔLES
 import { NextResponse } from 'next/server';
 
 export function middleware(request) {
@@ -39,7 +39,7 @@ export function middleware(request) {
   // Routes qui nécessitent une authentification pour certaines méthodes
   const protectedWriteRoutes = [
     { pattern: /^\/api\/actualites(?:\/.*)?$/, methods: ['POST', 'PUT', 'DELETE'] },
-    { pattern: /^\/api\/users\/.*$/, methods: ['GET', 'PUT', 'DELETE'] } // Seulement les routes avec ID
+    { pattern: /^\/api\/users\/.*$/, methods: ['GET', 'PUT', 'DELETE'] }
   ];
 
   // Vérifier si la route nécessite une authentification
@@ -67,10 +67,7 @@ export function middleware(request) {
   }
 
   try {
-    // Vérification basique du token (en production, utiliser jsonwebtoken)
-    const secret = process.env.JWT_SECRET || 'your-secret-key';
-    
-    // Décoder le token (version simplifiée)
+    // Vérification basique du token
     const parts = token.split('.');
     if (parts.length !== 3) {
       throw new Error('Token invalide');
@@ -85,15 +82,8 @@ export function middleware(request) {
       throw new Error('Token expiré');
     }
     
-    // Vérifier les permissions pour les routes utilisateurs avec ID
-    if (pathname.startsWith('/api/users/') && payload.role !== 'Administrateur') {
-      console.log('❌ Permissions insuffisantes pour la gestion des utilisateurs');
-      return NextResponse.json(
-        { error: 'Permissions insuffisantes' }, 
-        { status: 403 }
-      );
-    }
-    
+    // SIMPLIFIÉ : Plus de vérification de rôle
+    // Tous les utilisateurs connectés peuvent tout faire
     console.log('✅ Token valide, accès autorisé');
     return NextResponse.next();
   } catch (error) {

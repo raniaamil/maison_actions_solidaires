@@ -1,4 +1,4 @@
-// src/app/api/users/route.js - VERSION NEXT.JS 15 AVEC ÉCHAPPEMENTS MANUELS
+// src/app/api/users/route.js - VERSION SIMPLIFIÉE SANS RÔLES
 export const runtime = 'nodejs';
 import db from '../../../lib/db';
 import bcrypt from 'bcryptjs';
@@ -22,7 +22,6 @@ export async function GET(request) {
 
     const [rows] = await db.query(query);
 
-    // Transformer les données
     const users = rows.map(row => ({
       id: row.id,
       prenom: row.prenom,
@@ -30,7 +29,7 @@ export async function GET(request) {
       email: row.email,
       photo: row.photo || '/images/default-avatar.jpg',
       bio: row.bio || '',
-      role: row.role,
+      role: row.role, // Sera toujours 'Administrateur' maintenant
       date_inscription: row.date_inscription,
       date_modification: row.date_modification,
       actif: Boolean(row.actif)
@@ -49,7 +48,7 @@ export async function GET(request) {
   }
 }
 
-// POST - Créer un nouvel utilisateur avec échappements manuels
+// POST - Créer un nouvel utilisateur (toujours Administrateur maintenant)
 export async function POST(request) {
   try {
     console.log('🔄 Début de la création d\'utilisateur...');
@@ -64,11 +63,11 @@ export async function POST(request) {
       email, 
       password, 
       photo, 
-      bio,
-      role = 'Administrateur' // Valeur par défaut
+      bio
+      // Suppression du paramètre role - sera toujours 'Administrateur'
     } = body;
 
-    // Support pour les deux formats de noms (compatibilité)
+    // Support pour les deux formats de noms
     const finalFirstName = firstName || prenom;
     const finalLastName = lastName || nom;
 
@@ -88,7 +87,6 @@ export async function POST(request) {
     if (!email || !email.trim()) {
       errors.email = 'L\'email est requis';
     } else {
-      // Validation de l'email
       const emailRegex = /\S+@\S+\.\S+/;
       if (!emailRegex.test(email.trim())) {
         errors.email = 'L\'adresse e-mail n\'est pas valide';
@@ -109,10 +107,9 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Vérifier si l'utilisateur existe déjà avec échappement manuel
+    // Vérifier si l'utilisateur existe déjà
     console.log('🔍 Vérification utilisateur existant...');
     const checkEmailQuery = `SELECT id FROM users WHERE email = ${db.escape(email.toLowerCase().trim())}`;
-    console.log('📝 Requête vérification email:', checkEmailQuery);
     
     const [existingUsers] = await db.query(checkEmailQuery);
 
@@ -135,9 +132,10 @@ export async function POST(request) {
     const passwordEscaped = db.escape(hashedPassword);
     const photoEscaped = photo && photo.trim() !== '' ? db.escape(photo.trim()) : 'NULL';
     const bioEscaped = bio && bio.trim() !== '' ? db.escape(bio.trim()) : 'NULL';
-    const roleEscaped = db.escape(role);
+    // SIMPLIFIÉ : Tous les nouveaux utilisateurs sont Administrateurs
+    const roleEscaped = db.escape('Administrateur');
 
-    // Construire la requête d'insertion avec échappements manuels
+    // Construire la requête d'insertion
     console.log('💾 Insertion en base...');
     const insertQuery = `
       INSERT INTO users (prenom, nom, email, mot_de_passe, photo, bio, role, date_inscription) 
@@ -149,7 +147,7 @@ export async function POST(request) {
     const [result] = await db.query(insertQuery);
     console.log('✅ Utilisateur inséré avec ID:', result.insertId);
 
-    // Récupérer l'utilisateur créé (sans le mot de passe) avec échappement manuel
+    // Récupérer l'utilisateur créé (sans le mot de passe)
     const selectQuery = `
       SELECT id, prenom, nom, email, photo, bio, role, date_inscription 
       FROM users 
@@ -172,7 +170,7 @@ export async function POST(request) {
       email: newUser[0].email,
       photo: newUser[0].photo || '/images/default-avatar.jpg',
       bio: newUser[0].bio || '',
-      role: newUser[0].role,
+      role: newUser[0].role, // Sera 'Administrateur'
       date_inscription: newUser[0].date_inscription
     };
 

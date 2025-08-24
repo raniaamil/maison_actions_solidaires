@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
   mot_de_passe VARCHAR(255) NOT NULL,
   photo TEXT DEFAULT NULL,
   bio TEXT DEFAULT NULL,
-  role ENUM('Administrateur', 'Rédacteur') DEFAULT 'Rédacteur',
+  role ENUM('Administrateur') DEFAULT 'Administrateur',
   date_inscription DATETIME DEFAULT CURRENT_TIMESTAMP,
   date_modification DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   actif BOOLEAN DEFAULT TRUE,

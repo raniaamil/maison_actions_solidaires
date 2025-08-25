@@ -1,7 +1,24 @@
-// src/app/api/users/route.js - VERSION SIMPLIFIÉE SANS RÔLES
+// src/app/api/users/route.js - VERSION AVEC ENVOI D'EMAIL
 export const runtime = 'nodejs';
 import db from '../../../lib/db';
 import bcrypt from 'bcryptjs';
+import nodemailer from 'nodemailer';
+
+// Configuration du transporteur email
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: false, // true pour 465, false pour les autres ports
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
+};
 
 // GET - Récupérer tous les utilisateurs
 export async function GET(request) {
@@ -22,6 +39,7 @@ export async function GET(request) {
 
     const [rows] = await db.query(query);
 
+    // Transformer les données
     const users = rows.map(row => ({
       id: row.id,
       prenom: row.prenom,
@@ -29,7 +47,7 @@ export async function GET(request) {
       email: row.email,
       photo: row.photo || '/images/default-avatar.jpg',
       bio: row.bio || '',
-      role: row.role, // Sera toujours 'Administrateur' maintenant
+      role: row.role,
       date_inscription: row.date_inscription,
       date_modification: row.date_modification,
       actif: Boolean(row.actif)
@@ -48,7 +66,7 @@ export async function GET(request) {
   }
 }
 
-// POST - Créer un nouvel utilisateur (toujours Administrateur maintenant)
+// POST - Créer un nouvel utilisateur avec envoi d'email
 export async function POST(request) {
   try {
     console.log('🔄 Début de la création d\'utilisateur...');
@@ -63,11 +81,11 @@ export async function POST(request) {
       email, 
       password, 
       photo, 
-      bio
-      // Suppression du paramètre role - sera toujours 'Administrateur'
+      bio,
+      role = 'Administrateur' // Valeur par défaut
     } = body;
 
-    // Support pour les deux formats de noms
+    // Support pour les deux formats de noms (compatibilité)
     const finalFirstName = firstName || prenom;
     const finalLastName = lastName || nom;
 
@@ -87,6 +105,7 @@ export async function POST(request) {
     if (!email || !email.trim()) {
       errors.email = 'L\'email est requis';
     } else {
+      // Validation de l'email
       const emailRegex = /\S+@\S+\.\S+/;
       if (!emailRegex.test(email.trim())) {
         errors.email = 'L\'adresse e-mail n\'est pas valide';
@@ -107,9 +126,10 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Vérifier si l'utilisateur existe déjà
+    // Vérifier si l'utilisateur existe déjà avec échappement manuel
     console.log('🔍 Vérification utilisateur existant...');
     const checkEmailQuery = `SELECT id FROM users WHERE email = ${db.escape(email.toLowerCase().trim())}`;
+    console.log('📝 Requête vérification email:', checkEmailQuery);
     
     const [existingUsers] = await db.query(checkEmailQuery);
 
@@ -132,10 +152,9 @@ export async function POST(request) {
     const passwordEscaped = db.escape(hashedPassword);
     const photoEscaped = photo && photo.trim() !== '' ? db.escape(photo.trim()) : 'NULL';
     const bioEscaped = bio && bio.trim() !== '' ? db.escape(bio.trim()) : 'NULL';
-    // SIMPLIFIÉ : Tous les nouveaux utilisateurs sont Administrateurs
-    const roleEscaped = db.escape('Administrateur');
+    const roleEscaped = db.escape(role);
 
-    // Construire la requête d'insertion
+    // Construire la requête d'insertion avec échappements manuels
     console.log('💾 Insertion en base...');
     const insertQuery = `
       INSERT INTO users (prenom, nom, email, mot_de_passe, photo, bio, role, date_inscription) 
@@ -147,7 +166,7 @@ export async function POST(request) {
     const [result] = await db.query(insertQuery);
     console.log('✅ Utilisateur inséré avec ID:', result.insertId);
 
-    // Récupérer l'utilisateur créé (sans le mot de passe)
+    // Récupérer l'utilisateur créé (sans le mot de passe) avec échappement manuel
     const selectQuery = `
       SELECT id, prenom, nom, email, photo, bio, role, date_inscription 
       FROM users 
@@ -170,15 +189,94 @@ export async function POST(request) {
       email: newUser[0].email,
       photo: newUser[0].photo || '/images/default-avatar.jpg',
       bio: newUser[0].bio || '',
-      role: newUser[0].role, // Sera 'Administrateur'
+      role: newUser[0].role,
       date_inscription: newUser[0].date_inscription
     };
+
+    // 📧 ENVOI DE L'EMAIL DE BIENVENUE
+    try {
+      console.log('📧 Envoi de l\'email de bienvenue...');
+      const transporter = createTransporter();
+      
+      const mailOptions = {
+        from: `"Maison d'Actions Solidaires" <${process.env.SMTP_USER}>`,
+        to: userCreated.email,
+        subject: ' Vos identifiants de connexion',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #8b9467 0%, #a4b070 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">Bienvenue dans l'équipe !</h1>
+            </div>
+            
+            <div style="background: white; padding: 30px; border: 1px solid #e1e5e9; border-top: none;">
+              <p style="color: #333; font-size: 16px; line-height: 1.6;">Bonjour ${userCreated.prenom} ${userCreated.nom},</p>
+              
+              <p style="color: #333; font-size: 16px; line-height: 1.6;">
+                Félicitations ! Votre compte administrateur a été créé avec succès sur la plateforme de Maison d'Actions Solidaires.
+              </p>
+              
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8b9467;">
+                <h3 style="color: #8b9467; margin-top: 0;"> Vos identifiants de connexion :</h3>
+                <p style="margin: 10px 0;"><strong>Email :</strong> ${userCreated.email}</p>
+                <p style="margin: 10px 0;"><strong>Mot de passe temporaire :</strong> <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${password}</span></p>
+                <p style="margin: 10px 0;"><strong>Rôle :</strong> ${userCreated.role}</p>
+              </div>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/login" 
+                   style="background: linear-gradient(135deg, #8b9467 0%, #a4b070 100%); 
+                          color: white; 
+                          text-decoration: none; 
+                          padding: 15px 30px; 
+                          border-radius: 8px; 
+                          font-weight: bold; 
+                          display: inline-block;
+                          font-size: 16px;">
+                  Se connecter à la plateforme
+                </a>
+              </div>
+              
+              <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; color: #856404; font-size: 14px;">
+                  <strong>⚠️ Important :</strong> Pour votre sécurité, nous vous recommandons vivement de changer ce mot de passe temporaire lors de votre première connexion.
+                </p>
+              </div>
+              
+              <h3 style="color: #8b9467;"> Vos prochaines étapes :</h3>
+              <ol style="color: #333; line-height: 1.6;">
+                <li>Connectez-vous à la plateforme avec vos identifiants</li>
+                <li>Modifiez votre mot de passe temporaire</li>
+                <li>Complétez votre profil (photo, biographie)</li>
+                <li>Explorez l'interface d'administration</li>
+                <li>Commencez à créer des actualités !</li>
+              </ol>
+              
+              <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px;">
+                <p style="color: #999; font-size: 12px; margin: 0; text-align: center;">
+                  Cet email a été envoyé automatiquement par la plateforme Maison d\'Actions Solidaires<br>
+                  Si vous avez des questions, contactez-nous à maisondactionsolidaire@gmail.com
+                </p>
+              </div>
+            </div>
+          </div>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log('✅ Email de bienvenue envoyé à:', userCreated.email);
+
+    } catch (emailError) {
+      console.error('❌ Erreur lors de l\'envoi de l\'email:', emailError);
+      // On ne fait pas échouer la création si l'email ne peut pas être envoyé
+      // L'utilisateur est créé, c'est l'essentiel
+    }
 
     console.log('✅ Utilisateur créé avec succès:', userCreated.email);
 
     return Response.json({
       message: 'Utilisateur créé avec succès',
-      user: userCreated
+      user: userCreated,
+      emailSent: true // Indique que l'email a été tenté
     }, { status: 201 });
 
   } catch (error) {

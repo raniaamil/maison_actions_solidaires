@@ -194,7 +194,7 @@
   background-color: #f9fafb;
   transition: all 0.2s ease;
   resize: vertical;
-  min-height: 150px;
+  min-height: 100px;
   font-family: inherit;
   box-sizing: border-box;
 }
@@ -411,3 +411,21 @@
   cursor: pointer;
 }
 
+/* Listes visibles et correctement indentées dans l'éditeur */
+.joditFix :global(.jodit-wysiwyg ul),
+.joditFix :global(.jodit-wysiwyg ol) {
+  margin: 0 0 1rem;
+  padding-left: 1.5rem;         /* place les puces/chiffres dans la zone visible */
+}
+
+.joditFix :global(.jodit-wysiwyg ul) { list-style: disc; }
+.joditFix :global(.jodit-wysiwyg ol) { list-style: decimal; }
+
+.joditFix :global(.jodit-wysiwyg li) {
+  display: list-item;
+  margin: 0.25rem 0;
+}
+
+/* (Optionnel) styles pour listes imbriquées */
+.joditFix :global(.jodit-wysiwyg ul ul) { list-style: circle; }
+.joditFix :global(.jodit-wysiwyg ul ul ul) { list-style: square; }

@@ -1,115 +1,154 @@
+// src/app/administrateur/actualites/create/page.tsx
 'use client';
 
-import React, { useState } from 'react';
-import { ArrowLeft, Save, FileText, Upload, Calendar } from 'lucide-react';
+import React, { useMemo, useRef, useState, useCallback } from 'react';
+import { ArrowLeft, Save, FileText, Calendar } from 'lucide-react';
 import styles from './create.module.css';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../contexts/AuthContext';
 
-const NouvelleActualite = () => {
+// ⬇️ Jodit (exactement la même lib que ton extrait)
+// (import dynamique pour éviter les erreurs SSR)
+import dynamic from 'next/dynamic';
+const JoditEditor = dynamic(() => import('jodit-react').then(m => m.default), { ssr: false });
+
+type Errors = {
+  [key: string]: string | undefined;
+  titre?: string;
+  description?: string;
+  contenu?: string;
+  auteur?: string;
+};
+
+const NouvelleActualite: React.FC = () => {
   const router = useRouter();
   const { user, getToken } = useAuth();
-  
+
   const [formData, setFormData] = useState({
     titre: '',
     description: '',
-    contenu: '',
+    contenu: '', // valeur initiale (sera sync au blur)
     statut: 'Brouillon',
     datePublication: new Date().toISOString().split('T')[0],
     categorie: 'administratif',
     image: '',
-    tags: [],
+    tags: [] as string[],
     lieu: '',
     places_disponibles: '',
-    inscription_requise: false
+    inscription_requise: false,
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState<Errors>({});
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-    
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+  // 🔒 Tampon non-contrôlé pour éviter les re-renders à chaque frappe
+  const editorContentRef = useRef<string>(formData.contenu);
+
+  // ✅ Config Jodit (stable) + styles anti-débordement
+  const joditConfig = useMemo(
+    () => ({
+      autofocus: true,
+      spellcheck: true,
+      width: '100%',
+      height: 400,
+      placeholder: "Rédigez votre contenu ici...",
+      style: {
+        maxWidth: '100%',
+        width: '100%',
+        boxSizing: 'border-box',
+        overflowWrap: 'anywhere',
+        wordBreak: 'break-word',
+        whiteSpace: 'pre-wrap',
+      } as React.CSSProperties,
+    }),
+    []
+  );
+
+  // helper: détecter contenu vide (vrai texte)
+  const isHtmlEmpty = (html: string) => {
+    const text = (html || '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return text.length === 0;
   };
 
-  const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target as HTMLInputElement;
+    const checked = (e.target as HTMLInputElement).checked;
 
-    if (!formData.titre.trim()) {
-      newErrors.titre = 'Le titre est requis';
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
 
-    if (!formData.description.trim()) {
-      newErrors.description = 'La description est requise';
-    }
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+  };
 
-    if (!formData.contenu.trim()) {
-      newErrors.contenu = 'Le contenu est requis';
-    }
+  // 🧠 IMPORTANT : on NE met pas à jour le state à chaque frappe.
+  // onChange ➜ juste MAJ du ref (pas de re-render donc pas de "caret jump")
+  const handleEditorChange = useCallback((content: string) => {
+    editorContentRef.current = content;
+  }, []);
 
-    if (!user?.id) {
-      newErrors.auteur = 'Utilisateur non connecté';
-    }
+  // Au blur, on synchronise le state (utile pour validations/preview)
+  const handleEditorBlur = useCallback((content: string) => {
+    editorContentRef.current = content;
+    setFormData(prev => ({ ...prev, contenu: content }));
+    if (errors.contenu) setErrors(prev => ({ ...prev, contenu: '' }));
+  }, [errors.contenu]);
+
+  const validateForm = (contentForValidation?: string) => {
+    const content = contentForValidation ?? editorContentRef.current ?? formData.contenu;
+    const newErrors: Errors = {};
+
+    if (!formData.titre.trim()) newErrors.titre = 'Le titre est requis';
+    if (!formData.description.trim()) newErrors.description = 'La description est requise';
+    if (!content || isHtmlEmpty(content)) newErrors.contenu = 'Le contenu est requis';
+    if (!user?.id) newErrors.auteur = 'Utilisateur non connecté';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = async (statut = 'Brouillon') => {
-    if (!validateForm()) {
-      return;
-    }
+  const handleSave = async (statut: 'Brouillon' | 'Publié' = 'Brouillon') => {
+    // 🔁 On récupère TOUJOURS la dernière version depuis le ref
+    const latestContent = editorContentRef.current ?? formData.contenu;
 
-    if (!user?.id) {
-      router.push('/login');
-      return;
-    }
+    if (!validateForm(latestContent)) return;
+    if (!user?.id) { router.push('/login'); return; }
 
     setIsLoading(true);
-
     try {
       const payload = {
         titre: formData.titre.trim(),
         description: formData.description.trim(),
-        contenu: formData.contenu.trim(),
+        contenu: latestContent, // garder le HTML tel quel
         type: formData.categorie,
-        statut: statut,
+        statut,
         image: formData.image.trim() || null,
         auteur_id: user.id,
         date_publication: statut === 'Publié' ? formData.datePublication : null,
         tags: formData.tags.length > 0 ? formData.tags : [],
         lieu: formData.lieu.trim() || null,
-        places_disponibles: formData.places_disponibles ? parseInt(formData.places_disponibles) : null,
-        inscription_requise: formData.inscription_requise
+        places_disponibles: formData.places_disponibles ? parseInt(formData.places_disponibles, 10) : null,
+        inscription_requise: formData.inscription_requise,
       };
 
-      const headers: {[key: string]: string} = {
-        'Content-Type': 'application/json',
-      };
-
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       const token = getToken();
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const response = await fetch('/api/actualites', {
         method: 'POST',
         headers,
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -117,20 +156,14 @@ const NouvelleActualite = () => {
       if (response.ok) {
         router.push('/administrateur?tab=actualites');
       } else {
-        console.error('❌ Erreur du serveur:', data);
-        
-        if (response.status === 401) {
-          router.push('/login');
-        } else if (response.status === 403) {
-          console.error('Erreur: Vous n\'avez pas les permissions pour créer une actualité.');
-        } else if (data?.error) {
-          console.error(`Erreur: ${data.error}`);
-        } else {
-          console.error(`Erreur ${response.status}: Une erreur est survenue`);
-        }
+        if (response.status === 401) router.push('/login');
+        else if (response.status === 403) alert("Erreur: Vous n'avez pas les permissions pour créer une actualité.");
+        else if (data?.error) alert(`Erreur: ${data.error}`);
+        else alert(`Erreur ${response.status}: Une erreur est survenue`);
       }
     } catch (error) {
-      console.error('❌ Erreur réseau:', error);
+      console.error('Erreur réseau:', error);
+      alert('Erreur de connexion au serveur');
     } finally {
       setIsLoading(false);
     }
@@ -138,10 +171,6 @@ const NouvelleActualite = () => {
 
   const handlePublish = () => handleSave('Publié');
   const handleSaveDraft = () => handleSave('Brouillon');
-
-  const handleMediaUpload = () => {
-    console.log('Upload de média - fonctionnalité à implémenter');
-  };
 
   return (
     <div className="bg-gray-50 min-h-screen font-sans">
@@ -151,24 +180,18 @@ const NouvelleActualite = () => {
             <ArrowLeft className={styles.backIcon} />
             Retour
           </Link>
+
           <div className={styles.titleSection}>
             <h1 className={styles.pageTitle}>Nouvelle actualité</h1>
-            <p className={styles.pageSubtitle}>Créez un nouvel article</p>
+            <p className={styles.pageSubtitle}>Créez un nouvel article avec l&apos;éditeur</p>
           </div>
+
           <div className={styles.headerActions}>
-            <button 
-              className={styles.saveButton} 
-              onClick={handleSaveDraft}
-              disabled={isLoading}
-            >
+            <button className={styles.saveButton} onClick={handleSaveDraft} disabled={isLoading}>
               <Save className={styles.buttonIcon} />
               {isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
             </button>
-            <button 
-              className={styles.publishButton} 
-              onClick={handlePublish}
-              disabled={isLoading}
-            >
+            <button className={styles.publishButton} onClick={handlePublish} disabled={isLoading}>
               <FileText className={styles.buttonIcon} />
               {isLoading ? 'Publication...' : 'Publier'}
             </button>
@@ -178,7 +201,7 @@ const NouvelleActualite = () => {
         <div className={styles.content}>
           <div className={styles.mainSection}>
             <div className={styles.contentCard}>
-              <h2 className={styles.sectionTitle}>Contenu de l'article</h2>
+              <h2 className={styles.sectionTitle}>Contenu de l&apos;article</h2>
               <p className={styles.sectionSubtitle}>Saisissez le titre et le contenu de votre actualité</p>
 
               <div className={styles.formGroup}>
@@ -194,11 +217,7 @@ const NouvelleActualite = () => {
                   className={`${styles.input} ${errors.titre ? styles.inputError : ''}`}
                   disabled={isLoading}
                 />
-                {errors.titre && (
-                  <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
-                    {errors.titre}
-                  </span>
-                )}
+                {errors.titre && <span style={{ color: '#ef4444', fontSize: '.875rem' }}>{errors.titre}</span>}
               </div>
 
               <div className={styles.formGroup}>
@@ -214,34 +233,38 @@ const NouvelleActualite = () => {
                   rows={3}
                   disabled={isLoading}
                 />
-                {errors.description && (
-                  <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
-                    {errors.description}
-                  </span>
-                )}
+                {errors.description && <span style={{ color: '#ef4444', fontSize: '.875rem' }}>{errors.description}</span>}
               </div>
 
               <div className={styles.formGroup}>
                 <label className={styles.label}>
                   Contenu <span className={styles.required}>*</span>
                 </label>
-                <textarea
-                  name="contenu"
-                  value={formData.contenu}
-                  onChange={handleInputChange}
-                  placeholder="Rédigez le contenu de votre actualité..."
-                  className={`${styles.textarea} ${errors.contenu ? styles.inputError : ''}`}
-                  rows={8}
-                  disabled={isLoading}
-                />
-                {errors.contenu && (
-                  <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
-                    {errors.contenu}
-                  </span>
-                )}
+
+                {/* ✅ Wrapper anti-débordement + classe locale pour :global(...) */}
+                <div
+                  className={styles.joditFix}
+                  style={{
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                    borderRadius: '.375rem',
+                    border: errors.contenu ? '1px solid #ef4444' : '1px solid transparent',
+                  }}
+                >
+                  {/* ⬇️ ÉDITEUR JODIT (non-contrôlé pendant la frappe) */}
+                  <JoditEditor
+                    value={formData.contenu}   // valeur initiale / réhydratation si besoin
+                    onChange={handleEditorChange} // maj ref (pas de state ➜ pas de caret jump)
+                    onBlur={handleEditorBlur}     // sync state au blur
+                    // @ts-ignore — la lib tolère des clés supplémentaires comme "style"
+                    config={joditConfig}
+                  />
+                </div>
+
+                {errors.contenu && <span style={{ color: '#ef4444', fontSize: '.875rem' }}>{errors.contenu}</span>}
               </div>
 
-              {/* Informations complémentaires - toujours visibles */}
+              {/* Infos complémentaires */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>Lieu (optionnel)</label>
                 <input
@@ -284,11 +307,11 @@ const NouvelleActualite = () => {
             </div>
 
             <div className={styles.mediaCard}>
-              <h2 className={styles.sectionTitle}>Média</h2>
-              <p className={styles.sectionSubtitle}>Ajoutez une image ou une vidéo à votre actualité</p>
+              <h2 className={styles.sectionTitle}>Image principale</h2>
+              <p className={styles.sectionSubtitle}>Ajoutez une image d&apos;en-tête à votre actualité</p>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>URL de l'image</label>
+                <label className={styles.label}>URL de l&apos;image (optionnel)</label>
                 <input
                   type="url"
                   name="image"
@@ -298,12 +321,9 @@ const NouvelleActualite = () => {
                   className={styles.input}
                   disabled={isLoading}
                 />
-              </div>
-
-              <div className={styles.uploadArea} onClick={handleMediaUpload}>
-                <Upload className={styles.uploadIcon} />
-                <p className={styles.uploadText}>Cliquez pour télécharger</p>
-                <p className={styles.uploadSubtext}>Images et vidéos acceptées</p>
+                <p style={{ fontSize: '.875rem', color: '#6b7280', marginTop: '.25rem' }}>
+                  Vous pouvez aussi insérer des images directement dans le contenu via l’éditeur.
+                </p>
               </div>
             </div>
           </div>
@@ -311,7 +331,7 @@ const NouvelleActualite = () => {
           <div className={styles.sidebar}>
             <div className={styles.publicationCard}>
               <h2 className={styles.sectionTitle}>Publication</h2>
-              <p className={styles.sectionSubtitle}>Paramètres de publication de l'article</p>
+              <p className={styles.sectionSubtitle}>Paramètres de publication de l&apos;article</p>
 
               <div className={styles.formGroup}>
                 <label className={styles.label}>Statut</label>
@@ -369,20 +389,12 @@ const NouvelleActualite = () => {
             <div className={styles.actionsCard}>
               <h2 className={styles.sectionTitle}>Actions</h2>
 
-              <button 
-                className={styles.draftButton} 
-                onClick={handleSaveDraft}
-                disabled={isLoading}
-              >
+              <button className={styles.draftButton} onClick={handleSaveDraft} disabled={isLoading}>
                 <Save className={styles.buttonIcon} />
                 {isLoading ? 'Sauvegarde...' : 'Sauvegarder en brouillon'}
               </button>
 
-              <button 
-                className={styles.publishNowButton} 
-                onClick={handlePublish}
-                disabled={isLoading}
-              >
+              <button className={styles.publishNowButton} onClick={handlePublish} disabled={isLoading}>
                 <FileText className={styles.buttonIcon} />
                 {isLoading ? 'Publication...' : 'Publier maintenant'}
               </button>
@@ -390,18 +402,21 @@ const NouvelleActualite = () => {
           </div>
         </div>
 
-        {/* Afficher les erreurs de validation */}
         {errors.auteur && (
-          <div style={{
-            position: 'fixed',
-            bottom: '1rem',
-            right: '1rem',
-            backgroundColor: '#fee2e2',
-            border: '1px solid #fca5a5',
-            color: '#dc2626',
-            padding: '0.75rem 1rem',
-            borderRadius: '0.375rem'
-          }}>
+          <div
+            style={{
+              position: 'fixed',
+              bottom: '1rem',
+              right: '1rem',
+              backgroundColor: '#fee2e2',
+              border: '1px solid #fca5a5',
+              color: '#dc2626',
+              padding: '0.75rem 1rem',
+              borderRadius: '0.375rem',
+              boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+              zIndex: 50,
+            }}
+          >
             {errors.auteur}
           </div>
         )}
@@ -411,3 +426,4 @@ const NouvelleActualite = () => {
 };
 
 export default NouvelleActualite;
+

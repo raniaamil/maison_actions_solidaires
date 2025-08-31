@@ -37,12 +37,12 @@ export async function GET(request) {
         a.places_disponibles,
         a.inscription_requise,
         a.auteur_id,
-        u.prenom as auteur_prenom,
-        u.nom as auteur_nom,
+        COALESCE(u.prenom, 'Auteur') as auteur_prenom,
+        COALESCE(u.nom, 'supprimé') as auteur_nom,
         u.photo as auteur_photo,
         u.bio as auteur_bio
       FROM actualites a
-      JOIN users u ON a.auteur_id = u.id
+      LEFT JOIN users u ON a.auteur_id = u.id
       WHERE 1=1
     `;
     

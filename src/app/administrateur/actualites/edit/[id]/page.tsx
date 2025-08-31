@@ -6,6 +6,7 @@ import styles from './edit.module.css';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../../../contexts/AuthContext';
+import RichTextEditor from '@/components/RichTextEditor';
 
 const ModifierActualite = () => {
   const params = useParams();
@@ -274,13 +275,10 @@ const ModifierActualite = () => {
                 <label className={styles.label}>
                   Contenu <span className={styles.required}>*</span>
                 </label>
-                <textarea
-                  name="contenu"
+                <RichTextEditor 
                   value={formData.contenu}
-                  onChange={handleInputChange}
-                  className={`${styles.textarea} ${errors.contenu ? styles.inputError : ''}`}
-                  rows={8}
-                  disabled={isLoading}
+                  onChange={(content) => setFormData(prev => ({...prev, contenu: content}))}
+                  placeholder="Rédigez le contenu de votre actualité..."
                 />
                 {errors.contenu && (
                   <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>

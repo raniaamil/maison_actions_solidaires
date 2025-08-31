@@ -359,3 +359,47 @@
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
 }
 
+/* --- Fix overflow Jodit (scopé via une classe locale) --- */
+.joditFix :global(.jodit-container),
+.joditFix :global(.jodit-editor__wrapper),
+.joditFix :global(.jodit-wysiwyg) {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Texte & blocs : forcer le retour à la ligne, y compris mots/URLs très longs */
+.joditFix :global(.jodit-wysiwyg),
+.joditFix :global(.jodit-wysiwyg p),
+.joditFix :global(.jodit-wysiwyg div),
+.joditFix :global(.jodit-wysiwyg li),
+.joditFix :global(.jodit-wysiwyg blockquote) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* Éviter que <pre>/<code> débordent horizontalement */
+.joditFix :global(.jodit-wysiwyg pre),
+.joditFix :global(.jodit-wysiwyg code) {
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+/* Médias responsives */
+.joditFix :global(.jodit-wysiwyg img),
+.joditFix :global(.jodit-wysiwyg table),
+.joditFix :global(.jodit-wysiwyg iframe) {
+  max-width: 100%;
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* Toolbar : éviter tout débordement */
+.joditFix :global(.jodit-toolbar__box) {
+  max-width: 100%;
+  overflow: hidden;
+}

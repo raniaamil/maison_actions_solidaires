@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../contexts/AuthContext';
 
-// ⬇️ Jodit (exactement la même lib que ton extrait)
 // (import dynamique pour éviter les erreurs SSR)
 import dynamic from 'next/dynamic';
 const JoditEditor = dynamic(() => import('jodit-react').then(m => m.default), { ssr: false });
@@ -28,7 +27,7 @@ const NouvelleActualite: React.FC = () => {
   const [formData, setFormData] = useState({
     titre: '',
     description: '',
-    contenu: '', // valeur initiale (sera sync au blur)
+    contenu: '', // valeur initiale (sync au blur)
     statut: 'Brouillon',
     datePublication: new Date().toISOString().split('T')[0],
     categorie: 'administratif',
@@ -42,17 +41,50 @@ const NouvelleActualite: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
-  // 🔒 Tampon non-contrôlé pour éviter les re-renders à chaque frappe
+  // Tampon non contrôlé pour éviter le "caret jump"
   const editorContentRef = useRef<string>(formData.contenu);
 
-  // ✅ Config Jodit (stable) + styles anti-débordement
+  // ✅ helper: force _blank + rel sécurisé + soulignement visible sur tous les liens
+  const ensureLinksOpenNewTab = useCallback((html: string) => {
+    if (!html) return html;
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+
+    wrapper.querySelectorAll<HTMLAnchorElement>('a[href]').forEach(a => {
+      const href = (a.getAttribute('href') || '').trim();
+      // ignorer ancres et liens à risque
+      if (!href || href.startsWith('#') || /^javascript:/i.test(href)) return;
+
+      // nouvel onglet + sécurité
+      a.setAttribute('target', '_blank');
+      const rel = a.getAttribute('rel') || '';
+      const set = new Set(rel.split(/\s+/).filter(Boolean));
+      set.add('noopener');
+      set.add('noreferrer');
+      a.setAttribute('rel', Array.from(set).join(' '));
+
+      // ✅ souligner explicitement
+      const style = a.getAttribute('style') || '';
+      if (!/text-decoration\s*:/i.test(style)) {
+        a.setAttribute(
+          'style',
+          `${style ? style + '; ' : ''}text-decoration: underline; text-underline-offset: 2px;`
+        );
+      }
+    });
+
+    return wrapper.innerHTML;
+  }, []);
+
+  // ✅ Config Jodit (stable) : wrap URL collées, case "nouvel onglet", double-clic pour suivre
   const joditConfig = useMemo(
     () => ({
       autofocus: true,
       spellcheck: true,
       width: '100%',
       height: 400,
-      placeholder: "Rédigez votre contenu ici...",
+      placeholder: 'Rédigez votre contenu ici...',
+      // style anti-débordement
       style: {
         maxWidth: '100%',
         width: '100%',
@@ -61,6 +93,13 @@ const NouvelleActualite: React.FC = () => {
         wordBreak: 'break-word',
         whiteSpace: 'pre-wrap',
       } as React.CSSProperties,
+      safeJavaScriptLink: true,
+      // @ts-ignore - certaines clés ne sont pas typées dans jodit-react
+      link: {
+        processPastedLink: true,    // transforme auto une URL collée en <a>
+        openInNewTabCheckbox: true, // case dans le dialogue lien
+        followOnDblClick: true,     // dans l'éditeur: double-clic pour ouvrir
+      },
     }),
     []
   );
@@ -91,18 +130,21 @@ const NouvelleActualite: React.FC = () => {
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  // 🧠 IMPORTANT : on NE met pas à jour le state à chaque frappe.
-  // onChange ➜ juste MAJ du ref (pas de re-render donc pas de "caret jump")
+  // NE pas setState à chaque frappe -> on stocke seulement dans le ref
   const handleEditorChange = useCallback((content: string) => {
     editorContentRef.current = content;
   }, []);
 
-  // Au blur, on synchronise le state (utile pour validations/preview)
-  const handleEditorBlur = useCallback((content: string) => {
-    editorContentRef.current = content;
-    setFormData(prev => ({ ...prev, contenu: content }));
-    if (errors.contenu) setErrors(prev => ({ ...prev, contenu: '' }));
-  }, [errors.contenu]);
+  // Au blur, on sécurise/souligne les liens puis on sync le state
+  const handleEditorBlur = useCallback(
+    (content: string) => {
+      const fixed = ensureLinksOpenNewTab(content);
+      editorContentRef.current = fixed;
+      setFormData(prev => ({ ...prev, contenu: fixed }));
+      if (errors.contenu) setErrors(prev => ({ ...prev, contenu: '' }));
+    },
+    [ensureLinksOpenNewTab, errors.contenu]
+  );
 
   const validateForm = (contentForValidation?: string) => {
     const content = contentForValidation ?? editorContentRef.current ?? formData.contenu;
@@ -118,10 +160,11 @@ const NouvelleActualite: React.FC = () => {
   };
 
   const handleSave = async (statut: 'Brouillon' | 'Publié' = 'Brouillon') => {
-    // 🔁 On récupère TOUJOURS la dernière version depuis le ref
+    // Toujours prendre la dernière version + forcer target/rel + soulignement
     const latestContent = editorContentRef.current ?? formData.contenu;
+    const safeContent = ensureLinksOpenNewTab(latestContent);
 
-    if (!validateForm(latestContent)) return;
+    if (!validateForm(safeContent)) return;
     if (!user?.id) { router.push('/login'); return; }
 
     setIsLoading(true);
@@ -129,7 +172,7 @@ const NouvelleActualite: React.FC = () => {
       const payload = {
         titre: formData.titre.trim(),
         description: formData.description.trim(),
-        contenu: latestContent, // garder le HTML tel quel
+        contenu: safeContent, // HTML final
         type: formData.categorie,
         statut,
         image: formData.image.trim() || null,
@@ -181,7 +224,7 @@ const NouvelleActualite: React.FC = () => {
             Retour
           </Link>
 
-          <div className={styles.titleSection}>
+        <div className={styles.titleSection}>
             <h1 className={styles.pageTitle}>Nouvelle actualité</h1>
             <p className={styles.pageSubtitle}>Créez un nouvel article avec l&apos;éditeur</p>
           </div>
@@ -241,7 +284,7 @@ const NouvelleActualite: React.FC = () => {
                   Contenu <span className={styles.required}>*</span>
                 </label>
 
-                {/* ✅ Wrapper anti-débordement + classe locale pour :global(...) */}
+                {/* Wrapper anti-débordement + classe locale pour :global(...) */}
                 <div
                   className={styles.joditFix}
                   style={{
@@ -251,12 +294,12 @@ const NouvelleActualite: React.FC = () => {
                     border: errors.contenu ? '1px solid #ef4444' : '1px solid transparent',
                   }}
                 >
-                  {/* ⬇️ ÉDITEUR JODIT (non-contrôlé pendant la frappe) */}
+                  {/* Jodit (non contrôlé pendant la frappe) */}
                   <JoditEditor
-                    value={formData.contenu}   // valeur initiale / réhydratation si besoin
-                    onChange={handleEditorChange} // maj ref (pas de state ➜ pas de caret jump)
-                    onBlur={handleEditorBlur}     // sync state au blur
-                    // @ts-ignore — la lib tolère des clés supplémentaires comme "style"
+                    value={formData.contenu}
+                    onChange={handleEditorChange}
+                    onBlur={handleEditorBlur}
+                    // @ts-ignore - Jodit accepte des clés supplémentaires comme "style"
                     config={joditConfig}
                   />
                 </div>
@@ -426,4 +469,3 @@ const NouvelleActualite: React.FC = () => {
 };
 
 export default NouvelleActualite;
-

@@ -403,3 +403,11 @@
   max-width: 100%;
   overflow: hidden;
 }
+
+/* Lien visible (éditeur) */
+.joditFix :global(.jodit-wysiwyg a) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+

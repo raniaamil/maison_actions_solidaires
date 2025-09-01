@@ -1,14 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, FileText, X, Calendar, Image as ImageIcon, Upload } from 'lucide-react';
+import React, { useMemo, useRef, useState, useCallback, useEffect, ChangeEvent } from 'react';
+import { ArrowLeft, Save, FileText, Calendar, UploadCloud, Image as ImageIcon, Trash2 } from 'lucide-react';
 import styles from './edit.module.css';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../../../contexts/AuthContext';
-import RichTextEditor from '@/components/RichTextEditor';
 
-const ModifierActualite = () => {
+// import dynamique Jodit pour éviter SSR
+import dynamic from 'next/dynamic';
+const JoditEditor = dynamic(() => import('jodit-react').then(m => m.default), { ssr: false });
+
+// même limite client que l’endpoint /api/upload/image
+const MAX_CLIENT_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
+
+type Errors = {
+  [key: string]: string | undefined;
+  titre?: string;
+  description?: string;
+  contenu?: string;
+};
+
+const ModifierActualite: React.FC = () => {
   const params = useParams();
   const router = useRouter();
   const { getToken } = useAuth();
@@ -21,144 +34,358 @@ const ModifierActualite = () => {
     statut: 'Brouillon',
     datePublication: '',
     categorie: 'administratif',
-    image: '',
+    image: '', // URL publique (image principale)
     tags: [] as string[],
     lieu: '',
     places_disponibles: '',
     inscription_requise: false
   });
 
-  const [hasImage, setHasImage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState<Errors>({});
 
-  // Charger les données de l'actualité
+  // Upload image principale
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [uploadedCoverFilename, setUploadedCoverFilename] = useState<string | null>(null);
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
+
+  // tampon non contrôlé pour l’éditeur (évite le caret jump)
+  const editorContentRef = useRef<string>('');
+
+  // ---- Helpers contenu (liens & vidéos) ----
+  const ensureLinksOpenNewTab = useCallback((html: string) => {
+    if (!html) return html;
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+
+    wrapper.querySelectorAll<HTMLAnchorElement>('a[href]').forEach(a => {
+      const href = (a.getAttribute('href') || '').trim();
+      if (!href || href.startsWith('#') || /^javascript:/i.test(href)) return;
+      a.setAttribute('target', '_blank');
+      const rel = a.getAttribute('rel') || '';
+      const set = new Set(rel.split(/\s+/).filter(Boolean));
+      set.add('noopener'); set.add('noreferrer');
+      a.setAttribute('rel', Array.from(set).join(' '));
+      const style = a.getAttribute('style') || '';
+      if (!/text-decoration\s*:/i.test(style)) {
+        a.setAttribute('style', `${style ? style + '; ' : ''}text-decoration: underline; text-underline-offset: 2px;`);
+      }
+    });
+
+    return wrapper.innerHTML;
+  }, []);
+
+  const ensureMediaPlayable = useCallback((html: string) => {
+    if (!html) return html;
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+
+    wrapper.querySelectorAll<HTMLVideoElement>('video').forEach(v => {
+      v.setAttribute('controls', '');
+      v.setAttribute('playsinline', '');
+      v.setAttribute('preload', 'metadata');
+      v.setAttribute('contenteditable', 'false');
+      const style = v.getAttribute('style') || '';
+      const needsMax = !/max-width\s*:/i.test(style);
+      const needsHeight = !/height\s*:/i.test(style);
+      const needsDisplay = !/display\s*:/i.test(style);
+      if (needsMax || needsHeight || needsDisplay) {
+        v.setAttribute(
+          'style',
+          `${style ? style + '; ' : ''}${needsMax ? 'max-width:100%;' : ''}${needsHeight ? 'height:auto;' : ''}${needsDisplay ? 'display:block;' : ''}`
+        );
+      }
+    });
+
+    return wrapper.innerHTML;
+  }, []);
+
+  // ---- Upload inséré via le bouton "fichier" de la barre Jodit ----
+  const handleInsertLocalFile = useCallback(
+    (editorInstance: any) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,video/*';
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+
+        // limite image
+        if (file.type.startsWith('image/') && file.size > MAX_CLIENT_IMAGE_SIZE) {
+          const mb = (MAX_CLIENT_IMAGE_SIZE / (1024 * 1024)).toFixed(0);
+          alert(`L’image est trop volumineuse. Taille max: ${mb} Mo.`);
+          input.value = '';
+          return;
+        }
+
+        try {
+          const form = new FormData();
+          let endpoint = '';
+          let fieldName = '';
+
+          if (file.type.startsWith('image/')) { endpoint = '/api/upload/image'; fieldName = 'image'; }
+          else if (file.type.startsWith('video/')) { endpoint = '/api/upload/video'; fieldName = 'video'; }
+          else { alert('Type de fichier non pris en charge.'); return; }
+
+          form.append(fieldName, file, file.name);
+
+          const token = getToken?.();
+          const headers: Record<string, string> = {};
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          const res = await fetch(endpoint, { method: 'POST', body: form, headers });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.error || `Upload échoué (${res.status})`);
+
+          const url: string = data.url;
+          const safeAlt = file.name.replace(/"/g, '&quot;');
+
+          if (file.type.startsWith('image/')) {
+            editorInstance.selection.insertHTML(`<img src="${url}" alt="${safeAlt}" style="max-width:100%;height:auto;" />`);
+          } else {
+            editorInstance.selection.insertHTML(`<video controls playsinline preload="metadata" contenteditable="false" src="${url}" style="max-width:100%;height:auto;display:block;"></video>`);
+          }
+        } catch (e: any) {
+          alert(`Erreur upload: ${e?.message || e}`);
+        } finally {
+          input.value = '';
+        }
+      };
+      input.click();
+    },
+    [getToken]
+  );
+
+  // ---- Config Jodit (identique à la création) ----
+  const joditConfig = useMemo(
+    () => ({
+      autofocus: true,
+      spellcheck: true,
+      width: '100%',
+      height: 400,
+      placeholder: 'Rédigez votre contenu ici...',
+      style: {
+        maxWidth: '100%',
+        width: '100%',
+        boxSizing: 'border-box',
+        overflowWrap: 'anywhere',
+        wordBreak: 'break-word',
+        whiteSpace: 'pre-wrap',
+      } as React.CSSProperties,
+      safeJavaScriptLink: true,
+      // @ts-ignore
+      link: {
+        processPastedLink: true,
+        openInNewTabCheckbox: true,
+        followOnDblClick: true,
+      },
+      // @ts-ignore
+      allowTags: {
+        video: [
+          'controls', 'src', 'poster', 'preload', 'autoplay', 'loop', 'muted',
+          'playsinline', 'width', 'height', 'style', 'contenteditable'
+        ],
+        source: ['src', 'type']
+      },
+      // @ts-ignore
+      controls: {
+        file: {
+          tooltip: 'Insérer un fichier (image/vidéo) depuis l’ordinateur',
+          exec: (editor: any) => handleInsertLocalFile(editor),
+        },
+      },
+    }),
+    [handleInsertLocalFile]
+  );
+
+  // ---- Helpers formulaire ----
+  const isHtmlEmpty = (html: string) => {
+    const text = (html || '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return text.length === 0;
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target as HTMLInputElement;
+    const checked = (e.target as HTMLInputElement).checked;
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  const handleEditorChange = useCallback((content: string) => {
+    editorContentRef.current = content;
+  }, []);
+
+  const handleEditorBlur = useCallback((content: string) => {
+    let fixed = ensureLinksOpenNewTab(content);
+    fixed = ensureMediaPlayable(fixed);
+    editorContentRef.current = fixed;
+    setFormData(prev => ({ ...prev, contenu: fixed }));
+    if (errors.contenu) setErrors(prev => ({ ...prev, contenu: '' }));
+  }, [ensureLinksOpenNewTab, ensureMediaPlayable, errors.contenu]);
+
+  // ---- Image principale (upload direct) ----
+  const onClickSelectCover = useCallback(() => {
+    coverInputRef.current?.click();
+  }, []);
+
+  const handlePrimaryImageFile = useCallback(async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { alert('Veuillez sélectionner un fichier image.'); return; }
+    if (file.size > MAX_CLIENT_IMAGE_SIZE) {
+      const mb = (MAX_CLIENT_IMAGE_SIZE / (1024 * 1024)).toFixed(0);
+      alert(`L’image est trop volumineuse. Taille max: ${mb} Mo.`);
+      return;
+    }
+
+    setIsUploadingCover(true);
+    try {
+      // si on avait déjà une image uploadée pendant cette session, on tente de la supprimer
+      if (uploadedCoverFilename) {
+        try { await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedCoverFilename)}`, { method: 'DELETE' }); } catch {}
+      }
+
+      const form = new FormData();
+      form.append('image', file, file.name);
+
+      const token = getToken?.();
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('/api/upload/image', { method: 'POST', body: form, headers });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `Upload échoué (${res.status})`);
+
+      setFormData(prev => ({ ...prev, image: data.url }));
+      setUploadedCoverFilename(data.filename || null);
+    } catch (e: any) {
+      alert(`Erreur upload de l'image: ${e?.message || e}`);
+    } finally {
+      setIsUploadingCover(false);
+    }
+  }, [getToken, uploadedCoverFilename]);
+
+  const onCoverChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handlePrimaryImageFile(file);
+    e.target.value = '';
+  }, [handlePrimaryImageFile]);
+
+  const handleRemoveCover = useCallback(async () => {
+    if (!formData.image) return;
+    if (uploadedCoverFilename) {
+      try { await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedCoverFilename)}`, { method: 'DELETE' }); } catch {}
+      setUploadedCoverFilename(null);
+    }
+    setFormData(prev => ({ ...prev, image: '' }));
+  }, [formData.image, uploadedCoverFilename]);
+
+  // ---- Charger l’actualité ----
   useEffect(() => {
     const loadActualite = async () => {
       try {
         const response = await fetch(`/api/actualites/${actualiteId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setFormData({
-            titre: data.titre || data.title || '',
-            description: data.description || '',
-            contenu: data.contenu || data.content || '',
-            statut: data.statut || data.status || 'Brouillon',
-            datePublication: data.date_publication ? new Date(data.date_publication).toISOString().split('T')[0] : '',
-            categorie: data.type || 'administratif',
-            image: data.image || '',
-            tags: data.tags || [],
-            lieu: data.lieu || data.location || '',
-            places_disponibles: data.places_disponibles?.toString() || data.places?.toString() || '',
-            inscription_requise: data.inscription_requise || data.hasRegistration || false
-          });
-          setHasImage(!!data.image);
-        } else {
-          console.error('Erreur lors du chargement de l\'actualité');
-          router.push('/administrateur?tab=actualites');
+        if (!response.ok) throw new Error('Chargement impossible');
+        const data = await response.json();
+
+        // nettoyer/sécuriser le contenu entrant pour l’éditeur
+        const initialContent = ensureMediaPlayable(ensureLinksOpenNewTab(data.contenu || data.content || ''));
+
+        setFormData({
+          titre: data.titre || data.title || '',
+          description: data.description || '',
+          contenu: initialContent,
+          statut: data.statut || data.status || 'Brouillon',
+          datePublication: data.date_publication ? new Date(data.date_publication).toISOString().split('T')[0] : '',
+          categorie: data.type || 'administratif',
+          image: data.image || '',
+          tags: data.tags || [],
+          lieu: data.lieu || data.location || '',
+          places_disponibles: data.places_disponibles?.toString() || data.places?.toString() || '',
+          inscription_requise: data.inscription_requise || data.hasRegistration || false
+        });
+
+        editorContentRef.current = initialContent;
+
+        // si l’image vient de /uploads/images, on récupère le filename pour pouvoir la supprimer si on la remplace
+        if (data.image && typeof data.image === 'string') {
+          const match = /\/uploads\/images\/([^\/?#]+)/.exec(data.image);
+          if (match) setUploadedCoverFilename(match[1]);
         }
-      } catch (error) {
-        console.error('Erreur:', error);
+      } catch (e) {
+        console.error(e);
+        router.push('/administrateur?tab=actualites');
       } finally {
         setLoading(false);
       }
     };
 
-    if (actualiteId) {
-      loadActualite();
-    }
-  }, [actualiteId, router]);
+    if (actualiteId) loadActualite();
+  }, [actualiteId, router, ensureLinksOpenNewTab, ensureMediaPlayable]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-    
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-
-    // Update hasImage when image URL changes
-    if (name === 'image') {
-      setHasImage(!!value);
-    }
-  };
-
+  // ---- Validation + sauvegarde ----
   const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
-
-    if (!formData.titre.trim()) {
-      newErrors.titre = 'Le titre est requis';
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = 'La description est requise';
-    }
-
-    if (!formData.contenu.trim()) {
-      newErrors.contenu = 'Le contenu est requis';
-    }
-
+    const newErrors: Errors = {};
+    if (!formData.titre.trim()) newErrors.titre = 'Le titre est requis';
+    if (!formData.description.trim()) newErrors.description = 'La description est requise';
+    if (!formData.contenu || isHtmlEmpty(formData.contenu)) newErrors.contenu = 'Le contenu est requis';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = async (statut: string | null = null) => {
-    if (!validateForm()) {
-      return;
-    }
+  const handleSave = async (forceStatut: 'Brouillon' | 'Publié' | null = null) => {
+    // sécuriser le dernier contenu avant envoi
+    let safeContent = editorContentRef.current ?? formData.contenu;
+    safeContent = ensureMediaPlayable(ensureLinksOpenNewTab(safeContent));
+
+    const ok = validateForm();
+    if (!ok) return;
 
     setIsLoading(true);
-
     try {
       const payload = {
-        titre: formData.titre,
-        description: formData.description,
-        contenu: formData.contenu,
+        titre: formData.titre.trim(),
+        description: formData.description.trim(),
+        contenu: safeContent,
         type: formData.categorie,
-        statut: statut || formData.statut,
-        image: formData.image || null,
-        date_publication: (statut === 'Publié' || formData.statut === 'Publié') ? formData.datePublication : null,
-        tags: formData.tags.length > 0 ? formData.tags : null,
-        lieu: formData.lieu || null,
-        places_disponibles: formData.places_disponibles ? parseInt(formData.places_disponibles) : null,
+        statut: (forceStatut || formData.statut) as 'Brouillon' | 'Publié',
+        image: formData.image.trim() || null,
+        date_publication: ((forceStatut || formData.statut) === 'Publié') ? formData.datePublication : null,
+        tags: formData.tags.length > 0 ? formData.tags : [],
+        lieu: formData.lieu.trim() || null,
+        places_disponibles: formData.places_disponibles ? parseInt(formData.places_disponibles, 10) : null,
         inscription_requise: formData.inscription_requise
       };
 
-      const headers: {[key: string]: string} = {
-        'Content-Type': 'application/json',
-      };
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const token = getToken?.();
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const token = getToken();
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`/api/actualites/${actualiteId}`, {
+      const res = await fetch(`/api/actualites/${actualiteId}`, {
         method: 'PUT',
         headers,
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `Erreur ${res.status}`);
 
-      if (response.ok) {
-        console.log('✅ Actualité mise à jour avec succès:', data);
-        router.push('/administrateur?tab=actualites');
-      } else {
-        console.log('❌ Erreur du serveur:', data);
-      }
-    } catch (error) {
-      console.error('❌ Erreur réseau:', error);
+      router.push('/administrateur?tab=actualites');
+    } catch (e: any) {
+      alert(e?.message || 'Erreur lors de la mise à jour');
     } finally {
       setIsLoading(false);
     }
@@ -167,28 +394,13 @@ const ModifierActualite = () => {
   const handlePublish = () => handleSave('Publié');
   const handleSaveDraft = () => handleSave('Brouillon');
 
-  const handleRemoveImage = () => {
-    setFormData(prev => ({ ...prev, image: '' }));
-    setHasImage(false);
-  };
-
-  const handleMediaUpload = () => {
-    console.log('Upload de média - fonctionnalité à implémenter');
-  };
-
+  // ---- UI ----
   if (loading) {
     return (
       <div className="bg-gray-50 min-h-screen font-sans">
-        <div className="max-w-6xl mx-auto p-8">
+        <div className="max-w-7xl mx-auto p-8">
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '16rem' }}>
-            <div style={{ 
-              animation: 'spin 1s linear infinite', 
-              borderRadius: '50%', 
-              height: '3rem', 
-              width: '3rem', 
-              borderBottomWidth: '2px', 
-              borderBottomColor: '#2563eb' 
-            }}></div>
+            <div className={styles.loadingSpinner} />
           </div>
         </div>
       </div>
@@ -203,24 +415,18 @@ const ModifierActualite = () => {
             <ArrowLeft className={styles.backIcon} />
             Retour
           </Link>
+
           <div className={styles.titleSection}>
-            <h1 className={styles.pageTitle}>Modifier l'actualité</h1>
+            <h1 className={styles.pageTitle}>Modifier l&apos;actualité</h1>
             <p className={styles.pageSubtitle}>Modifiez votre article existant</p>
           </div>
+
           <div className={styles.headerActions}>
-            <button 
-              className={styles.saveButton} 
-              onClick={() => handleSave()}
-              disabled={isLoading}
-            >
+            <button className={styles.saveButton} onClick={handleSaveDraft} disabled={isLoading}>
               <Save className={styles.buttonIcon} />
               {isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
             </button>
-            <button 
-              className={styles.publishButton} 
-              onClick={handlePublish}
-              disabled={isLoading}
-            >
+            <button className={styles.publishButton} onClick={handlePublish} disabled={isLoading}>
               <FileText className={styles.buttonIcon} />
               {isLoading ? 'Publication...' : 'Publier'}
             </button>
@@ -230,8 +436,8 @@ const ModifierActualite = () => {
         <div className={styles.content}>
           <div className={styles.mainSection}>
             <div className={styles.contentCard}>
-              <h2 className={styles.sectionTitle}>Contenu de l'article</h2>
-              <p className={styles.sectionSubtitle}>Saisissez le titre et le contenu de votre actualité</p>
+              <h2 className={styles.sectionTitle}>Contenu de l&apos;article</h2>
+              <p className={styles.sectionSubtitle}>Modifiez le titre et le contenu de votre actualité</p>
 
               <div className={styles.formGroup}>
                 <label className={styles.label}>
@@ -245,11 +451,7 @@ const ModifierActualite = () => {
                   className={`${styles.input} ${errors.titre ? styles.inputError : ''}`}
                   disabled={isLoading}
                 />
-                {errors.titre && (
-                  <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                    {errors.titre}
-                  </span>
-                )}
+                {errors.titre && <span className={styles.errorMessage}>{errors.titre}</span>}
               </div>
 
               <div className={styles.formGroup}>
@@ -264,30 +466,36 @@ const ModifierActualite = () => {
                   rows={3}
                   disabled={isLoading}
                 />
-                {errors.description && (
-                  <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                    {errors.description}
-                  </span>
-                )}
+                {errors.description && <span className={styles.errorMessage}>{errors.description}</span>}
               </div>
 
               <div className={styles.formGroup}>
                 <label className={styles.label}>
                   Contenu <span className={styles.required}>*</span>
                 </label>
-                <RichTextEditor 
-                  value={formData.contenu}
-                  onChange={(content) => setFormData(prev => ({...prev, contenu: content}))}
-                  placeholder="Rédigez le contenu de votre actualité..."
-                />
-                {errors.contenu && (
-                  <span style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                    {errors.contenu}
-                  </span>
-                )}
+
+                <div
+                  className={styles.joditFix}
+                  style={{
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                    borderRadius: '.375rem',
+                    border: errors.contenu ? '1px solid #ef4444' : '1px solid transparent',
+                  }}
+                >
+                  <JoditEditor
+                    value={formData.contenu}
+                    onChange={handleEditorChange}
+                    onBlur={handleEditorBlur}
+                    // @ts-ignore
+                    config={joditConfig}
+                  />
+                </div>
+
+                {errors.contenu && <span className={styles.errorMessage}>{errors.contenu}</span>}
               </div>
 
-              {/* Informations complémentaires - toujours visibles */}
+              {/* Infos complémentaires */}
               <div className={styles.formGroup}>
                 <label className={styles.label}>Lieu (optionnel)</label>
                 <input
@@ -330,46 +538,61 @@ const ModifierActualite = () => {
             </div>
 
             <div className={styles.mediaCard}>
-              <h2 className={styles.sectionTitle}>Média</h2>
-              <p className={styles.sectionSubtitle}>Ajoutez une image ou une vidéo à votre actualité</p>
+              <h2 className={styles.sectionTitle}>Image principale</h2>
+              <p className={styles.sectionSubtitle}>Téléversez une image d&apos;en-tête (JPG, PNG, GIF, WebP – max 5 Mo)</p>
 
-              <div className={styles.formGroup}>
-                <label className={styles.label}>URL de l'image</label>
-                <input
-                  type="url"
-                  name="image"
-                  value={formData.image}
-                  onChange={handleInputChange}
-                  placeholder="https://exemple.com/image.jpg"
-                  className={styles.input}
-                  disabled={isLoading}
-                />
-              </div>
+              {/* input fichier caché */}
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                onChange={onCoverChange}
+                style={{ display: 'none' }}
+              />
 
-              {hasImage && formData.image ? (
-                <div className={styles.imagePreview}>
-                  <img 
-                    src={formData.image} 
-                    alt="Aperçu"
-                    className={styles.previewImage}
-                  />
-                  <button 
-                    className={styles.removeButton} 
-                    onClick={handleRemoveImage}
-                    disabled={isLoading}
-                  >
-                    <X className={styles.removeIcon} />
-                  </button>
-                  <div className={styles.imageInfo}>
-                    <ImageIcon className={styles.imageInfoIcon} />
-                    <span className={styles.imageInfoText}>Image attachée</span>
-                  </div>
+              {!formData.image ? (
+                <div
+                  className={styles.uploadArea}
+                  onClick={onClickSelectCover}
+                  role="button"
+                  aria-label="Choisir une image principale"
+                  style={{ cursor: isUploadingCover ? 'not-allowed' : 'pointer', opacity: isUploadingCover ? 0.6 : 1 }}
+                >
+                  <UploadCloud className={styles.uploadIcon} />
+                  <p className={styles.uploadText}>
+                    {isUploadingCover ? 'Téléversement en cours…' : 'Cliquez pour choisir une image'}
+                  </p>
+                  <p className={styles.uploadSubtext}>Formats acceptés: JPG, PNG, GIF, WebP — 5 Mo max</p>
                 </div>
               ) : (
-                <div className={styles.uploadArea} onClick={handleMediaUpload}>
-                  <Upload className={styles.uploadIcon} />
-                  <p className={styles.uploadText}>Cliquez pour télécharger</p>
-                  <p className={styles.uploadSubtext}>Images et vidéos acceptées</p>
+                <div>
+                  <img
+                    src={formData.image}
+                    alt="Image principale"
+                    style={{ maxWidth: '100%', height: 'auto', borderRadius: '.375rem', display: 'block' }}
+                  />
+                  <div style={{ display: 'flex', gap: '.5rem', marginTop: '.75rem' }}>
+                    <button
+                      type="button"
+                      onClick={onClickSelectCover}
+                      disabled={isUploadingCover || isLoading}
+                      className={styles.saveButton}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '.5rem' }}
+                    >
+                      <ImageIcon className={styles.buttonIcon} />
+                      Changer l’image
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCover}
+                      disabled={isUploadingCover || isLoading}
+                      className={styles.draftButton}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '.5rem', marginBottom: 0 }}
+                    >
+                      <Trash2 className={styles.buttonIcon} />
+                      Supprimer
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -378,7 +601,7 @@ const ModifierActualite = () => {
           <div className={styles.sidebar}>
             <div className={styles.publicationCard}>
               <h2 className={styles.sectionTitle}>Publication</h2>
-              <p className={styles.sectionSubtitle}>Paramètres de publication de l'article</p>
+              <p className={styles.sectionSubtitle}>Paramètres de publication de l&apos;article</p>
 
               <div className={styles.formGroup}>
                 <label className={styles.label}>Statut</label>
@@ -415,7 +638,6 @@ const ModifierActualite = () => {
               <p className={styles.sectionSubtitle}>Sélectionnez la catégorie de votre actualité</p>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Catégorie</label>
                 <select
                   name="categorie"
                   value={formData.categorie}
@@ -437,20 +659,12 @@ const ModifierActualite = () => {
             <div className={styles.actionsCard}>
               <h2 className={styles.sectionTitle}>Actions</h2>
 
-              <button 
-                className={styles.draftButton} 
-                onClick={handleSaveDraft}
-                disabled={isLoading}
-              >
+              <button className={styles.draftButton} onClick={handleSaveDraft} disabled={isLoading}>
                 <Save className={styles.buttonIcon} />
                 {isLoading ? 'Sauvegarde...' : 'Sauvegarder en brouillon'}
               </button>
 
-              <button 
-                className={styles.publishNowButton} 
-                onClick={handlePublish}
-                disabled={isLoading}
-              >
+              <button className={styles.publishNowButton} onClick={handlePublish} disabled={isLoading}>
                 <FileText className={styles.buttonIcon} />
                 {isLoading ? 'Publication...' : 'Publier maintenant'}
               </button>

@@ -1,8 +1,8 @@
 // src/app/administrateur/actualites/create/page.tsx
 'use client';
 
-import React, { useMemo, useRef, useState, useCallback } from 'react';
-import { ArrowLeft, Save, FileText, Calendar } from 'lucide-react';
+import React, { useMemo, useRef, useState, useCallback, ChangeEvent } from 'react';
+import { ArrowLeft, Save, FileText, Calendar, UploadCloud, Image as ImageIcon, Trash2 } from 'lucide-react';
 import styles from './create.module.css';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,9 @@ import { useAuth } from '../../../../contexts/AuthContext';
 // (import dynamique pour éviter les erreurs SSR)
 import dynamic from 'next/dynamic';
 const JoditEditor = dynamic(() => import('jodit-react').then(m => m.default), { ssr: false });
+
+// ⚙️ Limite côté client (gardez-la en phase avec l’API /api/upload/image)
+const MAX_CLIENT_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
 
 type Errors = {
   [key: string]: string | undefined;
@@ -31,7 +34,7 @@ const NouvelleActualite: React.FC = () => {
     statut: 'Brouillon',
     datePublication: new Date().toISOString().split('T')[0],
     categorie: 'administratif',
-    image: '',
+    image: '', // ← URL publique renvoyée par /api/upload/image
     tags: [] as string[],
     lieu: '',
     places_disponibles: '',
@@ -41,10 +44,15 @@ const NouvelleActualite: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
+  // Etat pour l'image principale (upload en cours + suivi du filename pour suppression)
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [uploadedCoverFilename, setUploadedCoverFilename] = useState<string | null>(null);
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
+
   // Tampon non contrôlé pour éviter le "caret jump"
   const editorContentRef = useRef<string>(formData.contenu);
 
-  // ✅ helper: force _blank + rel sécurisé + soulignement visible sur tous les liens
+  // ✅ helper: liens cliquables, nouvel onglet + soulignement
   const ensureLinksOpenNewTab = useCallback((html: string) => {
     if (!html) return html;
     const wrapper = document.createElement('div');
@@ -52,23 +60,40 @@ const NouvelleActualite: React.FC = () => {
 
     wrapper.querySelectorAll<HTMLAnchorElement>('a[href]').forEach(a => {
       const href = (a.getAttribute('href') || '').trim();
-      // ignorer ancres et liens à risque
       if (!href || href.startsWith('#') || /^javascript:/i.test(href)) return;
-
-      // nouvel onglet + sécurité
       a.setAttribute('target', '_blank');
       const rel = a.getAttribute('rel') || '';
       const set = new Set(rel.split(/\s+/).filter(Boolean));
-      set.add('noopener');
-      set.add('noreferrer');
+      set.add('noopener'); set.add('noreferrer');
       a.setAttribute('rel', Array.from(set).join(' '));
-
-      // ✅ souligner explicitement
       const style = a.getAttribute('style') || '';
       if (!/text-decoration\s*:/i.test(style)) {
-        a.setAttribute(
+        a.setAttribute('style', `${style ? style + '; ' : ''}text-decoration: underline; text-underline-offset: 2px;`);
+      }
+    });
+
+    return wrapper.innerHTML;
+  }, []);
+
+  // ✅ helper: rendre les vidéos "jouables" dans l’éditeur
+  const ensureMediaPlayable = useCallback((html: string) => {
+    if (!html) return html;
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+
+    wrapper.querySelectorAll<HTMLVideoElement>('video').forEach(v => {
+      v.setAttribute('controls', '');
+      v.setAttribute('playsinline', '');
+      v.setAttribute('preload', 'metadata');
+      v.setAttribute('contenteditable', 'false');
+      const style = v.getAttribute('style') || '';
+      const needsMax = !/max-width\s*:/i.test(style);
+      const needsHeight = !/height\s*:/i.test(style);
+      const needsDisplay = !/display\s*:/i.test(style);
+      if (needsMax || needsHeight || needsDisplay) {
+        v.setAttribute(
           'style',
-          `${style ? style + '; ' : ''}text-decoration: underline; text-underline-offset: 2px;`
+          `${style ? style + '; ' : ''}${needsMax ? 'max-width:100%;' : ''}${needsHeight ? 'height:auto;' : ''}${needsDisplay ? 'display:block;' : ''}`
         );
       }
     });
@@ -76,7 +101,155 @@ const NouvelleActualite: React.FC = () => {
     return wrapper.innerHTML;
   }, []);
 
-  // ✅ Config Jodit (stable) : wrap URL collées, case "nouvel onglet", double-clic pour suivre
+  // ⬇️ Upload local (image/vidéo) + insertion dans l'éditeur
+  const handleInsertLocalFile = useCallback(
+    (editorInstance: any) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,video/*';
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+
+        // ✅ Vérif taille pour les images (5 Mo)
+        if (file.type.startsWith('image/')) {
+          if (file.size > MAX_CLIENT_IMAGE_SIZE) {
+            const mb = (MAX_CLIENT_IMAGE_SIZE / (1024 * 1024)).toFixed(0);
+            alert(`L’image sélectionnée est trop volumineuse. Taille max: ${mb} Mo.
+Conseil: compressez l’image (JPEG/WebP) ou réduisez sa résolution, puis réessayez.`);
+            input.value = '';
+            return;
+          }
+        }
+
+        try {
+          const form = new FormData();
+          let endpoint = '';
+          let fieldName = '';
+
+          if (file.type.startsWith('image/')) {
+            endpoint = '/api/upload/image';
+            fieldName = 'image';
+          } else if (file.type.startsWith('video/')) {
+            endpoint = '/api/upload/video';
+            fieldName = 'video';
+          } else {
+            alert('Type de fichier non pris en charge.');
+            return;
+          }
+
+          form.append(fieldName, file, file.name);
+
+          const token = getToken?.();
+          const headers: Record<string, string> = {};
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          const res = await fetch(endpoint, { method: 'POST', body: form, headers });
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data?.error || `Upload échoué (${res.status})`);
+          }
+
+          const url: string = data.url;
+          const safeAlt = file.name.replace(/"/g, '&quot;');
+
+          if (file.type.startsWith('image/')) {
+            editorInstance.selection.insertHTML(
+              `<img src="${url}" alt="${safeAlt}" style="max-width:100%;height:auto;" />`
+            );
+          } else {
+            editorInstance.selection.insertHTML(
+              `<video controls playsinline preload="metadata" contenteditable="false" src="${url}" style="max-width:100%;height:auto;display:block;"></video>`
+            );
+          }
+        } catch (e: any) {
+          alert(`Erreur upload: ${e?.message || e}`);
+        } finally {
+          input.value = '';
+        }
+      };
+      input.click();
+    },
+    [getToken]
+  );
+
+  // ✅ Upload de l'image principale (sans URL)
+  const handlePrimaryImageFile = useCallback(
+    async (file: File) => {
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('Veuillez sélectionner un fichier image (JPG, PNG, GIF, WebP).');
+        return;
+      }
+      if (file.size > MAX_CLIENT_IMAGE_SIZE) {
+        const mb = (MAX_CLIENT_IMAGE_SIZE / (1024 * 1024)).toFixed(0);
+        alert(`L’image est trop volumineuse. Taille max: ${mb} Mo.`);
+        return;
+      }
+
+      setIsUploadingCover(true);
+      try {
+        // Optionnel: supprimer l’ancienne image du serveur si on en avait uploadé une dans cette session
+        if (uploadedCoverFilename) {
+          try {
+            await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedCoverFilename)}`, { method: 'DELETE' });
+          } catch {
+            /* ignore */
+          }
+        }
+
+        const form = new FormData();
+        form.append('image', file, file.name);
+
+        const token = getToken?.();
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch('/api/upload/image', { method: 'POST', body: form, headers });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || `Upload échoué (${res.status})`);
+
+        setFormData(prev => ({ ...prev, image: data.url }));
+        setUploadedCoverFilename(data.filename || null);
+      } catch (e: any) {
+        alert(`Erreur upload de l'image: ${e?.message || e}`);
+      } finally {
+        setIsUploadingCover(false);
+      }
+    },
+    [getToken, uploadedCoverFilename]
+  );
+
+  const onClickSelectCover = useCallback(() => {
+    coverInputRef.current?.click();
+  }, []);
+
+  const onCoverChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) handlePrimaryImageFile(file);
+      // reset la valeur pour pouvoir re-sélectionner le même fichier si besoin
+      e.target.value = '';
+    },
+    [handlePrimaryImageFile]
+  );
+
+  const handleRemoveCover = useCallback(async () => {
+    if (!formData.image) return;
+    // Tentative de suppression côté serveur (si on connaît le filename renvoyé par l’API)
+    if (uploadedCoverFilename) {
+      try {
+        await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedCoverFilename)}`, { method: 'DELETE' });
+      } catch {
+        /* ignore */
+      }
+    }
+    setFormData(prev => ({ ...prev, image: '' }));
+    setUploadedCoverFilename(null);
+  }, [formData.image, uploadedCoverFilename]);
+
+  // ✅ Config Jodit (toolbar par défaut). On **surcharge** seulement le contrôle "file"
   const joditConfig = useMemo(
     () => ({
       autofocus: true,
@@ -93,15 +266,37 @@ const NouvelleActualite: React.FC = () => {
         wordBreak: 'break-word',
         whiteSpace: 'pre-wrap',
       } as React.CSSProperties,
+
       safeJavaScriptLink: true,
-      // @ts-ignore - certaines clés ne sont pas typées dans jodit-react
+
+      // Lien: comportement par défaut + options utiles
+      // @ts-ignore
       link: {
-        processPastedLink: true,    // transforme auto une URL collée en <a>
-        openInNewTabCheckbox: true, // case dans le dialogue lien
-        followOnDblClick: true,     // dans l'éditeur: double-clic pour ouvrir
+        processPastedLink: true,
+        openInNewTabCheckbox: true,
+        followOnDblClick: true,
+      },
+
+      // Autoriser explicitement les attributs vidéo pour éviter un nettoyage trop agressif
+      // @ts-ignore
+      allowTags: {
+        video: [
+          'controls', 'src', 'poster', 'preload', 'autoplay', 'loop', 'muted',
+          'playsinline', 'width', 'height', 'style', 'contenteditable'
+        ],
+        source: ['src', 'type']
+      },
+
+      // ⬇️ Remplace le comportement du bouton "insérer un fichier"
+      // @ts-ignore
+      controls: {
+        file: {
+          tooltip: 'Insérer un fichier (image/vidéo) depuis l’ordinateur',
+          exec: (editor: any) => handleInsertLocalFile(editor),
+        },
       },
     }),
-    []
+    [handleInsertLocalFile]
   );
 
   // helper: détecter contenu vide (vrai texte)
@@ -135,15 +330,16 @@ const NouvelleActualite: React.FC = () => {
     editorContentRef.current = content;
   }, []);
 
-  // Au blur, on sécurise/souligne les liens puis on sync le state
+  // Au blur, on sécurise liens + médias, puis on sync le state
   const handleEditorBlur = useCallback(
     (content: string) => {
-      const fixed = ensureLinksOpenNewTab(content);
+      let fixed = ensureLinksOpenNewTab(content);
+      fixed = ensureMediaPlayable(fixed);
       editorContentRef.current = fixed;
       setFormData(prev => ({ ...prev, contenu: fixed }));
       if (errors.contenu) setErrors(prev => ({ ...prev, contenu: '' }));
     },
-    [ensureLinksOpenNewTab, errors.contenu]
+    [ensureLinksOpenNewTab, ensureMediaPlayable, errors.contenu]
   );
 
   const validateForm = (contentForValidation?: string) => {
@@ -160,9 +356,10 @@ const NouvelleActualite: React.FC = () => {
   };
 
   const handleSave = async (statut: 'Brouillon' | 'Publié' = 'Brouillon') => {
-    // Toujours prendre la dernière version + forcer target/rel + soulignement
+    // Toujours prendre la dernière version + sécuriser avant envoi
     const latestContent = editorContentRef.current ?? formData.contenu;
-    const safeContent = ensureLinksOpenNewTab(latestContent);
+    let safeContent = ensureLinksOpenNewTab(latestContent);
+    safeContent = ensureMediaPlayable(safeContent);
 
     if (!validateForm(safeContent)) return;
     if (!user?.id) { router.push('/login'); return; }
@@ -224,7 +421,7 @@ const NouvelleActualite: React.FC = () => {
             Retour
           </Link>
 
-        <div className={styles.titleSection}>
+          <div className={styles.titleSection}>
             <h1 className={styles.pageTitle}>Nouvelle actualité</h1>
             <p className={styles.pageSubtitle}>Créez un nouvel article avec l&apos;éditeur</p>
           </div>
@@ -299,7 +496,7 @@ const NouvelleActualite: React.FC = () => {
                     value={formData.contenu}
                     onChange={handleEditorChange}
                     onBlur={handleEditorBlur}
-                    // @ts-ignore - Jodit accepte des clés supplémentaires comme "style"
+                    // @ts-ignore
                     config={joditConfig}
                   />
                 </div>
@@ -351,23 +548,62 @@ const NouvelleActualite: React.FC = () => {
 
             <div className={styles.mediaCard}>
               <h2 className={styles.sectionTitle}>Image principale</h2>
-              <p className={styles.sectionSubtitle}>Ajoutez une image d&apos;en-tête à votre actualité</p>
+              <p className={styles.sectionSubtitle}>Téléversez une image d&apos;en-tête (JPG, PNG, GIF, WebP – max 5 Mo)</p>
 
-              <div className={styles.formGroup}>
-                <label className={styles.label}>URL de l&apos;image (optionnel)</label>
-                <input
-                  type="url"
-                  name="image"
-                  value={formData.image}
-                  onChange={handleInputChange}
-                  placeholder="https://exemple.com/image.jpg"
-                  className={styles.input}
-                  disabled={isLoading}
-                />
-                <p style={{ fontSize: '.875rem', color: '#6b7280', marginTop: '.25rem' }}>
-                  Vous pouvez aussi insérer des images directement dans le contenu via l’éditeur.
-                </p>
-              </div>
+              {/* Input de fichier caché */}
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                onChange={onCoverChange}
+                style={{ display: 'none' }}
+              />
+
+              {!formData.image ? (
+                <div
+                  className={styles.uploadArea}
+                  onClick={onClickSelectCover}
+                  role="button"
+                  aria-label="Choisir une image principale"
+                  style={{ cursor: isUploadingCover ? 'not-allowed' : 'pointer', opacity: isUploadingCover ? 0.6 : 1 }}
+                >
+                  <UploadCloud className={styles.uploadIcon} />
+                  <p className={styles.uploadText}>
+                    {isUploadingCover ? 'Téléversement en cours…' : 'Cliquez pour choisir une image'}
+                  </p>
+                  <p className={styles.uploadSubtext}>Formats acceptés: JPG, PNG, GIF, WebP — 5 Mo max</p>
+                </div>
+              ) : (
+                <div>
+                  <img
+                    src={formData.image}
+                    alt="Image principale"
+                    style={{ maxWidth: '100%', height: 'auto', borderRadius: '.375rem', display: 'block' }}
+                  />
+                  <div style={{ display: 'flex', gap: '.5rem', marginTop: '.75rem' }}>
+                    <button
+                      type="button"
+                      onClick={onClickSelectCover}
+                      disabled={isUploadingCover || isLoading}
+                      className={styles.saveButton}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '.5rem' }}
+                    >
+                      <ImageIcon className={styles.buttonIcon} />
+                      Changer l’image
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCover}
+                      disabled={isUploadingCover || isLoading}
+                      className={styles.draftButton}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '.5rem', marginBottom: 0 }}
+                    >
+                      <Trash2 className={styles.buttonIcon} />
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -469,3 +705,6 @@ const NouvelleActualite: React.FC = () => {
 };
 
 export default NouvelleActualite;
+
+
+

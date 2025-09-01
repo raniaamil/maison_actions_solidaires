@@ -12,7 +12,6 @@ export default function CreateUserPage() {
     prenom: '',
     nom: '',
     email: '',
-    photo: '',
     bio: '',
     role: 'Administrateur'
   });
@@ -109,7 +108,6 @@ export default function CreateUserPage() {
         nom: formData.nom,
         email: formData.email,
         password: tempPassword,
-        photo: formData.photo || null,
         bio: formData.bio || null,
         role: formData.role
       };
@@ -149,7 +147,6 @@ export default function CreateUserPage() {
       prenom: '',
       nom: '',
       email: '',
-      photo: '',
       bio: '',
       role: 'Administrateur'
     });
@@ -193,37 +190,6 @@ export default function CreateUserPage() {
                 <div className="flex items-center gap-3 mb-6">
                   <User className="w-5 h-5 text-blue-600" />
                   <h2 className="text-xl font-semibold text-gray-900">Informations personnelles</h2>
-                </div>
-
-                {/* Photo de profil */}
-                <div className="flex items-start gap-6 mb-8 p-6 bg-gray-50 rounded-lg">
-                  <div className="flex flex-col items-center">
-                    <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-md mb-4 flex items-center justify-center overflow-hidden">
-                      {formData.photo ? (
-                        <img src={formData.photo} alt="Aperçu" className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-8 h-8 text-gray-400" />
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-600">Photo de profil</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex flex-col">
-                      <label className="text-sm font-medium text-gray-700 mb-2">URL de la photo (optionnelle)</label>
-                      <input
-                        type="url"
-                        name="photo"
-                        value={formData.photo}
-                        onChange={handleInputChange}
-                        className="px-3 py-3 border border-gray-300 rounded-md text-base bg-white transition-all duration-200 focus:outline-none focus:border-blue-600 focus:ring-3 focus:ring-blue-100"
-                        placeholder="https://exemple.com/photo.jpg"
-                        disabled={isCreating}
-                      />
-                      <p className="text-sm text-gray-600 mt-1">
-                        L'utilisateur pourra modifier sa photo de profil après sa première connexion.
-                      </p>
-                    </div>
-                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 mb-6">

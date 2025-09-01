@@ -1,8 +1,8 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { User, FileText, Users, Edit, Trash2, Plus, X, Eye, EyeOff } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { User, FileText, Users, Edit, Trash2, Plus, X, Eye, EyeOff, UploadCloud, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,6 +10,8 @@ import ProtectedRoute from '../../components/ProtectedRoute';
 import AdminActualitesFilters from '../../components/AdminActualitesFilters';
 
 type Tab = 'informations' | 'actualites' | 'utilisateurs';
+
+const MAX_CLIENT_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
 
 const EspaceAdministrateurPage = () => {
   const router = useRouter();
@@ -34,7 +36,7 @@ const EspaceAdministrateurPage = () => {
     bio: ''
   });
   const [profileLoading, setProfileLoading] = useState(false);
-  const [profileErrors, setProfileErrors] = useState({});
+  const [profileErrors, setProfileErrors] = useState<any>({});
 
   // États pour le changement de mot de passe
   const [passwordData, setPasswordData] = useState({
@@ -43,12 +45,17 @@ const EspaceAdministrateurPage = () => {
     confirmPassword: ''
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [passwordErrors, setPasswordErrors] = useState({});
+  const [passwordErrors, setPasswordErrors] = useState<any>({});
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
     confirm: false
   });
+
+  // Upload photo de profil
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [uploadedPhotoFilename, setUploadedPhotoFilename] = useState<string | null>(null);
 
   // États pour les messages de succès
   const [successMessage, setSuccessMessage] = useState('');
@@ -67,13 +74,13 @@ const EspaceAdministrateurPage = () => {
   }, [user]);
 
   // Fonction pour afficher un message de succès temporaire
-  const showSuccessMessage = (message) => {
+  const showSuccessMessage = (message: string) => {
     setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(''), 5000); // Disparaît après 5 secondes
+    setTimeout(() => setSuccessMessage(''), 5000);
   };
 
   // Fonction pour gérer les changements dans le formulaire profil
-  const handleProfileChange = (e) => {
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setProfileData(prev => ({
       ...prev,
@@ -81,15 +88,75 @@ const EspaceAdministrateurPage = () => {
     }));
     
     if (profileErrors[name]) {
-      setProfileErrors(prev => ({
+      setProfileErrors((prev: any) => ({
         ...prev,
         [name]: ''
       }));
     }
   };
 
+  // Upload: ouvrir le sélecteur
+  const onClickSelectPhoto = () => photoInputRef.current?.click();
+
+  // Upload: changement de fichier
+  const onPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner un fichier image (JPG, PNG, GIF, WebP).');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_CLIENT_IMAGE_SIZE) {
+      alert('L’image est trop volumineuse (max 5 Mo).');
+      e.target.value = '';
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    try {
+      // Si on remplace une image déjà téléversée durant cette session, on la supprime côté serveur
+      if (uploadedPhotoFilename) {
+        try {
+          await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedPhotoFilename)}`, { method: 'DELETE' });
+        } catch { /* ignore */ }
+      }
+
+      const form = new FormData();
+      form.append('image', file, file.name);
+
+      const token = getToken?.();
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('/api/upload/image', { method: 'POST', body: form, headers });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || `Upload échoué (${res.status})`);
+
+      setProfileData(prev => ({ ...prev, photo: data.url }));
+      setUploadedPhotoFilename(data.filename || null);
+    } catch (err: any) {
+      alert(`Erreur upload de l'image: ${err?.message || err}`);
+    } finally {
+      setIsUploadingPhoto(false);
+      e.target.value = '';
+    }
+  };
+
+  // Supprimer la photo (si téléversée pendant cette session)
+  const handleRemovePhoto = async () => {
+    if (uploadedPhotoFilename) {
+      try {
+        await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedPhotoFilename)}`, { method: 'DELETE' });
+      } catch { /* ignore */ }
+    }
+    setProfileData(prev => ({ ...prev, photo: '' }));
+    setUploadedPhotoFilename(null);
+  };
+
   // Fonction pour gérer les changements dans le formulaire mot de passe
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPasswordData(prev => ({
       ...prev,
@@ -97,7 +164,7 @@ const EspaceAdministrateurPage = () => {
     }));
     
     if (passwordErrors[name]) {
-      setPasswordErrors(prev => ({
+      setPasswordErrors((prev: any) => ({
         ...prev,
         [name]: ''
       }));
@@ -106,7 +173,7 @@ const EspaceAdministrateurPage = () => {
 
   // Validation du profil
   const validateProfile = () => {
-    const errors = {};
+    const errors: any = {};
     
     if (!profileData.prenom.trim()) {
       errors.prenom = 'Le prénom est requis';
@@ -128,7 +195,7 @@ const EspaceAdministrateurPage = () => {
 
   // Validation du mot de passe
   const validatePassword = () => {
-    const errors = {};
+    const errors: any = {};
     
     if (!passwordData.currentPassword) {
       errors.currentPassword = 'Le mot de passe actuel est requis';
@@ -160,7 +227,7 @@ const EspaceAdministrateurPage = () => {
 
     try {
       const token = getToken();
-      const headers = {
+      const headers: any = {
         'Content-Type': 'application/json',
       };
 
@@ -220,7 +287,7 @@ const EspaceAdministrateurPage = () => {
 
     try {
       const token = getToken();
-      const headers = {
+      const headers: any = {
         'Content-Type': 'application/json',
       };
 
@@ -265,7 +332,7 @@ const EspaceAdministrateurPage = () => {
   };
 
   // Fonction pour basculer la visibilité des mots de passe
-  const togglePasswordVisibility = (field) => {
+  const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
     setShowPasswords(prev => ({
       ...prev,
       [field]: !prev[field]
@@ -274,7 +341,6 @@ const EspaceAdministrateurPage = () => {
 
   // Initialiser l'onglet selon les paramètres URL et les permissions
   useEffect(() => {
-    // Si pas connecté, rediriger vers login
     if (!isAuthenticated()) {
       router.replace('/login');
       return;
@@ -311,8 +377,6 @@ const EspaceAdministrateurPage = () => {
       
       if (response.ok) {
         const data = await response.json();
-        
-        // Plus de filtrage par rôle - tous les utilisateurs voient toutes les actualités
         setArticles(data);
       } else {
         const errorText = await response.text();
@@ -499,7 +563,7 @@ const EspaceAdministrateurPage = () => {
           <div className="bg-white rounded-lg shadow-sm">
             <div className="p-8">
 
-              {/* Onglet Informations avec fonctionnalités complètes */}
+              {/* Onglet Informations */}
               {activeTab === 'informations' && (
                 <div>
                   <h2 className="text-2xl font-semibold text-gray-900 mb-2">Informations personnelles</h2>
@@ -514,8 +578,9 @@ const EspaceAdministrateurPage = () => {
                       <h3 className="text-xl font-semibold text-gray-900">Informations générales</h3>
                     </div>
 
-                    {/* Section Avatar */}
-                    <div className="flex items-start gap-6 mb-8 p-6 bg-gray-50 rounded-lg">
+                    {/* Avatar + Upload (local) */}
+                    <div className="flex items-center gap-6 mb-8 p-6 bg-gray-50 rounded-lg">
+                      {/* Aperçu */}
                       <div className="flex flex-col items-center">
                         <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-md mb-4 flex items-center justify-center overflow-hidden">
                           {profileData.photo ? (
@@ -530,27 +595,53 @@ const EspaceAdministrateurPage = () => {
                         </div>
                         <span className="text-sm text-gray-600">Photo de profil</span>
                       </div>
+
+                      {/* Actions upload */}
                       <div className="flex-1">
-                        <div className="flex flex-col">
-                          <label className="text-sm font-medium text-gray-700 mb-2">URL de la photo</label>
-                          <input
-                            type="url"
-                            name="photo"
-                            value={profileData.photo}
-                            onChange={handleProfileChange}
-                            placeholder="https://exemple.com/photo.jpg"
-                            className={`px-3 py-3 border border-gray-300 rounded-md text-base bg-white transition-all duration-200 focus:outline-none focus:border-blue-600 focus:ring-3 focus:ring-blue-100 ${
-                              profileErrors.photo ? 'border-red-500' : ''
-                            }`}
-                            disabled={profileLoading}
-                          />
-                          {profileErrors.photo && (
-                            <span className="text-red-500 text-sm mt-1">{profileErrors.photo}</span>
-                          )}
-                          <p className="text-sm text-gray-600 mt-1">
-                            Vous pouvez utiliser une URL d'image existante ou télécharger une nouvelle photo.
-                          </p>
-                        </div>
+                        {/* input file caché */}
+                        <input
+                          ref={photoInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={onPhotoChange}
+                          style={{ display: 'none' }}
+                        />
+
+                        {!profileData.photo ? (
+                          <div
+                            role="button"
+                            onClick={onClickSelectPhoto}
+                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-blue-50 transition-colors"
+                            aria-label="Choisir une image"
+                          >
+                            <UploadCloud className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                            <p className="text-gray-700 font-medium">
+                              {isUploadingPhoto ? 'Téléversement en cours…' : 'Cliquez pour choisir une image'}
+                            </p>
+                            <p className="text-sm text-gray-500">Formats: JPG, PNG, GIF, WebP — 5 Mo max</p>
+                          </div>
+                        ) : (
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={onClickSelectPhoto}
+                              disabled={isUploadingPhoto}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            >
+                              <ImageIcon className="w-4 h-4" />
+                              Changer l’image
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleRemovePhoto}
+                              disabled={isUploadingPhoto}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors disabled:opacity-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Supprimer
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -562,9 +653,7 @@ const EspaceAdministrateurPage = () => {
                           name="prenom"
                           value={profileData.prenom}
                           onChange={handleProfileChange}
-                          className={`w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${
-                            profileErrors.prenom ? 'border-red-500' : ''
-                          }`}
+                          className={`w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${profileErrors.prenom ? 'border-red-500' : ''}`}
                           disabled={profileLoading}
                         />
                         {profileErrors.prenom && (
@@ -578,9 +667,7 @@ const EspaceAdministrateurPage = () => {
                           name="nom"
                           value={profileData.nom}
                           onChange={handleProfileChange}
-                          className={`w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${
-                            profileErrors.nom ? 'border-red-500' : ''
-                          }`}
+                          className={`w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${profileErrors.nom ? 'border-red-500' : ''}`}
                           disabled={profileLoading}
                         />
                         {profileErrors.nom && (
@@ -602,9 +689,7 @@ const EspaceAdministrateurPage = () => {
                           name="email"
                           value={profileData.email}
                           onChange={handleProfileChange}
-                          className={`w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${
-                            profileErrors.email ? 'border-red-500' : ''
-                          }`}
+                          className={`w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${profileErrors.email ? 'border-red-500' : ''}`}
                           disabled={profileLoading}
                         />
                         {profileErrors.email && (
@@ -660,9 +745,7 @@ const EspaceAdministrateurPage = () => {
                             name="currentPassword"
                             value={passwordData.currentPassword}
                             onChange={handlePasswordChange}
-                            className={`w-full px-3 py-3 pr-10 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${
-                              passwordErrors.currentPassword ? 'border-red-500' : ''
-                            }`}
+                            className={`w-full px-3 py-3 pr-10 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${passwordErrors.currentPassword ? 'border-red-500' : ''}`}
                             disabled={passwordLoading}
                           />
                           <button 
@@ -688,9 +771,7 @@ const EspaceAdministrateurPage = () => {
                               name="newPassword"
                               value={passwordData.newPassword}
                               onChange={handlePasswordChange}
-                              className={`w-full px-3 py-3 pr-10 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${
-                                passwordErrors.newPassword ? 'border-red-500' : ''
-                              }`}
+                              className={`w-full px-3 py-3 pr-10 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${passwordErrors.newPassword ? 'border-red-500' : ''}`}
                               disabled={passwordLoading}
                             />
                             <button 
@@ -714,9 +795,7 @@ const EspaceAdministrateurPage = () => {
                               name="confirmPassword"
                               value={passwordData.confirmPassword}
                               onChange={handlePasswordChange}
-                              className={`w-full px-3 py-3 pr-10 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${
-                                passwordErrors.confirmPassword ? 'border-red-500' : ''
-                              }`}
+                              className={`w-full px-3 py-3 pr-10 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${passwordErrors.confirmPassword ? 'border-red-500' : ''}`}
                               disabled={passwordLoading}
                             />
                             <button 
@@ -749,7 +828,7 @@ const EspaceAdministrateurPage = () => {
                 </div>
               )}
 
-{/* Onglet Actualités */}
+              {/* Onglet Actualités */}
               {activeTab === 'actualites' && (
                 <div>
                   <div className="flex justify-between items-start mb-8">
@@ -879,42 +958,42 @@ const EspaceAdministrateurPage = () => {
                     <div>
                       {users.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {users.map((user: any) => (
-                            <div key={user.id} className="bg-white border border-gray-300 rounded-lg p-6">
+                          {users.map((u: any) => (
+                            <div key={u.id} className="bg-white border border-gray-300 rounded-lg p-6">
                               <div className="flex items-center mb-4">
-                                <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center mr-4">
-                                  {user.photo ? (
-                                    <img src={user.photo} alt={user.prenom} className="w-12 h-12 rounded-full object-cover" />
+                                <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center mr-4 overflow-hidden">
+                                  {u.photo ? (
+                                    <img src={u.photo} alt={u.prenom} className="w-12 h-12 rounded-full object-cover" />
                                   ) : (
                                     <span className="text-gray-500 font-medium">
-                                      {user.prenom?.[0]}{user.nom?.[0]}
+                                      {u.prenom?.[0]}{u.nom?.[0]}
                                     </span>
                                   )}
                                 </div>
                                 <div>
-                                  <h3 className="font-semibold text-gray-900">{user.prenom} {user.nom}</h3>
-                                  <p className="text-sm text-gray-600">{user.email}</p>
+                                  <h3 className="font-semibold text-gray-900">{u.prenom} {u.nom}</h3>
+                                  <p className="text-sm text-gray-600">{u.email}</p>
                                 </div>
                               </div>
                               <div className="mb-4">
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  user.role === 'Administrateur' 
+                                  u.role === 'Administrateur' 
                                     ? 'bg-red-100 text-red-800' 
                                     : 'bg-green-100 text-green-800'
                                 }`}>
-                                  {user.role}
+                                  {u.role}
                                 </span>
                               </div>
                               <div className="flex gap-2">
                                 <Link
-                                  href={`/administrateur/users/edit/${user.id}`}
+                                  href={`/administrateur/users/edit/${u.id}`}
                                   className="flex items-center gap-1 px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300 transition-colors no-underline"
                                 >
                                   <Edit className="w-3 h-3" />
                                   Modifier
                                 </Link>
                                 <button
-                                  onClick={() => handleDeleteClick(user, 'user')}
+                                  onClick={() => handleDeleteClick(u, 'user')}
                                   className="flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors"
                                 >
                                   <Trash2 className="w-3 h-3" />

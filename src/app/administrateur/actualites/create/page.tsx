@@ -1,4 +1,3 @@
-// src/app/administrateur/actualites/create/page.tsx
 'use client';
 
 import React, { useMemo, useRef, useState, useCallback, ChangeEvent } from 'react';
@@ -610,7 +609,7 @@ Conseil: compressez l’image (JPEG/WebP) ou réduisez sa résolution, puis rée
           <div className={styles.sidebar}>
             <div className={styles.publicationCard}>
               <h2 className={styles.sectionTitle}>Publication</h2>
-              <p className={styles.sectionSubtitle}>Paramètres de publication de l&apos;article</p>
+              <p className={styles.sectionSubtitle}>Ne pas toucher cette section.</p>
 
               <div className={styles.formGroup}>
                 <label className={styles.label}>Statut</label>

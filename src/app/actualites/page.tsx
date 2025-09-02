@@ -31,17 +31,22 @@ interface Article {
   hasRegistration?: boolean;
 }
 
+const PAGE_SIZE = 14; // ← DECIDE ICI le nombre d’articles par page (6/9/12… selon ton design)
+
 const Page: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // États des filtres
+  // Filtres
   const [selectedCategory, setSelectedCategory] = useState<string>('toutes');
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>('toutes');
 
-  // Options des filtres
+  // Pagination
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Options filtres
   const categories = [
     { value: 'toutes', label: 'Toutes les catégories' },
     { value: 'numérique', label: 'Numérique' },
@@ -88,7 +93,7 @@ const Page: React.FC = () => {
     loadActualites();
   }, []);
 
-  // Fonction pour filtrer les articles
+  // Filtrage + reset page à 1 quand filtres changent
   useEffect(() => {
     let filtered = [...articles];
 
@@ -100,13 +105,17 @@ const Page: React.FC = () => {
     // Filtre par date
     if (selectedDateFilter !== 'toutes') {
       const now = new Date();
-      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+      const startOfWeek = new Date();
+      startOfWeek.setHours(0, 0, 0, 0);
+      // Lundi comme début de semaine (optionnel)
+      const day = (now.getDay() + 6) % 7; // 0 = lundi
+      startOfWeek.setDate(now.getDate() - day);
+
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const startOfQuarter = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
 
       filtered = filtered.filter(article => {
         const articleDate = new Date(article.date_creation || article.date || '');
-        
         switch (selectedDateFilter) {
           case 'semaine':
             return articleDate >= startOfWeek;
@@ -121,7 +130,12 @@ const Page: React.FC = () => {
     }
 
     setFilteredArticles(filtered);
+    setCurrentPage(1); // ← important pour repartir en page 1 après filtrage
   }, [articles, selectedCategory, selectedDateFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredArticles.length / PAGE_SIZE));
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const currentPageItems = filteredArticles.slice(startIndex, startIndex + PAGE_SIZE);
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -160,6 +174,17 @@ const Page: React.FC = () => {
   const resetFilters = () => {
     setSelectedCategory('toutes');
     setSelectedDateFilter('toutes');
+    setCurrentPage(1);
+  };
+
+  const goToPage = (page: number) => {
+    const p = Math.min(Math.max(1, page), totalPages);
+    setCurrentPage(p);
+    // Optionnel: scroll en haut de la liste
+    if (typeof window !== 'undefined') {
+      const el = document.getElementById('newsTop');
+      (el || window).scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   if (loading) {
@@ -218,11 +243,11 @@ const Page: React.FC = () => {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} id="newsTop">
       <div className={styles.contentWrapper}>
         <h1 className={styles.title}>Nos Actualités</h1>
         
-{/* Section des filtres */}
+        {/* Section des filtres */}
         <div className={styles.filtersSection}>
           <div className={styles.filtersContainer}>
             <div className={styles.filtersLeft}>
@@ -271,7 +296,7 @@ const Page: React.FC = () => {
           </div>
         </div>
         
-        {filteredArticles.length === 0 ? (
+        {currentPageItems.length === 0 ? (
           <div style={{ 
             display: 'flex', 
             flexDirection: 'column', 
@@ -288,75 +313,114 @@ const Page: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className={styles.articlesGrid}>
-            {filteredArticles.map((article) => (
-              <article key={article.id} className={styles.articleCard}>
-                <Link href={`/actualites/${article.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
-                  <div className={styles.imageContainer}>
-                    <img 
-                      src={article.image || '/images/actualites/default.jpg'} 
-                      alt={article.titre || article.title}
-                      className={styles.articleImage}
-                      onError={handleImageError}
-                    />
-                    <span className={`${styles.typeTag} ${getTypeColor(article.type)}`}>
-                      {article.type}
-                    </span>
-                  </div>
-                  
-                  <div className={styles.cardContent}>
-                    <div className={styles.dateContainer}>
-                      <span className={styles.clockIcon}>🕐</span>
-                      <span className={styles.date}>
-                        {formatDate(article.date_creation || article.date || '')}
+          <>
+            <div className={styles.articlesGrid}>
+              {currentPageItems.map((article) => (
+                <article key={article.id} className={styles.articleCard}>
+                  <Link href={`/actualites/${article.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                    <div className={styles.imageContainer}>
+                      <img 
+                        src={article.image || '/images/actualites/default.jpg'} 
+                        alt={article.titre || article.title}
+                        className={styles.articleImage}
+                        onError={handleImageError}
+                      />
+                      <span className={`${styles.typeTag} ${getTypeColor(article.type)}`}>
+                        {article.type}
                       </span>
                     </div>
                     
-                    <h2 className={styles.articleTitle}>
-                      {article.titre || article.title}
-                    </h2>
-                    
-                    <p className={styles.articleDescription}>{article.description}</p>
-                    
-                    <div className={styles.articleMeta}>
-                      <div className={styles.authorInfo}>
-                        <span className={styles.authorName}>
-                          {article.auteur ? 
-                            `${article.auteur.prenom} ${article.auteur.nom}` : 
-                            `${article.author?.firstName} ${article.author?.lastName}`
-                          }
+                    <div className={styles.cardContent}>
+                      <div className={styles.dateContainer}>
+                        <span className={styles.clockIcon}>🕐</span>
+                        <span className={styles.date}>
+                          {formatDate(article.date_creation || article.date || '')}
                         </span>
                       </div>
                       
-                      {(article.date_modification || article.updatedDate) && (
-                        <div className={styles.updatedDate}>
-                          Mis à jour le {formatDate(article.date_modification || article.updatedDate || '')}
+                      <h2 className={styles.articleTitle}>
+                        {article.titre || article.title}
+                      </h2>
+                      
+                      <p className={styles.articleDescription}>{article.description}</p>
+                      
+                      <div className={styles.articleMeta}>
+                        <div className={styles.authorInfo}>
+                          <span className={styles.authorName}>
+                            {article.auteur ? 
+                              `${article.auteur.prenom} ${article.auteur.nom}` : 
+                              `${article.author?.firstName} ${article.author?.lastName}`
+                            }
+                          </span>
                         </div>
-                      )}
-                    </div>
-
-                    {/* Informations pour les événements */}
-                    {(article.lieu || article.location || article.places_disponibles || article.places) && (
-                      <div className={styles.eventDetails}>
-                        {(article.lieu || article.location) && (
-                          <div className={styles.location}>
-                            <span className={styles.locationIcon}>📍</span>
-                            <span>{article.lieu || article.location}</span>
-                          </div>
-                        )}
-                        {(article.places_disponibles || article.places) && (
-                          <div className={styles.places}>
-                            <span className={styles.placesIcon}>👥</span>
-                            <span>{article.places_disponibles || article.places} places</span>
+                        
+                        {(article.date_modification || article.updatedDate) && (
+                          <div className={styles.updatedDate}>
+                            Mis à jour le {formatDate(article.date_modification || article.updatedDate || '')}
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                </Link>
-              </article>
-            ))}
-          </div>
+
+                      {(article.lieu || article.location || article.places_disponibles || article.places) && (
+                        <div className={styles.eventDetails}>
+                          {(article.lieu || article.location) && (
+                            <div className={styles.location}>
+                              <span className={styles.locationIcon}>📍</span>
+                              <span>{article.lieu || article.location}</span>
+                            </div>
+                          )}
+                          {(article.places_disponibles || article.places) && (
+                            <div className={styles.places}>
+                              <span className={styles.placesIcon}>👥</span>
+                              <span>{article.places_disponibles || article.places} places</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                </article>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <nav className={styles.pagination} aria-label="Pagination des actualités">
+                <button
+                  className={`${styles.pageNav} ${currentPage === 1 ? styles.pageDisabled : ''}`}
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  aria-label="Page précédente"
+                >
+                  ← Précédent
+                </button>
+
+                <ul className={styles.pageList}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <li key={pageNum}>
+                      <button
+                        className={`${styles.pageButton} ${pageNum === currentPage ? styles.pageActive : ''}`}
+                        onClick={() => goToPage(pageNum)}
+                        aria-current={pageNum === currentPage ? 'page' : undefined}
+                        aria-label={`Aller à la page ${pageNum}`}
+                      >
+                        {pageNum}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  className={`${styles.pageNav} ${currentPage === totalPages ? styles.pageDisabled : ''}`}
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  aria-label="Page suivante"
+                >
+                  Suivant →
+                </button>
+              </nav>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -364,3 +428,4 @@ const Page: React.FC = () => {
 };
 
 export default Page;
+

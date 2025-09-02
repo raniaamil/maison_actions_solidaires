@@ -151,6 +151,11 @@ export default function LoginPage() {
             {isLoading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
+
+        {/* <div className={styles.registerLink}>
+          <span>Pas encore de compte ? </span>
+          <a href="/register" className={styles.link}>S'inscrire</a>
+        </div> */}
       </div>
     </div>
   );

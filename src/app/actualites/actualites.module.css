@@ -416,3 +416,51 @@
     font-size: 1.1rem;
   }
 }
+
+/* ----- Pagination ----- */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  margin-top: 2rem;
+}
+
+.pageList {
+  display: flex;
+  gap: .5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 .25rem;
+}
+
+.pageButton,
+.pageNav {
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 .75rem;
+  border-radius: .375rem;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  font-size: .95rem;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.pageButton:hover,
+.pageNav:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.pageActive {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.pageDisabled {
+  opacity: .5;
+  cursor: not-allowed;
+}

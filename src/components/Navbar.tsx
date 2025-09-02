@@ -72,7 +72,7 @@ const Navbar = () => {
               </Link>
             </div>
             <div className={styles.desktopButtons}>
-              {/* Menu déroulant utilisateur pour desktop - VERSION SIMPLIFIÉE */}
+              {/* Menu déroulant utilisateur pour desktop - VERSION SANS LIEN INSCRIPTION */}
               <div className={styles.dropdown}>
                 <button 
                   className={styles.dropdownToggle}
@@ -110,13 +110,7 @@ const Navbar = () => {
                       </>
                     ) : (
                       <>
-                        <Link 
-                          href="/register" 
-                          className={styles.dropdownItem} 
-                          onClick={() => handleDropdownItemClick(() => {})}
-                        >
-                          Inscription
-                        </Link>
+                        {/* Inscription retirée */}
                         <Link 
                           href="/login" 
                           className={styles.dropdownItem} 
@@ -178,7 +172,7 @@ const Navbar = () => {
             </Link>
 
             <div className={styles.mobileButtons}>
-              {/* Menu déroulant utilisateur pour mobile - VERSION SIMPLIFIÉE */}
+              {/* Menu déroulant utilisateur pour mobile - SANS LIEN INSCRIPTION */}
               <div className={styles.mobileDropdown}>
                 <button 
                   className={styles.mobileDropdownToggle}
@@ -219,13 +213,7 @@ const Navbar = () => {
                       </>
                     ) : (
                       <>
-                        <Link 
-                          href="/register" 
-                          className={styles.mobileDropdownItem} 
-                          onClick={closeMenus}
-                        >
-                          Inscription
-                        </Link>
+                        {/* Inscription retirée */}
                         <Link 
                           href="/login" 
                           className={styles.mobileDropdownItem} 

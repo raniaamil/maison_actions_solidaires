@@ -248,7 +248,7 @@ const MaisonActionsSolidaires = () => {
 
           {/* Objectifs 2025 */}
           <div className={styles.objectivesCard}>
-            <h3 className={styles.objectivesTitle}>Objectifs 2025</h3>
+            <h3 className={styles.objectivesTitle}>Objectifs</h3>
             <p className={styles.objectivesDescription}>
               Cette année, nous ambitionnons de doubler le nombre de bénéficiaires formés en informatique avec un objectif de 50 
               personnes accompagnées. Nous souhaitons également améliorer la disponibilité de notre plateforme d'écoute téléphonique 

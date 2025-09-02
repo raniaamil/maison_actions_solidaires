@@ -10,13 +10,13 @@ export default function NosActionsPage() {
       items: [
         'Initiation informatique pour les novices',
         'Utilisation des outils bureautiques (Word, Excel, etc.)',
-        'Création et gestion de comptes administratifs en ligne',
+        'Création et gestion de comptes administratifs en ligne (CAF, MDPH)',
         'Rédaction et envoi de courriels',
-        'Assistance dans les démarches complexes'
+        'Assistance dans les démarches complexes (dossiers MDPH, déclarations en ligne)'
       ],
       objectif: {
-        title: 'Objectif 2025',
-        description: 'Doubler le nombre de bénéficiaires formés en informatique (50 bénéficiaires)'
+        title: 'Objectif',
+        description: 'Doubler le nombre de bénéficiaires formés en informatique (50 bénéficiaires), augmenter la fréquence des ateliers et aménager une salle informatique dédiée'
       }
     },
     {
@@ -25,14 +25,14 @@ export default function NosActionsPage() {
       title: 'Pôle Administratif',
       items: [
         'Accompagnement individualisé',
-        'Permanence MDPH',
-        'Remplissage de dossiers administratifs',
+        'Permanence MDPH pour accompagnement et vérification des dossiers',
+        'Remplissage de dossiers administratifs (MDPH, CAF, sécurité sociale)',
         'Vérification et suivi des demandes',
-        'Accompagnement à la domiciliation administrative'
+        'Accompagnement à la domiciliation administrative (sous réserve d\'un local fixe)'
       ],
       objectif: {
         title: 'Services spécialisés',
-        description: 'Domiciliation pour les personnes sans domicile stable'
+        description: 'Domiciliation pour les personnes sans domicile stable et renfort de personnel administratif (conseiller en autonomie)'
       }
     },
     {
@@ -40,15 +40,15 @@ export default function NosActionsPage() {
       icon: '/images/nosactions/pôle-soutien.jpg',
       title: 'Pôle Soutien',
       items: [
-        'Plateforme d\'écoute téléphonique',
+        'Plateforme d\'écoute téléphonique pour aidants en burnout',
         'Orientation vers les structures adaptées',
-        'Groupes de parole thématiques',
-        'Accompagnement psychologique individuel',
-        'Cours de langue française'
+        'Groupes de parole thématiques (épuisement parental, etc.)',
+        'Accompagnement psychologique individuel (15 séances avec psychologue)',
+        'Cours de langue française et aide aux devoirs'
       ],
       objectif: {
-        title: 'Objectif 2025',
-        description: '75 appels mensuels et 15 séances individuelles avec psychologue'
+        title: 'Objectif',
+        description: '75 appels mensuels, 2 groupes de parole mensuels avec 8 participants et développement de cercles de parole thématiques'
       }
     },
     {
@@ -58,29 +58,29 @@ export default function NosActionsPage() {
       items: [
         'Ateliers de relaxation et musicothérapie',
         'Formation aux techniques de gestion du stress',
-        'Prévention du burn-out des aidants',
+        'Prévention du burn-out des aidants avec sessions de sensibilisation',
         'Conférences santé animées par des professionnels',
         'Soutien holistique : diététique, danse, art-thérapie'
       ],
       objectif: {
         title: 'Approche globale',
-        description: 'Soutien physique, mental et émotionnel adapté'
+        description: 'Soutien physique, mental et émotionnel adapté avec espaces calmes et intervenants spécialisés'
       }
     },
     {
-      id: 'junior',
+      id: 'familles',
       icon: '/images/nosactions/pôle-junior.jpg',
-      title: 'Pôle Junior',
+      title: 'Pôle Familles',
       items: [
-        'Accompagnement AESH personnalisé',
-        'Ateliers éducatifs et ludiques adaptés',
-        'Stimulation de la créativité et des capacités cognitives',
+        'Accompagnement AESH personnalisé pour enfants à besoins spécifiques',
+        'Ateliers éducatifs et ludiques adaptés pour stimuler créativité et capacités cognitives',
+        'Atelier "Découverte des métiers" par jeu de rôle avec expériences sensorielles',
         'Événements inclusifs et sorties collectives',
-        'Sensibilisation à la diversité'
+        'Sensibilisation à la diversité pour favoriser l\'inclusion'
       ],
       objectif: {
         title: 'Mission',
-        description: 'Favoriser l\'inclusion des enfants à besoins spécifiques'
+        description: 'Favoriser l\'inclusion des enfants à besoins spécifiques, stimuler la curiosité et créer du lien intergénérationnel'
       }
     }
   ];
@@ -123,6 +123,18 @@ export default function NosActionsPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Section Appel à l'action */}
+        <div className={styles.ctaSection}>
+          <h2>Agissons Ensemble !</h2>
+          <p>
+            Chaque jour, notre association agit pour briser l'isolement, renforcer l'autonomie 
+            et promouvoir le bien-être à travers des activités inclusives et adaptées.
+          </p>
+          <a href="/contact" className={styles.nosActionsBtn}>
+            Nous soutenir
+          </a>
         </div>
       </div>
     </div>

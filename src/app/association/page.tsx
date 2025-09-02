@@ -179,31 +179,58 @@ const MaisonActionsSolidaires = () => {
               </div>
             </div>
 
-            {/* Autres membres de l'équipe */}
+            {/* Romain */}
             <div className={styles.teamCard}>
               <div className={styles.teamAvatar}>
-                <span className={styles.teamInitials}>👥</span>
+                <Image
+                  src="/images/association/photo_romain.jpg"
+                  alt="Romain"
+                  width={96}
+                  height={96}
+                  className={styles.teamPhoto}
+                />
               </div>
-              <h4 className={styles.teamName}>Autres Membres</h4>
-              <p className={styles.teamRole}>Équipe Administrative & Pédagogique</p>
-              <div className={styles.teamBio}>
-                <div className={styles.teamMemberItem}>
-                  <strong>Audrey KAGO</strong>
-                  <br />
-                  <span className={styles.memberRole}>Secrétaire</span>
-                </div>
-                <div className={styles.teamMemberItem}>
-                  <strong>Hippolyte NGOUAJO</strong>
-                  <br />
-                  <span className={styles.memberRole}>Trésorier</span>
-                </div>
-                <div className={styles.teamMemberItem}>
-                  <strong>Cataracte SMARTINS</strong>
-                  <br />
-                  <span className={styles.memberRole}>AESH/Enseignante - Pôle Junior</span>
-                  <span className={styles.memberDescription}>Accompagnante des enfants en situation de handicap par des ateliers récréatifs</span>
-                </div>
+              <h4 className={styles.teamName}>Romain</h4>
+              <p className={styles.teamRole}>Formateur Numérique</p>
+              <div className={styles.teamBioExtended}>
+                <p>
+                  "Hello ! Moi c'est Romain, et j'ai envie de donner un coup de pouce à toutes celles et ceux qui 
+                  veulent se sentir plus à l'aise avec le numérique.
+                </p>
+                <p>
+                  Que ce soit pour mieux utiliser Word, Excel, Google, créer facilement avec Canva, ou encore 
+                  s'organiser dans des papiers administratifs en ligne, je suis là pour partager mes astuces et 
+                  rendre tout ça plus simple et accessible.
+                </p>
+                <p>
+                  L'idée, c'est d'apprendre ensemble, sans prise de tête, et de montrer que le numérique peut 
+                  vraiment être utile à tout le monde.
+                </p>
+                <p>
+                  Au plaisir de vous rencontrer et de vous aider ! :)"
+                </p>
               </div>
+            </div>
+          </div>
+
+          {/* Section Autres Membres */}
+          <h3 className={styles.subsectionTitle}>Autres Membres de l'Équipe</h3>
+          
+          <div className={styles.otherMembersGrid}>
+            <div className={styles.otherMemberCard}>
+              <h4 className={styles.otherMemberName}>Audrey KAGO</h4>
+              <p className={styles.otherMemberRole}>Secrétaire</p>
+            </div>
+            
+            <div className={styles.otherMemberCard}>
+              <h4 className={styles.otherMemberName}>Hippolyte NGOUAJO</h4>
+              <p className={styles.otherMemberRole}>Trésorier</p>
+            </div>
+            
+            <div className={styles.otherMemberCard}>
+              <h4 className={styles.otherMemberName}>Cataracte SMARTINS</h4>
+              <p className={styles.otherMemberRole}>AESH/Enseignante - Pôle Junior</p>
+              <p className={styles.otherMemberDescription}>Accompagnante des enfants en situation de handicap par des ateliers récréatifs</p>
             </div>
           </div>
 
@@ -227,6 +254,21 @@ const MaisonActionsSolidaires = () => {
               personnes accompagnées. Nous souhaitons également améliorer la disponibilité de notre plateforme d'écoute téléphonique 
               pour atteindre 75 appels mensuels et développer de nouveaux cercles de parole thématiques.
             </p>
+          </div>
+
+          {/* Section Téléchargement PDF */}
+          <div className={styles.downloadSection}>
+            <h3 className={styles.subsectionTitle}>Découvrez qui nous sommes</h3>
+            <p className={styles.sectionDescription}>
+              Téléchargez notre plaquette de présentation pour en savoir plus sur nos services et découvrir comment nous pouvons vous accompagner.
+            </p>
+            <a 
+              href="/documents/plaquette-maison-actions-solidaires.pdf" 
+              download="Plaquette-Maison-Actions-Solidaires.pdf"
+              className={styles.downloadButton}
+            >
+              📄 Télécharger notre plaquette (PDF)
+            </a>
           </div>
         </div>
       </div>

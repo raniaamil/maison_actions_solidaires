@@ -1,0 +1,512 @@
+.homePage {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #374151;
+  overflow-x: hidden;
+}
+
+/* Bannière Hero pleine largeur */
+.heroBanner {
+  position: relative;
+  height: 100vh;
+  background: linear-gradient(135deg, rgba(139, 115, 85, 0.8), rgba(131, 140, 88, 0.7)),
+              url('/images/association/bannière_association.png') center/cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: white;
+  overflow: hidden;
+}
+
+.heroBanner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+  max-width: 1000px;
+  padding: 0 2rem;
+  animation: fadeInUp 1.2s ease-out;
+}
+
+.heroTitle {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+}
+
+.heroSubtitle {
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  margin-bottom: 2.5rem;
+  opacity: 0.95;
+  font-weight: 300;
+  line-height: 1.4;
+}
+
+.heroCta {
+  display: inline-flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn {
+  display: inline-block;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 1.1rem;
+  border: 2px solid transparent;
+}
+
+.btnPrimary {
+  background: linear-gradient(135deg, #FF8C42, #ff6b2b);
+  color: white;
+  box-shadow: 0 8px 25px rgba(255, 140, 66, 0.3);
+}
+
+.btnPrimary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(255, 140, 66, 0.4);
+  background: linear-gradient(135deg, #ff6b2b, #FF8C42);
+  color: white;
+  text-decoration: none;
+}
+
+.btnSecondary {
+  background: transparent;
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.btnSecondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: white;
+  transform: translateY(-2px);
+  color: white;
+  text-decoration: none;
+}
+
+/* Correction du conflit : suppression de la marge globale */
+.btnSecondaryAlt {
+  background: #8b7355;
+  color: white;
+}
+
+/* Marge uniquement pour le bouton "Voir toutes les actualités" dans la section Actus */
+.newsSection .newsCta .btnSecondaryAlt {
+  margin-bottom: 45px;
+}
+
+/* Aligne proprement les deux boutons du CTA final */
+.ctaButtons .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.9rem 1.75rem;
+  border-radius: 50px;
+  margin: 0;
+}
+
+/* Section Mission */
+.missionSection {
+  padding: 6rem 2rem;
+  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  position: relative;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.sectionTitle {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: bold;
+  color: #8b7355;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.sectionTitle::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(135deg, #FF8C42, #838C58);
+  border-radius: 2px;
+}
+
+.sectionTitleWhite {
+  color: white;
+}
+
+.sectionDescription {
+  font-size: 1.2rem;
+  color: #4b5563;
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+
+.sectionDescriptionWhite {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Valeurs Grid */
+.valuesGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.valueCard {
+  background: white;
+  padding: 1.5rem 1rem;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(139, 115, 85, 0.1);
+  position: relative;
+  border-color: #a4b566;
+}
+
+.valueIcon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #FF8C42;
+}
+
+.valueTitle {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 0.8rem;
+}
+
+.valueDesc {
+  color: #6b7280;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+/* Section Actualités */
+.newsSection {
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+}
+
+.newsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+  border: none !important;
+}
+
+.newsCard {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(131, 140, 88, 0.12);
+  transition: all 0.25s ease;
+  border-color: #a4b566 !important;
+  position: relative;
+}
+
+.newsCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 40px rgba(131, 140, 88, 0.28);
+  border-color: #a4b566;
+}
+
+.newsImage {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.newsImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.newsCard:hover .newsImg {
+  transform: scale(1.05);
+}
+
+.newsCategory {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: lowercase;
+  color: white;
+}
+
+.categoryNumerique { background-color: #2196F3; }
+.categoryTemoignage { background-color: #795548; }
+.categoryEvenement { background-color: #8c0c91; }
+.categoryAdministratif { background-color: #e23922; }
+.categorySoutien { background-color: #d6a81e; }
+.categoryBienEtre { background-color: #26d335; }
+.categoryJunior { background-color: #ec8768; }
+
+.newsContent {
+  padding: 1.5rem;
+}
+
+.newsMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.newsDate {
+  font-weight: 500;
+}
+
+.newsAuthor {
+  color: #8b7355;
+  font-weight: 600;
+}
+
+.newsTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+  transition: color 0.3s ease;
+}
+
+.newsCard:hover .newsTitle {
+  color: #8b7355;
+}
+
+.newsExcerpt {
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.newsCta {
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #f3f4f6;
+  border-top-color: #8b7355;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Section Stats */
+.statsSection {
+  padding: 5rem 2rem;
+  background: linear-gradient(135deg, #8b7355, #a4845e);
+  color: white;
+  text-align: center;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 3rem;
+  margin-top: 3rem;
+}
+
+.statItem {
+  padding: 2rem 1rem;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.statItem:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.statNumber {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #FFD93D;
+}
+
+.statLabel {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+/* Section CTA */
+.ctaSection {
+  padding: 6rem 2rem;
+  background: linear-gradient(135deg, #f0f9f0 0%, #ffffff 100%);
+  text-align: center;
+}
+
+.ctaContent {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.ctaTitle {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+.ctaText {
+  font-size: 1.2rem;
+  color: #4b5563;
+  margin-bottom: 3rem;
+  line-height: 1.7;
+}
+
+.ctaButtons {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animateOnScroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease;
+}
+
+.animateOnScroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .heroCta {
+    flex-direction: column;
+  }
+
+  .newsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  .ctaButtons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .valuesGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .missionSection,
+  .newsSection,
+  .statsSection,
+  .ctaSection {
+    padding: 4rem 1rem;
+  }
+
+  .heroContent {
+    padding: 0 1rem;
+  }
+}
+
+/* Bouton "Lire la suite" */
+.newsLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #FF8C42, #ff6b2b);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(255, 140, 66, 0.3);
+}
+
+.newsLink:hover {
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+.readMoreText { position: relative; z-index: 1; }
+
+.readMoreIcon {
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+

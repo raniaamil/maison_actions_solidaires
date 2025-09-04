@@ -179,6 +179,7 @@
   transform: scale(1);
   transition: all 0.3s ease;
   cursor: pointer;
+  border-color: #a4b566;
 }
 
 .teamCard:hover {

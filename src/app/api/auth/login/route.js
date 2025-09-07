@@ -1,6 +1,6 @@
 // src/app/api/auth/login/route.js
 export const runtime = 'nodejs';
-import db from '../../../../lib/db';
+import { query } from '../../../../lib/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -41,13 +41,13 @@ export async function POST(request) {
       );
     }
 
-    // Chercher l'utilisateur
-    const [users] = await db.execute(
-      'SELECT id, prenom, nom, email, mot_de_passe, role, photo, bio FROM users WHERE email = ? AND actif = TRUE',
+    // Chercher l'utilisateur - PostgreSQL
+    const result = await query(
+      'SELECT id, prenom, nom, email, mot_de_passe, role, photo, bio FROM users WHERE email = $1 AND actif = true',
       [emailTrimmed]
     );
 
-    if (users.length === 0) {
+    if (result.rows.length === 0) {
       // Utiliser un délai pour éviter les attaques par timing
       await new Promise(resolve => setTimeout(resolve, 100));
       return Response.json(
@@ -56,7 +56,7 @@ export async function POST(request) {
       );
     }
 
-    const user = users[0];
+    const user = result.rows[0];
 
     // Vérifier le mot de passe
     let isValidPassword = false;
@@ -162,8 +162,8 @@ export async function POST(request) {
   } catch (error) {
     console.error('❌ Erreur générale lors de la connexion:', error);
     
-    // Gestion des erreurs spécifiques
-    if (error.code === 'ER_ACCESS_DENIED_ERROR') {
+    // Gestion des erreurs spécifiques PostgreSQL
+    if (error.code === '28000') { // Invalid authorization specification
       return Response.json(
         { error: 'Erreur de connexion à la base de données' },
         { status: 500 }

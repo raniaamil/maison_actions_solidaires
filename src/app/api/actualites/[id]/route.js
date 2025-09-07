@@ -1,11 +1,12 @@
-// src/app/api/actualites/[id]/route.js - CORRECTION MYSQL2
+// src/app/api/actualites/[id]/route.js - VERSION POSTGRESQL CORRIGÉE
 export const runtime = 'nodejs';
-import db from '../../../../lib/db';
+import { query } from '../../../../lib/db';
 
 // GET - Récupérer une actualité par ID
 export async function GET(request, { params }) {
   try {
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
 
     if (isNaN(id)) {
       return Response.json(
@@ -14,7 +15,7 @@ export async function GET(request, { params }) {
       );
     }
 
-    const query = `
+    const result = await query(`
       SELECT 
         a.*,
         COALESCE(u.prenom, 'Auteur') as auteur_prenom,
@@ -23,19 +24,17 @@ export async function GET(request, { params }) {
         u.bio as auteur_bio
       FROM actualites a
       LEFT JOIN users u ON a.auteur_id = u.id
-      WHERE a.id = ${id}
-    `;
+      WHERE a.id = $1
+    `, [id]);
 
-    const [rows] = await db.query(query);
-
-    if (rows.length === 0) {
+    if (result.rows.length === 0) {
       return Response.json(
         { error: 'Actualité non trouvée' },
         { status: 404 }
       );
     }
 
-    const row = rows[0];
+    const row = result.rows[0];
     
     // Gestion sécurisée des tags JSON
     let tags = [];
@@ -103,7 +102,8 @@ export async function GET(request, { params }) {
 // PUT - Mettre à jour une actualité
 export async function PUT(request, { params }) {
   try {
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     const body = await request.json();
 
     if (isNaN(id)) {
@@ -128,15 +128,19 @@ export async function PUT(request, { params }) {
     } = body;
 
     // Vérifier que l'actualité existe
-    const checkQuery = `SELECT id, statut FROM actualites WHERE id = ${id}`;
-    const [existingActualite] = await db.query(checkQuery);
+    const checkResult = await query(
+      'SELECT id, statut FROM actualites WHERE id = $1',
+      [id]
+    );
 
-    if (existingActualite.length === 0) {
+    if (checkResult.rows.length === 0) {
       return Response.json(
         { error: 'Actualité non trouvée' },
         { status: 404 }
       );
     }
+
+    const existingActualite = checkResult.rows[0];
 
     // Validation du type si fourni
     if (type) {
@@ -151,60 +155,86 @@ export async function PUT(request, { params }) {
 
     // Construire la requête de mise à jour dynamiquement
     const updates = [];
+    const queryParams = [];
+    let paramIndex = 1;
 
     if (titre !== undefined) {
-      updates.push(`titre = ${db.escape(titre.trim())}`);
+      updates.push(`titre = $${paramIndex}`);
+      queryParams.push(titre.trim());
+      paramIndex++;
     }
     if (description !== undefined) {
-      updates.push(`description = ${db.escape(description.trim())}`);
+      updates.push(`description = $${paramIndex}`);
+      queryParams.push(description.trim());
+      paramIndex++;
     }
     if (contenu !== undefined) {
-      updates.push(`contenu = ${db.escape(contenu.trim())}`);
+      updates.push(`contenu = $${paramIndex}`);
+      queryParams.push(contenu.trim());
+      paramIndex++;
     }
     if (type !== undefined) {
-      updates.push(`type = ${db.escape(type)}`);
+      updates.push(`type = $${paramIndex}`);
+      queryParams.push(type);
+      paramIndex++;
     }
     if (statut !== undefined) {
-      updates.push(`statut = ${db.escape(statut)}`);
-      
-      // Gestion de la date de publication
-      if (statut === 'Publié' && existingActualite[0].statut !== 'Publié') {
-        if (date_publication) {
-          try {
-            const dateObj = new Date(date_publication);
-            if (!isNaN(dateObj.getTime())) {
-              updates.push(`date_publication = ${db.escape(dateObj.toISOString().slice(0, 19).replace('T', ' '))}`);
-            } else {
-              updates.push(`date_publication = ${db.escape(new Date().toISOString().slice(0, 19).replace('T', ' '))}`);
-            }
-          } catch (e) {
-            updates.push(`date_publication = ${db.escape(new Date().toISOString().slice(0, 19).replace('T', ' '))}`);
+      updates.push(`statut = $${paramIndex}`);
+      queryParams.push(statut);
+      paramIndex++;
+    }
+    
+    // Gestion de la date de publication (séparée pour éviter les conflits de paramètres)
+    if (statut === 'Publié' && existingActualite.statut !== 'Publié') {
+      let datePublicationValue = new Date();
+      if (date_publication) {
+        try {
+          const dateObj = new Date(date_publication);
+          if (!isNaN(dateObj.getTime())) {
+            datePublicationValue = dateObj;
           }
-        } else {
-          updates.push(`date_publication = ${db.escape(new Date().toISOString().slice(0, 19).replace('T', ' '))}`);
+        } catch (e) {
+          // Garder la date par défaut
         }
       }
+      updates.push(`date_publication = $${paramIndex}`);
+      queryParams.push(datePublicationValue);
+      paramIndex++;
     }
     if (image !== undefined) {
-      updates.push(`image = ${image && image.trim() !== '' ? db.escape(image.trim()) : 'NULL'}`);
+      updates.push(`image = $${paramIndex}`);
+      queryParams.push(image && image.trim() !== '' ? image.trim() : null);
+      paramIndex++;
     }
     if (tags !== undefined) {
       const tagsJson = tags && Array.isArray(tags) && tags.length > 0 ? JSON.stringify(tags) : null;
-      updates.push(`tags = ${tagsJson ? db.escape(tagsJson) : 'NULL'}`);
+      updates.push(`tags = $${paramIndex}`);
+      queryParams.push(tagsJson);
+      paramIndex++;
     }
     if (lieu !== undefined) {
-      updates.push(`lieu = ${lieu && lieu.trim() !== '' ? db.escape(lieu.trim()) : 'NULL'}`);
+      updates.push(`lieu = $${paramIndex}`);
+      queryParams.push(lieu && lieu.trim() !== '' ? lieu.trim() : null);
+      paramIndex++;
     }
     if (places_disponibles !== undefined) {
+      let placesValue = null;
       const placesNum = parseInt(places_disponibles, 10);
-      updates.push(`places_disponibles = ${!isNaN(placesNum) && placesNum > 0 ? placesNum : 'NULL'}`);
+      if (!isNaN(placesNum) && placesNum > 0) {
+        placesValue = placesNum;
+      }
+      updates.push(`places_disponibles = $${paramIndex}`);
+      queryParams.push(placesValue);
+      paramIndex++;
     }
     if (inscription_requise !== undefined) {
-      updates.push(`inscription_requise = ${Boolean(inscription_requise) ? 1 : 0}`);
+      updates.push(`inscription_requise = $${paramIndex}`);
+      queryParams.push(Boolean(inscription_requise));
+      paramIndex++;
     }
 
     // Toujours mettre à jour la date de modification
-    updates.push('date_modification = NOW()');
+    updates.push(`date_modification = NOW()`);
 
     if (updates.length === 1) { // Seulement date_modification
       return Response.json(
@@ -213,13 +243,17 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const updateQuery = `UPDATE actualites SET ${updates.join(', ')} WHERE id = ${id}`;
+    // Ajouter l'ID à la fin pour la clause WHERE
+    queryParams.push(id);
+    const updateQuery = `UPDATE actualites SET ${updates.join(', ')} WHERE id = $${queryParams.length}`;
+    
     console.log('Requête de mise à jour:', updateQuery);
+    console.log('Paramètres:', queryParams);
 
-    await db.query(updateQuery);
+    await query(updateQuery, queryParams);
 
     // Récupérer l'actualité mise à jour
-    const selectQuery = `
+    const selectResult = await query(`
       SELECT 
         a.*,
         u.prenom as auteur_prenom,
@@ -228,32 +262,32 @@ export async function PUT(request, { params }) {
         u.bio as auteur_bio
       FROM actualites a
       JOIN users u ON a.auteur_id = u.id
-      WHERE a.id = ${id}
-    `;
+      WHERE a.id = $1
+    `, [id]);
 
-    const [updatedActualite] = await db.query(selectQuery);
+    const updatedActualite = selectResult.rows[0];
 
     const actualiteUpdated = {
-      id: updatedActualite[0].id,
-      titre: updatedActualite[0].titre,
-      description: updatedActualite[0].description,
-      contenu: updatedActualite[0].contenu,
-      type: updatedActualite[0].type,
-      statut: updatedActualite[0].statut,
-      image: updatedActualite[0].image || '/images/actualites/default.jpg',
-      date_creation: updatedActualite[0].date_creation,
-      date_publication: updatedActualite[0].date_publication,
-      date_modification: updatedActualite[0].date_modification,
-      tags: updatedActualite[0].tags ? JSON.parse(updatedActualite[0].tags) : [],
-      lieu: updatedActualite[0].lieu,
-      places_disponibles: updatedActualite[0].places_disponibles,
-      inscription_requise: Boolean(updatedActualite[0].inscription_requise),
+      id: updatedActualite.id,
+      titre: updatedActualite.titre,
+      description: updatedActualite.description,
+      contenu: updatedActualite.contenu,
+      type: updatedActualite.type,
+      statut: updatedActualite.statut,
+      image: updatedActualite.image || '/images/actualites/default.jpg',
+      date_creation: updatedActualite.date_creation,
+      date_publication: updatedActualite.date_publication,
+      date_modification: updatedActualite.date_modification,
+      tags: updatedActualite.tags ? JSON.parse(updatedActualite.tags) : [],
+      lieu: updatedActualite.lieu,
+      places_disponibles: updatedActualite.places_disponibles,
+      inscription_requise: Boolean(updatedActualite.inscription_requise),
       auteur: {
-        id: updatedActualite[0].auteur_id,
-        prenom: updatedActualite[0].auteur_prenom,
-        nom: updatedActualite[0].auteur_nom,
-        photo: updatedActualite[0].auteur_photo || '/images/default-avatar.jpg',
-        bio: updatedActualite[0].auteur_bio || ''
+        id: updatedActualite.auteur_id,
+        prenom: updatedActualite.auteur_prenom,
+        nom: updatedActualite.auteur_nom,
+        photo: updatedActualite.auteur_photo || '/images/default-avatar.jpg',
+        bio: updatedActualite.auteur_bio || ''
       }
     };
 
@@ -267,10 +301,10 @@ export async function PUT(request, { params }) {
     let errorMessage = 'Erreur serveur lors de la mise à jour de l\'actualité';
     let statusCode = 500;
     
-    if (error.code === 'ER_DATA_TOO_LONG') {
+    if (error.code === '22001') { // String data too long
       errorMessage = 'Données trop longues pour un ou plusieurs champs';
       statusCode = 400;
-    } else if (error.code === 'ER_BAD_FIELD_ERROR') {
+    } else if (error.code === '42703') { // Column does not exist
       errorMessage = 'Erreur de structure de base de données';
     }
     
@@ -287,7 +321,8 @@ export async function PUT(request, { params }) {
 // DELETE - Supprimer une actualité
 export async function DELETE(request, { params }) {
   try {
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
 
     if (isNaN(id)) {
       return Response.json(
@@ -297,18 +332,19 @@ export async function DELETE(request, { params }) {
     }
 
     // Vérifier que l'actualité existe
-    const checkQuery = `SELECT id FROM actualites WHERE id = ${id}`;
-    const [existingActualite] = await db.query(checkQuery);
+    const checkResult = await query(
+      'SELECT id FROM actualites WHERE id = $1',
+      [id]
+    );
 
-    if (existingActualite.length === 0) {
+    if (checkResult.rows.length === 0) {
       return Response.json(
         { error: 'Actualité non trouvée' },
         { status: 404 }
       );
     }
 
-    const deleteQuery = `DELETE FROM actualites WHERE id = ${id}`;
-    await db.query(deleteQuery);
+    await query('DELETE FROM actualites WHERE id = $1', [id]);
 
     return Response.json({
       message: 'Actualité supprimée avec succès'

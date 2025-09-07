@@ -21,6 +21,7 @@
     "@tiptap/pm": "^3.3.0",
     "@tiptap/react": "^3.3.0",
     "@tiptap/starter-kit": "^3.3.0",
+    "@types/pg": "^8.15.5",
     "autoprefixer": "^10.4.21",
     "bcryptjs": "^2.4.3",
     "dotenv": "^17.2.1",
@@ -31,6 +32,7 @@
     "mysql2": "^3.6.5",
     "next": "^15.4.7",
     "nodemailer": "^7.0.5",
+    "pg": "^8.16.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^4.12.0"

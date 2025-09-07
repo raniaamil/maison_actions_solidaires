@@ -1,6 +1,6 @@
 // src/app/api/auth/forgot-password/route.js
 export const runtime = 'nodejs';
-import db from '../../../../lib/db';
+import { query } from '../../../../lib/db';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 
@@ -43,15 +43,15 @@ export async function POST(request) {
       );
     }
 
-    // Vérifier si l'utilisateur existe
-    const [users] = await db.execute(
-      'SELECT id, prenom, nom, email FROM users WHERE email = ? AND actif = TRUE',
+    // Vérifier si l'utilisateur existe - PostgreSQL
+    const result = await query(
+      'SELECT id, prenom, nom, email FROM users WHERE email = $1 AND actif = true',
       [emailTrimmed]
     );
 
     // Pour des raisons de sécurité, on renvoie toujours le même message
     // même si l'email n'existe pas
-    if (users.length === 0) {
+    if (result.rows.length === 0) {
       console.log(`⚠️ Tentative de réinitialisation pour email inexistant: ${emailTrimmed}`);
       return Response.json(
         { message: 'Si cette adresse e-mail existe, vous recevrez un lien de réinitialisation' },
@@ -59,37 +59,21 @@ export async function POST(request) {
       );
     }
 
-    const user = users[0];
+    const user = result.rows[0];
 
     // Générer un token de réinitialisation sécurisé
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 heure
 
-    // Stocker le token dans la base de données
-    // Créer la table si elle n'existe pas
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS password_reset_tokens (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        token VARCHAR(255) NOT NULL,
-        expires_at DATETIME NOT NULL,
-        used BOOLEAN DEFAULT FALSE,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        INDEX idx_token (token),
-        INDEX idx_expires (expires_at)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    // Supprimer les anciens tokens pour cet utilisateur
-    await db.execute(
-      'DELETE FROM password_reset_tokens WHERE user_id = ? OR expires_at < NOW()',
+    // Supprimer les anciens tokens pour cet utilisateur et les tokens expirés
+    await query(
+      'DELETE FROM password_reset_tokens WHERE user_id = $1 OR expires_at < NOW()',
       [user.id]
     );
 
-    // Insérer le nouveau token
-    await db.execute(
-      'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
+    // Insérer le nouveau token - PostgreSQL
+    await query(
+      'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
       [user.id, resetToken, resetTokenExpiry]
     );
 
@@ -157,8 +141,8 @@ export async function POST(request) {
       console.error('❌ Erreur lors de l\'envoi de l\'email:', emailError);
       
       // Supprimer le token si l'email n'a pas pu être envoyé
-      await db.execute(
-        'DELETE FROM password_reset_tokens WHERE token = ?',
+      await query(
+        'DELETE FROM password_reset_tokens WHERE token = $1',
         [resetToken]
       );
       

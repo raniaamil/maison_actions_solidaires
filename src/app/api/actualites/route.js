@@ -1,6 +1,6 @@
-// src/app/api/actualites/route.js - CORRECTION MYSQL2/NEXT.JS
+// src/app/api/actualites/route.js - VERSION POSTGRESQL
 export const runtime = 'nodejs';
-import db from '../../../lib/db';
+import { query } from '../../../lib/db';
 
 // GET - Récupérer toutes les actualités
 export async function GET(request) {
@@ -20,8 +20,8 @@ export async function GET(request) {
 
     console.log('📊 Paramètres de recherche:', { statut, type, auteur_id, limit, offset });
 
-    // Construction dynamique de la requête SANS paramètres préparés pour éviter les erreurs mysql2
-    let query = `
+    // Construction dynamique de la requête avec paramètres PostgreSQL
+    let queryText = `
       SELECT 
         a.id,
         a.titre,
@@ -37,6 +37,7 @@ export async function GET(request) {
         a.places_disponibles,
         a.inscription_requise,
         a.auteur_id,
+        a.tags,
         COALESCE(u.prenom, 'Auteur') as auteur_prenom,
         COALESCE(u.nom, 'supprimé') as auteur_nom,
         u.photo as auteur_photo,
@@ -46,30 +47,40 @@ export async function GET(request) {
       WHERE 1=1
     `;
     
-    // Ajout des conditions avec échappement manuel pour éviter les problèmes mysql2
+    const queryParams = [];
+    let paramIndex = 1;
+    
+    // Ajout des conditions avec paramètres sécurisés
     if (statut && typeof statut === 'string' && statut.trim() !== '') {
-      const statutEscaped = db.escape(statut.trim());
-      query += ` AND a.statut = ${statutEscaped}`;
+      queryText += ` AND a.statut = $${paramIndex}`;
+      queryParams.push(statut.trim());
+      paramIndex++;
     }
 
     if (type && typeof type === 'string' && type.trim() !== '') {
-      const typeEscaped = db.escape(type.trim());
-      query += ` AND a.type = ${typeEscaped}`;
+      queryText += ` AND a.type = $${paramIndex}`;
+      queryParams.push(type.trim());
+      paramIndex++;
     }
 
     if (auteur_id && auteur_id.trim() !== '') {
       const auteurIdNum = parseInt(auteur_id, 10);
       if (!isNaN(auteurIdNum) && auteurIdNum > 0) {
-        query += ` AND a.auteur_id = ${auteurIdNum}`;
+        queryText += ` AND a.auteur_id = $${paramIndex}`;
+        queryParams.push(auteurIdNum);
+        paramIndex++;
       }
     }
 
-    query += ` ORDER BY a.date_creation DESC LIMIT ${limit} OFFSET ${offset}`;
+    queryText += ` ORDER BY a.date_creation DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    queryParams.push(limit, offset);
 
-    console.log('🗄️ Requête SQL finale:', query);
+    console.log('🗄️ Requête SQL finale:', queryText);
+    console.log('🗄️ Paramètres:', queryParams);
 
-    // Utilisation de query() au lieu de execute() pour éviter les problèmes de paramètres
-    const [rows] = await db.query(query);
+    // Exécution de la requête PostgreSQL
+    const result = await query(queryText, queryParams);
+    const rows = result.rows;
 
     console.log(`✅ ${rows.length} actualités trouvées dans la base de données`);
 
@@ -163,8 +174,7 @@ export async function GET(request) {
         details: process.env.NODE_ENV === 'development' ? {
           message: error.message,
           stack: error.stack,
-          code: error.code,
-          sqlMessage: error.sqlMessage
+          code: error.code
         } : undefined
       },
       { status: 500 }
@@ -229,31 +239,23 @@ export async function POST(request) {
       );
     }
 
-    // Vérifier que l'auteur existe avec une requête simple
-    const checkAuteurQuery = `SELECT id, prenom, nom FROM users WHERE id = ${auteurIdNum} AND actif = TRUE`;
-    const [auteurCheck] = await db.query(checkAuteurQuery);
+    // Vérifier que l'auteur existe
+    const checkAuteurResult = await query(
+      'SELECT id, prenom, nom FROM users WHERE id = $1 AND actif = true',
+      [auteurIdNum]
+    );
 
-    if (auteurCheck.length === 0) {
+    if (checkAuteurResult.rows.length === 0) {
       return Response.json(
         { error: 'Auteur non trouvé ou inactif' },
         { status: 404 }
       );
     }
 
-    // Préparation des données avec échappement sécurisé
-    const titreEscaped = db.escape(titre.trim());
-    const descriptionEscaped = db.escape(description.trim());
-    const contenuEscaped = db.escape(contenu.trim());
-    const typeEscaped = db.escape(type);
-    const statutEscaped = db.escape(statut);
-    const imageEscaped = image && image.trim() !== '' ? db.escape(image.trim()) : 'NULL';
-    
+    // Préparation des données
     const tagsJson = tags && Array.isArray(tags) && tags.length > 0 ? JSON.stringify(tags) : null;
-    const tagsEscaped = tagsJson ? db.escape(tagsJson) : 'NULL';
     
-    const lieuEscaped = lieu && lieu.trim() !== '' ? db.escape(lieu.trim()) : 'NULL';
-    
-    let placesValue = 'NULL';
+    let placesValue = null;
     if (places_disponibles !== null && places_disponibles !== undefined && places_disponibles !== '') {
       const placesNum = parseInt(places_disponibles, 10);
       if (!isNaN(placesNum) && placesNum > 0) {
@@ -262,58 +264,54 @@ export async function POST(request) {
     }
     
     // Gestion de la date de publication
-    let datePublicationEscaped = 'NULL';
+    let datePublicationValue = null;
     if (statut === 'Publié') {
       if (date_publication) {
         try {
           const dateObj = new Date(date_publication);
           if (!isNaN(dateObj.getTime())) {
-            datePublicationEscaped = db.escape(dateObj.toISOString().slice(0, 19).replace('T', ' '));
+            datePublicationValue = dateObj;
           } else {
-            datePublicationEscaped = db.escape(new Date().toISOString().slice(0, 19).replace('T', ' '));
+            datePublicationValue = new Date();
           }
         } catch (e) {
-          datePublicationEscaped = db.escape(new Date().toISOString().slice(0, 19).replace('T', ' '));
+          datePublicationValue = new Date();
         }
       } else {
-        datePublicationEscaped = db.escape(new Date().toISOString().slice(0, 19).replace('T', ' '));
+        datePublicationValue = new Date();
       }
     }
 
-    const inscriptionRequiseValue = inscription_requise ? 1 : 0;
-
     console.log('💾 Préparation de l\'insertion...');
 
-    // Construction de la requête d'insertion sans paramètres préparés
-    const insertQuery = `
+    // Requête d'insertion avec RETURNING pour récupérer l'ID
+    const insertResult = await query(`
       INSERT INTO actualites (
         titre, description, contenu, type, statut, image, auteur_id, 
         date_publication, tags, lieu, places_disponibles, inscription_requise
       ) VALUES (
-        ${titreEscaped}, 
-        ${descriptionEscaped}, 
-        ${contenuEscaped}, 
-        ${typeEscaped}, 
-        ${statutEscaped}, 
-        ${imageEscaped}, 
-        ${auteurIdNum}, 
-        ${datePublicationEscaped}, 
-        ${tagsEscaped}, 
-        ${lieuEscaped}, 
-        ${placesValue}, 
-        ${inscriptionRequiseValue}
-      )
-    `;
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+      ) RETURNING id
+    `, [
+      titre.trim(),
+      description.trim(),
+      contenu.trim(),
+      type,
+      statut,
+      image && image.trim() !== '' ? image.trim() : null,
+      auteurIdNum,
+      datePublicationValue,
+      tagsJson,
+      lieu && lieu.trim() !== '' ? lieu.trim() : null,
+      placesValue,
+      inscription_requise
+    ]);
 
-    console.log('💾 Requête d\'insertion:', insertQuery);
-
-    // Insertion en base
-    const [result] = await db.query(insertQuery);
-
-    console.log('✅ Actualité insérée avec l\'ID:', result.insertId);
+    const newId = insertResult.rows[0].id;
+    console.log('✅ Actualité insérée avec l\'ID:', newId);
 
     // Récupérer l'actualité créée
-    const selectQuery = `
+    const selectResult = await query(`
       SELECT 
         a.*,
         u.prenom as auteur_prenom,
@@ -322,39 +320,39 @@ export async function POST(request) {
         u.bio as auteur_bio
       FROM actualites a
       JOIN users u ON a.auteur_id = u.id
-      WHERE a.id = ${result.insertId}
-    `;
+      WHERE a.id = $1
+    `, [newId]);
 
-    const [newActualite] = await db.query(selectQuery);
-
-    if (newActualite.length === 0) {
+    if (selectResult.rows.length === 0) {
       return Response.json(
         { error: 'Actualité créée mais impossible de la récupérer' },
         { status: 500 }
       );
     }
 
+    const newActualite = selectResult.rows[0];
+
     const actualiteCreee = {
-      id: newActualite[0].id,
-      titre: newActualite[0].titre,
-      description: newActualite[0].description,
-      contenu: newActualite[0].contenu,
-      type: newActualite[0].type,
-      statut: newActualite[0].statut,
-      image: newActualite[0].image || '/images/actualites/default.jpg',
-      date_creation: newActualite[0].date_creation,
-      date_publication: newActualite[0].date_publication,
-      date_modification: newActualite[0].date_modification,
-      tags: newActualite[0].tags ? JSON.parse(newActualite[0].tags) : [],
-      lieu: newActualite[0].lieu,
-      places_disponibles: newActualite[0].places_disponibles,
-      inscription_requise: Boolean(newActualite[0].inscription_requise),
+      id: newActualite.id,
+      titre: newActualite.titre,
+      description: newActualite.description,
+      contenu: newActualite.contenu,
+      type: newActualite.type,
+      statut: newActualite.statut,
+      image: newActualite.image || '/images/actualites/default.jpg',
+      date_creation: newActualite.date_creation,
+      date_publication: newActualite.date_publication,
+      date_modification: newActualite.date_modification,
+      tags: newActualite.tags ? JSON.parse(newActualite.tags) : [],
+      lieu: newActualite.lieu,
+      places_disponibles: newActualite.places_disponibles,
+      inscription_requise: Boolean(newActualite.inscription_requise),
       auteur: {
-        id: newActualite[0].auteur_id,
-        prenom: newActualite[0].auteur_prenom,
-        nom: newActualite[0].auteur_nom,
-        photo: newActualite[0].auteur_photo || '/images/default-avatar.jpg',
-        bio: newActualite[0].auteur_bio || ''
+        id: newActualite.auteur_id,
+        prenom: newActualite.auteur_prenom,
+        nom: newActualite.auteur_nom,
+        photo: newActualite.auteur_photo || '/images/default-avatar.jpg',
+        bio: newActualite.auteur_bio || ''
       }
     };
 
@@ -371,22 +369,19 @@ export async function POST(request) {
     console.error('❌ Erreur lors de la création de l\'actualité:', error);
     console.error('❌ Stack trace:', error.stack);
     
-    // Gestion des erreurs spécifiques
+    // Gestion des erreurs spécifiques PostgreSQL
     let errorMessage = 'Erreur serveur lors de la création de l\'actualité';
     let statusCode = 500;
     
-    if (error.code === 'ER_NO_SUCH_TABLE') {
+    if (error.code === '42P01') { // Relation does not exist
       errorMessage = 'Table actualites non trouvée dans la base de données';
-    } else if (error.code === 'ER_BAD_FIELD_ERROR') {
+    } else if (error.code === '42703') { // Column does not exist
       errorMessage = 'Erreur de structure de base de données';
-    } else if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+    } else if (error.code === '23503') { // Foreign key violation
       errorMessage = 'Référence auteur invalide';
       statusCode = 400;
-    } else if (error.code === 'ER_DATA_TOO_LONG') {
+    } else if (error.code === '22001') { // String data too long
       errorMessage = 'Données trop longues pour un ou plusieurs champs';
-      statusCode = 400;
-    } else if (error.code === 'ER_WRONG_ARGUMENTS') {
-      errorMessage = 'Arguments invalides pour la requête SQL';
       statusCode = 400;
     }
     
@@ -397,8 +392,7 @@ export async function POST(request) {
         details: process.env.NODE_ENV === 'development' ? {
           message: error.message,
           stack: error.stack,
-          code: error.code,
-          sqlMessage: error.sqlMessage
+          code: error.code
         } : undefined
       },
       { status: statusCode }

@@ -1,6 +1,6 @@
 // src/app/api/auth/verify-reset-token/route.js
 export const runtime = 'nodejs';
-import db from '../../../../lib/db';
+import { query } from '../../../../lib/db';
 
 export async function POST(request) {
   try {
@@ -14,8 +14,8 @@ export async function POST(request) {
       );
     }
 
-    // Vérifier le token dans la base de données
-    const [tokens] = await db.execute(`
+    // Vérifier le token dans la base de données - PostgreSQL
+    const result = await query(`
       SELECT 
         prt.id, 
         prt.user_id, 
@@ -27,17 +27,17 @@ export async function POST(request) {
         u.actif
       FROM password_reset_tokens prt
       JOIN users u ON prt.user_id = u.id
-      WHERE prt.token = ? AND prt.used = FALSE
+      WHERE prt.token = $1 AND prt.used = false
     `, [token.trim()]);
 
-    if (tokens.length === 0) {
+    if (result.rows.length === 0) {
       return Response.json(
         { error: 'Token de réinitialisation invalide ou déjà utilisé' },
         { status: 400 }
       );
     }
 
-    const tokenData = tokens[0];
+    const tokenData = result.rows[0];
 
     // Vérifier si le token a expiré
     const now = new Date();
@@ -45,8 +45,8 @@ export async function POST(request) {
     
     if (now > expiryDate) {
       // Supprimer le token expiré
-      await db.execute(
-        'DELETE FROM password_reset_tokens WHERE id = ?',
+      await query(
+        'DELETE FROM password_reset_tokens WHERE id = $1',
         [tokenData.id]
       );
       

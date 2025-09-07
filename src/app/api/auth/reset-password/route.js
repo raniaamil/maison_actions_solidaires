@@ -1,6 +1,6 @@
 // src/app/api/auth/reset-password/route.js
 export const runtime = 'nodejs';
-import db from '../../../../lib/db';
+import { query } from '../../../../lib/db';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
@@ -29,8 +29,8 @@ export async function POST(request) {
       );
     }
 
-    // Vérifier le token dans la base de données
-    const [tokens] = await db.execute(`
+    // Vérifier le token dans la base de données - PostgreSQL
+    const result = await query(`
       SELECT 
         prt.id, 
         prt.user_id, 
@@ -42,17 +42,17 @@ export async function POST(request) {
         u.actif
       FROM password_reset_tokens prt
       JOIN users u ON prt.user_id = u.id
-      WHERE prt.token = ? AND prt.used = FALSE
+      WHERE prt.token = $1 AND prt.used = false
     `, [token.trim()]);
 
-    if (tokens.length === 0) {
+    if (result.rows.length === 0) {
       return Response.json(
         { error: 'Token de réinitialisation invalide ou déjà utilisé' },
         { status: 400 }
       );
     }
 
-    const tokenData = tokens[0];
+    const tokenData = result.rows[0];
 
     // Vérifier si le token a expiré
     const now = new Date();
@@ -60,8 +60,8 @@ export async function POST(request) {
     
     if (now > expiryDate) {
       // Supprimer le token expiré
-      await db.execute(
-        'DELETE FROM password_reset_tokens WHERE id = ?',
+      await query(
+        'DELETE FROM password_reset_tokens WHERE id = $1',
         [tokenData.id]
       );
       
@@ -80,32 +80,32 @@ export async function POST(request) {
     }
 
     try {
-      // Démarrer une transaction
-      await db.query('START TRANSACTION');
+      // PostgreSQL utilise BEGIN/COMMIT/ROLLBACK pour les transactions
+      await query('BEGIN');
 
       // Hacher le nouveau mot de passe
       const hashedPassword = await bcrypt.hash(password, 12);
 
-      // Mettre à jour le mot de passe de l'utilisateur
-      await db.execute(
-        'UPDATE users SET mot_de_passe = ?, date_modification = NOW() WHERE id = ?',
+      // Mettre à jour le mot de passe de l'utilisateur - PostgreSQL
+      await query(
+        'UPDATE users SET mot_de_passe = $1, date_modification = NOW() WHERE id = $2',
         [hashedPassword, tokenData.user_id]
       );
 
       // Marquer le token comme utilisé
-      await db.execute(
-        'UPDATE password_reset_tokens SET used = TRUE WHERE id = ?',
+      await query(
+        'UPDATE password_reset_tokens SET used = true WHERE id = $1',
         [tokenData.id]
       );
 
       // Supprimer tous les autres tokens de réinitialisation pour cet utilisateur
-      await db.execute(
-        'DELETE FROM password_reset_tokens WHERE user_id = ? AND id != ?',
+      await query(
+        'DELETE FROM password_reset_tokens WHERE user_id = $1 AND id != $2',
         [tokenData.user_id, tokenData.id]
       );
 
       // Valider la transaction
-      await db.query('COMMIT');
+      await query('COMMIT');
 
       console.log(`✅ Mot de passe réinitialisé pour l'utilisateur: ${tokenData.email}`);
 
@@ -123,20 +123,20 @@ export async function POST(request) {
 
     } catch (updateError) {
       // Annuler la transaction en cas d'erreur
-      await db.query('ROLLBACK');
+      await query('ROLLBACK');
       throw updateError;
     }
 
   } catch (error) {
     console.error('❌ Erreur lors de la réinitialisation du mot de passe:', error);
     
-    // Gestion des erreurs spécifiques
+    // Gestion des erreurs spécifiques PostgreSQL
     let errorMessage = 'Erreur serveur lors de la réinitialisation du mot de passe';
     let statusCode = 500;
     
-    if (error.code === 'ER_NO_SUCH_TABLE') {
+    if (error.code === '42P01') { // Relation does not exist
       errorMessage = 'Service de réinitialisation non configuré';
-    } else if (error.code === 'ER_DUP_ENTRY') {
+    } else if (error.code === '23505') { // Unique violation
       errorMessage = 'Conflit lors de la mise à jour';
     }
     

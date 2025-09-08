@@ -27,20 +27,18 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const query = `
+    const result = await db.query(`
       SELECT 
         id, prenom, nom, email, photo, bio, role, 
         date_inscription, date_modification, actif
       FROM users 
       WHERE actif = TRUE
       ORDER BY date_inscription DESC 
-      LIMIT ${limit} OFFSET ${offset}
-    `;
-
-    const [rows] = await db.query(query);
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
 
     // Transformer les données
-    const users = rows.map(row => ({
+    const users = result.rows.map(row => ({
       id: row.id,
       prenom: row.prenom,
       nom: row.nom,
@@ -126,14 +124,14 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Vérifier si l'utilisateur existe déjà avec échappement manuel
+    // Vérifier si l'utilisateur existe déjà
     console.log('🔍 Vérification utilisateur existant...');
-    const checkEmailQuery = `SELECT id FROM users WHERE email = ${db.escape(email.toLowerCase().trim())}`;
-    console.log('📝 Requête vérification email:', checkEmailQuery);
-    
-    const [existingUsers] = await db.query(checkEmailQuery);
+    const existingResult = await db.query(
+      'SELECT id FROM users WHERE email = $1',
+      [email.toLowerCase().trim()]
+    );
 
-    if (existingUsers.length > 0) {
+    if (existingResult.rows.length > 0) {
       console.log('❌ Email déjà utilisé');
       return Response.json({ 
         message: 'Utilisateur déjà existant',
@@ -145,52 +143,49 @@ export async function POST(request) {
     console.log('🔐 Hachage du mot de passe...');
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Préparer les valeurs avec échappements manuels
-    const prenomEscaped = db.escape(finalFirstName.trim());
-    const nomEscaped = db.escape(finalLastName.trim());
-    const emailEscaped = db.escape(email.toLowerCase().trim());
-    const passwordEscaped = db.escape(hashedPassword);
-    const photoEscaped = photo && photo.trim() !== '' ? db.escape(photo.trim()) : 'NULL';
-    const bioEscaped = bio && bio.trim() !== '' ? db.escape(bio.trim()) : 'NULL';
-    const roleEscaped = db.escape(role);
-
-    // Construire la requête d'insertion avec échappements manuels
+    // Insérer l'utilisateur (PostgreSQL avec RETURNING)
     console.log('💾 Insertion en base...');
-    const insertQuery = `
+    const insertResult = await db.query(`
       INSERT INTO users (prenom, nom, email, mot_de_passe, photo, bio, role, date_inscription) 
-      VALUES (${prenomEscaped}, ${nomEscaped}, ${emailEscaped}, ${passwordEscaped}, ${photoEscaped}, ${bioEscaped}, ${roleEscaped}, NOW())
-    `;
+      VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+      RETURNING id
+    `, [
+      finalFirstName.trim(),
+      finalLastName.trim(),
+      email.toLowerCase().trim(),
+      hashedPassword,
+      photo && photo.trim() !== '' ? photo.trim() : null,
+      bio && bio.trim() !== '' ? bio.trim() : null,
+      role
+    ]);
 
-    console.log('📝 Requête d\'insertion:', insertQuery.replace(passwordEscaped, '[HASH_MASQUÉ]'));
+    const userId = insertResult.rows[0].id;
+    console.log('✅ Utilisateur inséré avec ID:', userId);
 
-    const [result] = await db.query(insertQuery);
-    console.log('✅ Utilisateur inséré avec ID:', result.insertId);
-
-    // Récupérer l'utilisateur créé (sans le mot de passe) avec échappement manuel
-    const selectQuery = `
+    // Récupérer l'utilisateur créé (sans le mot de passe)
+    const userResult = await db.query(`
       SELECT id, prenom, nom, email, photo, bio, role, date_inscription 
       FROM users 
-      WHERE id = ${result.insertId}
-    `;
+      WHERE id = $1
+    `, [userId]);
 
-    const [newUser] = await db.query(selectQuery);
-
-    if (newUser.length === 0) {
+    if (userResult.rows.length === 0) {
       console.error('❌ Impossible de récupérer l\'utilisateur créé');
       return Response.json({
         message: 'Utilisateur créé mais impossible de le récupérer'
       }, { status: 500 });
     }
 
+    const userData = userResult.rows[0];
     const userCreated = {
-      id: newUser[0].id,
-      prenom: newUser[0].prenom,
-      nom: newUser[0].nom,
-      email: newUser[0].email,
-      photo: newUser[0].photo || '/images/default-avatar.jpg',
-      bio: newUser[0].bio || '',
-      role: newUser[0].role,
-      date_inscription: newUser[0].date_inscription
+      id: userData.id,
+      prenom: userData.prenom,
+      nom: userData.nom,
+      email: userData.email,
+      photo: userData.photo || '/images/default-avatar.jpg',
+      bio: userData.bio || '',
+      role: userData.role,
+      date_inscription: userData.date_inscription
     };
 
     // 📧 ENVOI DE L'EMAIL DE BIENVENUE
@@ -201,7 +196,7 @@ export async function POST(request) {
       const mailOptions = {
         from: `"Maison d'Actions Solidaires" <${process.env.SMTP_USER}>`,
         to: userCreated.email,
-        subject: ' Vos identifiants de connexion',
+        subject: '🔐 Vos identifiants de connexion',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #8b9467 0%, #a4b070 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
@@ -216,7 +211,7 @@ export async function POST(request) {
               </p>
               
               <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8b9467;">
-                <h3 style="color: #8b9467; margin-top: 0;"> Vos identifiants de connexion :</h3>
+                <h3 style="color: #8b9467; margin-top: 0;">🔑 Vos identifiants de connexion :</h3>
                 <p style="margin: 10px 0;"><strong>Email :</strong> ${userCreated.email}</p>
                 <p style="margin: 10px 0;"><strong>Mot de passe temporaire :</strong> <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${password}</span></p>
                 <p style="margin: 10px 0;"><strong>Rôle :</strong> ${userCreated.role}</p>
@@ -242,7 +237,7 @@ export async function POST(request) {
                 </p>
               </div>
               
-              <h3 style="color: #8b9467;"> Vos prochaines étapes :</h3>
+              <h3 style="color: #8b9467;">📋 Vos prochaines étapes :</h3>
               <ol style="color: #333; line-height: 1.6;">
                 <li>Connectez-vous à la plateforme avec vos identifiants</li>
                 <li>Modifiez votre mot de passe temporaire</li>
@@ -283,26 +278,26 @@ export async function POST(request) {
     console.error('❌ Erreur lors de la création de l\'utilisateur:', error);
     console.error('❌ Stack trace:', error.stack);
     
-    // Gestion des erreurs spécifiques MySQL
+    // Gestion des erreurs spécifiques PostgreSQL
     let errorMessage = 'Erreur serveur lors de la création de l\'utilisateur';
     let statusCode = 500;
     
-    if (error.code === 'ER_DUP_ENTRY') {
+    if (error.code === '23505') { // unique_violation
       errorMessage = 'Cette adresse e-mail est déjà utilisée';
       statusCode = 409;
-    } else if (error.code === 'ER_DATA_TOO_LONG') {
+    } else if (error.code === '22001') { // string_data_right_truncation
       errorMessage = 'Données trop longues pour un ou plusieurs champs';
       statusCode = 400;
-    } else if (error.code === 'ER_BAD_NULL_ERROR') {
+    } else if (error.code === '23502') { // not_null_violation
       errorMessage = 'Un champ obligatoire est manquant';
       statusCode = 400;
-    } else if (error.code === 'ER_NO_SUCH_TABLE') {
+    } else if (error.code === '42P01') { // undefined_table
       errorMessage = 'Table utilisateurs non trouvée dans la base de données';
       statusCode = 500;
-    } else if (error.code === 'ER_PARSE_ERROR') {
+    } else if (error.code === '42601') { // syntax_error
       errorMessage = 'Erreur de syntaxe SQL';
       statusCode = 500;
-    } else if (error.code === 'ER_ACCESS_DENIED_ERROR') {
+    } else if (error.code === '28P01') { // invalid_authorization_specification
       errorMessage = 'Accès refusé à la base de données';
       statusCode = 500;
     } else if (error.code === 'ECONNREFUSED') {

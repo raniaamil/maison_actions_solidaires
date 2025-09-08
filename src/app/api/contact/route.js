@@ -4,7 +4,7 @@ import db from '../../../lib/db';
 import nodemailer from 'nodemailer';
 
 // Configuration du transporteur email
-const createTransporter = () => {
+const createTransport = () => {
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
@@ -77,23 +77,31 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Création de la table des messages si elle n'existe pas
-    await db.execute(`
+    // Création de la table des messages si elle n'existe pas (PostgreSQL)
+    await db.query(`
       CREATE TABLE IF NOT EXISTS contact_messages (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         prenom VARCHAR(100) NOT NULL,
         nom VARCHAR(100) NOT NULL,
         email VARCHAR(255) NOT NULL,
         sujet VARCHAR(255) NOT NULL,
         message TEXT NOT NULL,
-        ip_address VARCHAR(45) DEFAULT NULL,
+        ip_address INET DEFAULT NULL,
         user_agent TEXT DEFAULT NULL,
-        date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
-        statut ENUM('nouveau', 'lu', 'traite') DEFAULT 'nouveau',
-        INDEX idx_email (email),
-        INDEX idx_date (date_creation),
-        INDEX idx_statut (statut)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        date_creation TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        statut VARCHAR(10) DEFAULT 'nouveau' CHECK (statut IN ('nouveau', 'lu', 'traite'))
+      )
+    `);
+
+    // Créer les index s'ils n'existent pas
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_contact_email ON contact_messages (email)
+    `);
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_contact_date ON contact_messages (date_creation)
+    `);
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_contact_statut ON contact_messages (statut)
     `);
 
     // Récupérer l'IP et user agent
@@ -102,33 +110,35 @@ export async function POST(request) {
     const ipAddress = forwardedFor?.split(',')[0] || realIp || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
-    // Insérer le message en base
-    const [result] = await db.execute(
+    // Insérer le message en base (PostgreSQL avec RETURNING)
+    const result = await db.query(
       `INSERT INTO contact_messages 
        (prenom, nom, email, sujet, message, ip_address, user_agent) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id`,
       [
         firstname.trim(),
         surname.trim(),
         email.toLowerCase().trim(),
         subject.trim(),
         message.trim(),
-        ipAddress,
+        ipAddress === 'unknown' ? null : ipAddress,
         userAgent
       ]
     );
 
-    console.log('✅ Message sauvegardé en base avec l\'ID:', result.insertId);
+    const messageId = result.rows[0].id;
+    console.log('✅ Message sauvegardé en base avec l\'ID:', messageId);
 
     // Envoi de l'email de notification
     try {
-      const transporter = createTransporter();
+      const transport = createTransport();
       
       // Email de notification à l'association
       const mailOptions = {
         from: `"Site Web MAACSO" <${process.env.SMTP_USER}>`,
         to: process.env.CONTACT_EMAIL,
-        subject: ` Nouveau message de contact: ${subject.trim()}`,
+        subject: `Nouveau message de contact: ${subject.trim()}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto;">
             <h2 style="color: #838C58; border-bottom: 2px solid #838C58; padding-bottom: 10px;">
@@ -149,7 +159,7 @@ export async function POST(request) {
             </div>
             
             <div style="font-size: 12px; color: #666; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-              <p>ID du message : ${result.insertId}</p>
+              <p>ID du message : ${messageId}</p>
               <p>IP : ${ipAddress}</p>
               <p>Ce message a été envoyé via le formulaire de contact du site web de Maison d\'Actions Solidaires.</p>
             </div>
@@ -157,7 +167,7 @@ export async function POST(request) {
         `
       };
 
-      await transporter.sendMail(mailOptions);
+      await transport.sendMail(mailOptions);
       console.log('✅ Email de notification envoyé à l\'association');
 
       // Email de confirmation à l'expéditeur
@@ -193,9 +203,9 @@ export async function POST(request) {
               <div style="display: flex; align-items: flex-start; margin-top: 15px;">
                 <img src="cid:logo" alt="Logo MAACSO" style="width: 120px; height: auto; margin-right: 20px; flex-shrink: 0;">
                 <div style="flex: 1; padding-top: 10px;">
-                  <p style="margin: 6px 0; line-height: 1.4;"> Email : maisondactionsolidaire@gmail.com</p>
-                  <p style="margin: 6px 0; line-height: 1.4;"> Téléphone : 07 82 16 90 08</p>
-                  <p style="margin: 6px 0; line-height: 1.4;"> Adresse : 12 rue de la Corne de Bœuf, 94500 Champigny-sur-Marne</p>
+                  <p style="margin: 6px 0; line-height: 1.4;">📧 Email : maisondactionsolidaire@gmail.com</p>
+                  <p style="margin: 6px 0; line-height: 1.4;">📞 Téléphone : 07 82 16 90 08</p>
+                  <p style="margin: 6px 0; line-height: 1.4;">📍 Adresse : 12 rue de la Corne de Bœuf, 94500 Champigny-sur-Marne</p>
                 </div>
               </div>
             </div>
@@ -208,7 +218,7 @@ export async function POST(request) {
         }]
       };
 
-      await transporter.sendMail(confirmationOptions);
+      await transport.sendMail(confirmationOptions);
       console.log('✅ Email de confirmation envoyé à l\'expéditeur');
 
     } catch (emailError) {
@@ -219,14 +229,14 @@ export async function POST(request) {
     return Response.json({
       success: true,
       message: 'Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.',
-      messageId: result.insertId
+      messageId: messageId
     }, { status: 201 });
 
   } catch (error) {
     console.error('❌ Erreur lors du traitement du formulaire de contact:', error);
     
-    // Gestion des erreurs spécifiques
-    if (error.code === 'ER_DATA_TOO_LONG') {
+    // Gestion des erreurs spécifiques PostgreSQL
+    if (error.code === '22001') { // string_data_right_truncation
       return Response.json({ 
         success: false,
         message: 'Données trop longues',
@@ -252,9 +262,9 @@ export async function GET(request) {
 
     // Vérifier que la table existe
     try {
-      await db.execute('SELECT 1 FROM contact_messages LIMIT 1');
+      await db.query('SELECT 1 FROM contact_messages LIMIT 1');
     } catch (tableError) {
-      if (tableError.code === 'ER_NO_SUCH_TABLE') {
+      if (tableError.code === '42P01') { // undefined_table
         return Response.json([]);
       }
       throw tableError;
@@ -270,16 +280,19 @@ export async function GET(request) {
     `;
     
     const params = [];
+    let paramIndex = 1;
 
     if (statut && ['nouveau', 'lu', 'traite'].includes(statut)) {
-      query += ' AND statut = ?';
+      query += ` AND statut = $${paramIndex}`;
       params.push(statut);
+      paramIndex++;
     }
 
-    query += ' ORDER BY date_creation DESC LIMIT ? OFFSET ?';
+    query += ` ORDER BY date_creation DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     params.push(limit, offset);
 
-    const [messages] = await db.execute(query, params);
+    const result = await db.query(query, params);
+    const messages = result.rows;
 
     // Formater les données
     const formattedMessages = messages.map(msg => ({

@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 // GET - Récupérer un utilisateur par ID
 export async function GET(request, { params }) {
   try {
-    const { id } = await params; // Correction: await params
+    const { id } = await params;
     const userId = parseInt(id);
 
     if (isNaN(userId)) {
@@ -16,33 +16,34 @@ export async function GET(request, { params }) {
       );
     }
 
-    const [rows] = await db.execute(
+    const result = await db.query(
       `SELECT 
         id, prenom, nom, email, photo, bio, role, 
         date_inscription, date_modification, actif
       FROM users 
-      WHERE id = ? AND actif = TRUE`,
+      WHERE id = $1 AND actif = TRUE`,
       [userId]
     );
 
-    if (rows.length === 0) {
+    if (result.rows.length === 0) {
       return Response.json(
         { error: 'Utilisateur non trouvé' },
         { status: 404 }
       );
     }
 
+    const userData = result.rows[0];
     const user = {
-      id: rows[0].id,
-      prenom: rows[0].prenom,
-      nom: rows[0].nom,
-      email: rows[0].email,
-      photo: rows[0].photo || '/images/default-avatar.jpg',
-      bio: rows[0].bio || '',
-      role: rows[0].role,
-      date_inscription: rows[0].date_inscription,
-      date_modification: rows[0].date_modification,
-      actif: Boolean(rows[0].actif)
+      id: userData.id,
+      prenom: userData.prenom,
+      nom: userData.nom,
+      email: userData.email,
+      photo: userData.photo || '/images/default-avatar.jpg',
+      bio: userData.bio || '',
+      role: userData.role,
+      date_inscription: userData.date_inscription,
+      date_modification: userData.date_modification,
+      actif: Boolean(userData.actif)
     };
 
     return Response.json(user);
@@ -61,7 +62,7 @@ export async function GET(request, { params }) {
 // PUT - Mettre à jour un utilisateur
 export async function PUT(request, { params }) {
   try {
-    const { id } = await params; // Correction: await params
+    const { id } = await params;
     const userId = parseInt(id);
     const body = await request.json();
 
@@ -84,17 +85,19 @@ export async function PUT(request, { params }) {
     } = body;
 
     // Vérifier que l'utilisateur existe
-    const [existingUser] = await db.execute(
-      'SELECT id, email FROM users WHERE id = ? AND actif = TRUE',
+    const existingResult = await db.query(
+      'SELECT id, email FROM users WHERE id = $1 AND actif = TRUE',
       [userId]
     );
 
-    if (existingUser.length === 0) {
+    if (existingResult.rows.length === 0) {
       return Response.json(
         { error: 'Utilisateur non trouvé' },
         { status: 404 }
       );
     }
+
+    const existingUser = existingResult.rows[0];
 
     // Validation du rôle si fourni
     if (role) {
@@ -118,13 +121,13 @@ export async function PUT(request, { params }) {
       }
 
       // Vérifier que l'email n'est pas déjà utilisé par un autre utilisateur
-      if (email.toLowerCase().trim() !== existingUser[0].email) {
-        const [emailCheck] = await db.execute(
-          'SELECT id FROM users WHERE email = ? AND id != ? AND actif = TRUE',
+      if (email.toLowerCase().trim() !== existingUser.email) {
+        const emailCheckResult = await db.query(
+          'SELECT id FROM users WHERE email = $1 AND id != $2 AND actif = TRUE',
           [email.toLowerCase().trim(), userId]
         );
 
-        if (emailCheck.length > 0) {
+        if (emailCheckResult.rows.length > 0) {
           return Response.json(
             { error: 'Cette adresse e-mail est déjà utilisée' },
             { status: 409 }
@@ -136,34 +139,42 @@ export async function PUT(request, { params }) {
     // Construire la requête de mise à jour dynamiquement
     const updates = [];
     const updateParams = [];
+    let paramIndex = 1;
 
     if (prenom !== undefined && prenom.trim() !== '') {
-      updates.push('prenom = ?');
+      updates.push(`prenom = $${paramIndex}`);
       updateParams.push(prenom.trim());
+      paramIndex++;
     }
     if (nom !== undefined && nom.trim() !== '') {
-      updates.push('nom = ?');
+      updates.push(`nom = $${paramIndex}`);
       updateParams.push(nom.trim());
+      paramIndex++;
     }
     if (email !== undefined && email.trim() !== '') {
-      updates.push('email = ?');
+      updates.push(`email = $${paramIndex}`);
       updateParams.push(email.toLowerCase().trim());
+      paramIndex++;
     }
     if (photo !== undefined) {
-      updates.push('photo = ?');
+      updates.push(`photo = $${paramIndex}`);
       updateParams.push(photo && photo.trim() !== '' ? photo.trim() : null);
+      paramIndex++;
     }
     if (bio !== undefined) {
-      updates.push('bio = ?');
+      updates.push(`bio = $${paramIndex}`);
       updateParams.push(bio && bio.trim() !== '' ? bio.trim() : null);
+      paramIndex++;
     }
     if (role !== undefined) {
-      updates.push('role = ?');
+      updates.push(`role = $${paramIndex}`);
       updateParams.push(role);
+      paramIndex++;
     }
     if (actif !== undefined) {
-      updates.push('actif = ?');
+      updates.push(`actif = $${paramIndex}`);
       updateParams.push(Boolean(actif));
+      paramIndex++;
     }
 
     // Gestion du mot de passe
@@ -175,12 +186,13 @@ export async function PUT(request, { params }) {
         );
       }
       const hashedPassword = await bcrypt.hash(password, 12);
-      updates.push('mot_de_passe = ?');
+      updates.push(`mot_de_passe = $${paramIndex}`);
       updateParams.push(hashedPassword);
+      paramIndex++;
     }
 
     // Toujours mettre à jour la date de modification
-    updates.push('date_modification = NOW()');
+    updates.push(`date_modification = CURRENT_TIMESTAMP`);
 
     if (updates.length === 1) { // Seulement date_modification
       return Response.json(
@@ -189,34 +201,36 @@ export async function PUT(request, { params }) {
       );
     }
 
+    // Ajouter l'ID utilisateur à la fin
     updateParams.push(userId);
 
-    await db.execute(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+    await db.query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
       updateParams
     );
 
     // Récupérer l'utilisateur mis à jour (sans le mot de passe)
-    const [updatedUser] = await db.execute(
+    const updatedResult = await db.query(
       `SELECT 
         id, prenom, nom, email, photo, bio, role, 
         date_inscription, date_modification, actif
       FROM users 
-      WHERE id = ?`,
+      WHERE id = $1`,
       [userId]
     );
 
+    const updatedUserData = updatedResult.rows[0];
     const userUpdated = {
-      id: updatedUser[0].id,
-      prenom: updatedUser[0].prenom,
-      nom: updatedUser[0].nom,
-      email: updatedUser[0].email,
-      photo: updatedUser[0].photo || '/images/default-avatar.jpg',
-      bio: updatedUser[0].bio || '',
-      role: updatedUser[0].role,
-      date_inscription: updatedUser[0].date_inscription,
-      date_modification: updatedUser[0].date_modification,
-      actif: Boolean(updatedUser[0].actif)
+      id: updatedUserData.id,
+      prenom: updatedUserData.prenom,
+      nom: updatedUserData.nom,
+      email: updatedUserData.email,
+      photo: updatedUserData.photo || '/images/default-avatar.jpg',
+      bio: updatedUserData.bio || '',
+      role: updatedUserData.role,
+      date_inscription: updatedUserData.date_inscription,
+      date_modification: updatedUserData.date_modification,
+      actif: Boolean(updatedUserData.actif)
     };
 
     return Response.json({
@@ -229,13 +243,13 @@ export async function PUT(request, { params }) {
     let errorMessage = 'Erreur serveur lors de la mise à jour de l\'utilisateur';
     let statusCode = 500;
     
-    if (error.code === 'ER_DUP_ENTRY') {
+    if (error.code === '23505') { // unique_violation
       errorMessage = 'Cette adresse e-mail est déjà utilisée';
       statusCode = 409;
-    } else if (error.code === 'ER_DATA_TOO_LONG') {
+    } else if (error.code === '22001') { // string_data_right_truncation
       errorMessage = 'Données trop longues pour un ou plusieurs champs';
       statusCode = 400;
-    } else if (error.code === 'ER_BAD_NULL_ERROR') {
+    } else if (error.code === '23502') { // not_null_violation
       errorMessage = 'Un champ obligatoire est manquant';
       statusCode = 400;
     }
@@ -253,7 +267,7 @@ export async function PUT(request, { params }) {
 // DELETE - Supprimer un utilisateur (suppression logique)
 export async function DELETE(request, { params }) {
   try {
-    const { id } = await params; // Correction: await params
+    const { id } = await params;
     const userId = parseInt(id);
 
     if (isNaN(userId)) {
@@ -264,26 +278,28 @@ export async function DELETE(request, { params }) {
     }
 
     // Vérifier que l'utilisateur existe
-    const [existingUser] = await db.execute(
-      'SELECT id, role FROM users WHERE id = ? AND actif = TRUE',
+    const existingResult = await db.query(
+      'SELECT id, role FROM users WHERE id = $1 AND actif = TRUE',
       [userId]
     );
 
-    if (existingUser.length === 0) {
+    if (existingResult.rows.length === 0) {
       return Response.json(
         { error: 'Utilisateur non trouvé' },
         { status: 404 }
       );
     }
 
+    const existingUser = existingResult.rows[0];
+
     // Empêcher la suppression si c'est le dernier administrateur
-    if (existingUser[0].role === 'Administrateur') {
-      const [adminCount] = await db.execute(
-        'SELECT COUNT(*) as count FROM users WHERE role = ? AND actif = TRUE',
+    if (existingUser.role === 'Administrateur') {
+      const adminCountResult = await db.query(
+        'SELECT COUNT(*) as count FROM users WHERE role = $1 AND actif = TRUE',
         ['Administrateur']
       );
 
-      if (adminCount[0].count <= 1) {
+      if (adminCountResult.rows[0].count <= 1) {
         return Response.json(
           { error: 'Impossible de supprimer le dernier administrateur' },
           { status: 400 }
@@ -291,7 +307,7 @@ export async function DELETE(request, { params }) {
       }
     }
 
-    await db.execute('DELETE FROM users WHERE id = ?', [userId]);
+    await db.query('DELETE FROM users WHERE id = $1', [userId]);
 
     return Response.json({
       message: 'Utilisateur supprimé avec succès'

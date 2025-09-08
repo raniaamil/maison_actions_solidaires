@@ -41,12 +41,12 @@ export async function POST(request) {
 
     // Vérifier si utilisateur existe
     console.log('🔍 Vérification email existant...');
-    const [existing] = await db.execute(
-      'SELECT id FROM users WHERE email = ?',
+    const existingResult = await db.query(
+      'SELECT id FROM users WHERE email = $1',
       [email.toLowerCase()]
     );
 
-    if (existing.length > 0) {
+    if (existingResult.rows.length > 0) {
       console.log('❌ Email déjà utilisé');
       return Response.json({ 
         success: false,
@@ -58,36 +58,48 @@ export async function POST(request) {
     console.log('🔐 Hachage du mot de passe...');
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insérer l'utilisateur
+    // Insérer l'utilisateur (PostgreSQL avec RETURNING)
     console.log('💾 Insertion en base...');
-    const [result] = await db.execute(
+    const insertResult = await db.query(
       `INSERT INTO users (prenom, nom, email, mot_de_passe, role, date_inscription) 
-       VALUES (?, ?, ?, ?, 'Administrateur', NOW())`,
+       VALUES ($1, $2, $3, $4, 'Administrateur', CURRENT_TIMESTAMP)
+       RETURNING id`,
       [finalPrenom, finalNom, email.toLowerCase(), hashedPassword]
     );
 
-    console.log('✅ Utilisateur créé avec ID:', result.insertId);
+    const userId = insertResult.rows[0].id;
+    console.log('✅ Utilisateur créé avec ID:', userId);
 
     // Récupérer l'utilisateur créé
-    const [newUser] = await db.execute(
-      'SELECT id, prenom, nom, email, role FROM users WHERE id = ?',
-      [result.insertId]
+    const userResult = await db.query(
+      'SELECT id, prenom, nom, email, role FROM users WHERE id = $1',
+      [userId]
     );
+
+    const newUser = userResult.rows[0];
 
     return Response.json({
       success: true,
       message: 'Inscription réussie !',
       user: {
-        id: newUser[0].id,
-        prenom: newUser[0].prenom,
-        nom: newUser[0].nom,
-        email: newUser[0].email,
-        role: newUser[0].role
+        id: newUser.id,
+        prenom: newUser.prenom,
+        nom: newUser.nom,
+        email: newUser.email,
+        role: newUser.role
       }
     }, { status: 201 });
 
   } catch (error) {
     console.error('💥 Erreur inscription:', error);
+    
+    // Gestion des erreurs spécifiques PostgreSQL
+    if (error.code === '23505') { // unique_violation
+      return Response.json({ 
+        success: false,
+        message: 'Cette adresse email est déjà utilisée'
+      }, { status: 409 });
+    }
     
     return Response.json({ 
       success: false,

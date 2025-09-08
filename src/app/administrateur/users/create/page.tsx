@@ -1,19 +1,31 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, Mail, ArrowLeft, Key, Send, Check, Copy, Eye, EyeOff } from 'lucide-react';
+import { User, ArrowLeft, Key, Send, Check, Copy, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '../../../../components/ProtectedRoute';
+
+// Types
+interface CreateUserFormData {
+  prenom: string;
+  nom: string;
+  email: string;
+  bio: string;
+  role: string; // 'Administrateur' | 'Rédacteur' | string
+}
+type FieldName = keyof CreateUserFormData;
+type ErrorKeys = FieldName | 'password';
+type Errors = Partial<Record<ErrorKeys, string>>;
 
 export default function CreateUserPage() {
   const router = useRouter();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateUserFormData>({
     prenom: '',
     nom: '',
     email: '',
     bio: '',
-    role: 'Administrateur'
+    role: 'Administrateur',
   });
 
   const [tempPassword, setTempPassword] = useState('');
@@ -21,7 +33,7 @@ export default function CreateUserPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [passwordCopied, setPasswordCopied] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Errors>({});
 
   const generateTempPassword = () => {
     const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
@@ -38,19 +50,23 @@ export default function CreateUserPage() {
     return password.split('').sort(() => Math.random() - 0.5).join('');
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
+    const key = name as FieldName;
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [key]: value,
     }));
-    
+
     // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+    if (errors[key]) {
+      setErrors(prev => {
+        const { [key]: _removed, ...rest } = prev;
+        return rest;
+      });
     }
   };
 
@@ -58,6 +74,13 @@ export default function CreateUserPage() {
     const newPassword = generateTempPassword();
     setTempPassword(newPassword);
     setPasswordCopied(false);
+    // efface l'erreur password si présente
+    if (errors.password) {
+      setErrors(prev => {
+        const { password: _removed, ...rest } = prev;
+        return rest;
+      });
+    }
   };
 
   const handleCopyPassword = async () => {
@@ -71,7 +94,7 @@ export default function CreateUserPage() {
   };
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: Errors = {};
 
     if (!formData.prenom.trim()) {
       newErrors.prenom = 'Le prénom est requis';
@@ -82,9 +105,9 @@ export default function CreateUserPage() {
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'L\'email est requis';
+      newErrors.email = "L'email est requis";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'L\'adresse e-mail n\'est pas valide';
+      newErrors.email = "L'adresse e-mail n'est pas valide";
     }
 
     if (!tempPassword) {
@@ -96,9 +119,7 @@ export default function CreateUserPage() {
   };
 
   const handleCreateUser = async () => {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsCreating(true);
 
@@ -109,15 +130,13 @@ export default function CreateUserPage() {
         email: formData.email,
         password: tempPassword,
         bio: formData.bio || null,
-        role: formData.role
+        role: formData.role,
       };
 
       const response = await fetch('/api/users', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -128,9 +147,9 @@ export default function CreateUserPage() {
       } else {
         console.log('❌ Erreur du serveur:', data);
         if (data.errors) {
-          setErrors(data.errors);
+          setErrors(data.errors as Errors);
         } else {
-          alert(data.message || 'Une erreur est survenue lors de la création de l\'utilisateur');
+          alert(data.message || "Une erreur est survenue lors de la création de l'utilisateur");
         }
       }
     } catch (error) {
@@ -148,7 +167,7 @@ export default function CreateUserPage() {
       nom: '',
       email: '',
       bio: '',
-      role: 'Administrateur'
+      role: 'Administrateur',
     });
     setTempPassword('');
     setPasswordCopied(false);
@@ -159,7 +178,11 @@ export default function CreateUserPage() {
     router.push('/administrateur?tab=utilisateurs');
   };
 
-  const isFormValid = formData.prenom && formData.nom && formData.email && tempPassword;
+  const isFormValid =
+    Boolean(formData.prenom) &&
+    Boolean(formData.nom) &&
+    Boolean(formData.email) &&
+    Boolean(tempPassword);
 
   return (
     <ProtectedRoute requiredRole="Administrateur">
@@ -202,7 +225,9 @@ export default function CreateUserPage() {
                       name="prenom"
                       value={formData.prenom}
                       onChange={handleInputChange}
-                      className={`px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${errors.prenom ? 'border-red-500' : ''}`}
+                      className={`px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${
+                        errors.prenom ? 'border-red-500' : ''
+                      }`}
                       disabled={isCreating}
                       required
                     />
@@ -217,7 +242,9 @@ export default function CreateUserPage() {
                       name="nom"
                       value={formData.nom}
                       onChange={handleInputChange}
-                      className={`px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${errors.nom ? 'border-red-500' : ''}`}
+                      className={`px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${
+                        errors.nom ? 'border-red-500' : ''
+                      }`}
                       disabled={isCreating}
                       required
                     />
@@ -235,7 +262,9 @@ export default function CreateUserPage() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${errors.email ? 'border-red-500' : ''}`}
+                      className={`px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 ${
+                        errors.email ? 'border-red-500' : ''
+                      }`}
                       disabled={isCreating}
                       required
                     />
@@ -301,7 +330,9 @@ export default function CreateUserPage() {
                         type={showPassword ? 'text' : 'password'}
                         value={tempPassword}
                         readOnly
-                        className={`w-full px-3 py-3 pr-20 border border-gray-300 rounded-md text-base bg-gray-100 font-mono ${errors.password ? 'border-red-500' : ''}`}
+                        className={`w-full px-3 py-3 pr-20 border border-gray-300 rounded-md text-base bg-gray-100 font-mono ${
+                          errors.password ? 'border-red-500' : ''
+                        }`}
                         placeholder="Cliquez sur 'Générer' pour créer un mot de passe"
                       />
                       {tempPassword && (
@@ -363,7 +394,9 @@ export default function CreateUserPage() {
                   onClick={handleCreateUser}
                   disabled={!isFormValid || isCreating}
                   className={`px-8 py-3 rounded-md font-medium transition-all duration-200 ${
-                    isFormValid && !isCreating ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    isFormValid && !isCreating
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
                   {isCreating ? (

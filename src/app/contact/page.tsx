@@ -34,9 +34,14 @@ const Contact: React.FC = () => {
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const { name, value, type, checked } = e.target;
-    const key = name as keyof ContactForm;
-    const nextValue = type === 'checkbox' ? checked : value;
+    // Narrowing explicite pour pouvoir lire "checked" uniquement sur les checkbox
+    const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+    const key = target.name as keyof ContactForm;
+
+    const nextValue =
+      target instanceof HTMLInputElement && target.type === 'checkbox'
+        ? (target.checked as ContactForm[typeof key])
+        : (target.value as ContactForm[typeof key]);
 
     setFormData(prev => {
       const updated = { ...prev, [key]: nextValue } as ContactForm;
@@ -195,7 +200,7 @@ const Contact: React.FC = () => {
             <div
               style={{
                 backgroundColor: '#f8d7da',
-                border: '1px solid #f5c6cb', 
+                border: '1px solid #f5c6cb',
                 color: '#721c24',
                 padding: '12px 16px',
                 borderRadius: '8px',
@@ -344,3 +349,4 @@ const Contact: React.FC = () => {
 };
 
 export default Contact;
+

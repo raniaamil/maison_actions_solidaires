@@ -195,7 +195,7 @@ const Contact: React.FC = () => {
             <div
               style={{
                 backgroundColor: '#f8d7da',
-                border: '1px solid '#f5c6cb',
+                border: '1px solid #f5c6cb', 
                 color: '#721c24',
                 padding: '12px 16px',
                 borderRadius: '8px',

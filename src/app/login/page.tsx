@@ -1,29 +1,36 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import styles from './login.module.css';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
+import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext'; // Ajustez le chemin selon votre structure
+
+interface FormData {
+  email: string;
+  password: string;
+}
+
+interface FormErrors {
+  [key: string]: string;
+}
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     email: '',
     password: ''
   });
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   
   const { login } = useAuth();
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    
+
+    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -32,130 +39,162 @@ export default function LoginPage() {
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'L\'adresse e-mail est requise';
+    if (!formData.email) {
+      newErrors.email = 'L\'adresse email est requise';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'L\'adresse e-mail n\'est pas valide';
+      newErrors.email = 'Veuillez entrer une adresse email valide';
     }
 
     if (!formData.password) {
       newErrors.password = 'Le mot de passe est requis';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Le mot de passe doit contenir au moins 6 caractères';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    if (validateForm()) {
-      setIsLoading(true);
-      try {
-        const result = await login(formData.email, formData.password, rememberMe);
-        
-        if (!result.success) {
-          setErrors({ general: result.error });
-        }
-      } catch (error) {
-        console.error('Erreur lors de la connexion:', error);
-        setErrors({ general: 'Erreur de connexion' });
-      } finally {
-        setIsLoading(false);
-      }
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await login(formData.email, formData.password);
+      // La redirection sera gérée par le contexte d'authentification
+    } catch (error: any) {
+      setErrors({ 
+        general: error.message || 'Erreur de connexion. Vérifiez vos identifiants.' 
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const handleRememberMeChange = (e) => {
-    setRememberMe(e.target.checked);
-  };
-
   return (
-    <div className={styles.container}>
-      <div className={styles.formCard}>
-        <h1 className={styles.title}>Connexion</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Connexion
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Connectez-vous à votre compte
+          </p>
+        </div>
         
-        {errors.general && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-            <span className="text-red-600 text-sm">{errors.general}</span>
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.inputGroup}>
-            <input
-              type="email"
-              name="email"
-              placeholder="Adresse e-mail"
-              value={formData.email}
-              onChange={handleInputChange}
-              className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
-              disabled={isLoading}
-            />
-            {errors.email && <span className={styles.errorText}>{errors.email}</span>}
-          </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {errors.general && (
+            <div className="rounded-md bg-red-50 p-4">
+              <p className="text-sm text-red-800">{errors.general}</p>
+            </div>
+          )}
 
-          <div className={styles.inputGroup}>
-            <div className={styles.passwordWrapper}>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Adresse email
+              </label>
               <input
-                type={showPassword ? "text" : "password"}
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className={`mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border ${
+                  errors.email ? 'border-red-300' : 'border-gray-300'
+                } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
+                placeholder="Votre adresse email"
+                value={formData.email}
+                onChange={handleInputChange}
+                disabled={isLoading}
+              />
+              {errors.email && (
+                <p className="mt-2 text-sm text-red-600">{errors.email}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Mot de passe
+              </label>
+              <input
+                id="password"
                 name="password"
-                placeholder="Mot de passe"
+                type="password"
+                autoComplete="current-password"
+                required
+                className={`mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border ${
+                  errors.password ? 'border-red-300' : 'border-gray-300'
+                } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
+                placeholder="Votre mot de passe"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`${styles.input} ${styles.passwordInput} ${errors.password ? styles.inputError : ''}`}
                 disabled={isLoading}
               />
-              <button
-                type="button"
-                className={styles.togglePassword}
-                onClick={togglePasswordVisibility}
-                disabled={isLoading}
-                aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-              >
-                {showPassword ? "👁️‍🗨️" : "👁️"}
-              </button>
+              {errors.password && (
+                <p className="mt-2 text-sm text-red-600">{errors.password}</p>
+              )}
             </div>
-            {errors.password && <span className={styles.errorText}>{errors.password}</span>}
           </div>
 
-          <div className={styles.optionsRow}>
-            <label className={styles.checkboxContainer}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
               <input
+                id="remember-me"
+                name="remember-me"
                 type="checkbox"
-                checked={rememberMe}
-                onChange={handleRememberMeChange}
-                className={styles.checkbox}
-                disabled={isLoading}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
-              <span className={styles.checkboxLabel}>Se souvenir de moi</span>
-            </label>
-            
-            <a href="/forgot-password" className={styles.forgotPassword}>
-              Mot de passe oublié ?
-            </a>
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                Se souvenir de moi
+              </label>
+            </div>
+
+            <div className="text-sm">
+              <Link
+                href="/forgot-password"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Mot de passe oublié ?
+              </Link>
+            </div>
           </div>
 
-          <button 
-            type="submit" 
-            className={styles.submitButton}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Connexion...' : 'Se connecter'}
-          </button>
-        </form>
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                isLoading
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+              }`}
+            >
+              {isLoading ? 'Connexion en cours...' : 'Se connecter'}
+            </button>
+          </div>
 
-        {/* <div className={styles.registerLink}>
-          <span>Pas encore de compte ? </span>
-          <a href="/register" className={styles.link}>S'inscrire</a>
-        </div> */}
+          <div className="text-center">
+            <p className="text-sm text-gray-600">
+              Pas encore de compte ?{' '}
+              <Link
+                href="/register"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                S'inscrire
+              </Link>
+            </p>
+          </div>
+        </form>
       </div>
     </div>
   );

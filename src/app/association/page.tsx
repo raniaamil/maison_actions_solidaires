@@ -124,7 +124,7 @@ const MaisonActionsSolidaires = () => {
             <div className={styles.teamCard}>
               <div className={styles.teamAvatar}>
                 <Image
-                  src="/images/association/photo_kimberley.jpg"
+                  src="/images/association/photo_kimberley.JPG"
                   alt="Kimberley"
                   width={96}
                   height={96}
@@ -154,7 +154,7 @@ const MaisonActionsSolidaires = () => {
             <div className={styles.teamCard}>
               <div className={styles.teamAvatar}>
                 <Image
-                  src="/images/association/photo_stéphane.jpg"
+                  src="/images/association/photo_stephane.JPG"
                   alt="Stéphane AURIAULT"
                   width={96}
                   height={96}
@@ -183,7 +183,7 @@ const MaisonActionsSolidaires = () => {
             <div className={styles.teamCard}>
               <div className={styles.teamAvatar}>
                 <Image
-                  src="/images/association/photo_romain.jpg"
+                  src="/images/association/photo_romain.JPG"
                   alt="Romain"
                   width={96}
                   height={96}

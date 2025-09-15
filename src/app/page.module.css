@@ -10,7 +10,7 @@
   position: relative;
   height: 100vh;
   background: linear-gradient(135deg, rgba(139, 115, 85, 0.8), rgba(131, 140, 88, 0.7)),
-              url('/images/association/banniere_association.png') center/cover;
+              url('/images/association/banniere_association.PNG') center/cover;
   display: flex;
   align-items: center;
   justify-content: center;

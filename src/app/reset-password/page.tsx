@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent, FormEvent, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
@@ -13,7 +13,20 @@ interface FormErrors {
   [key: string]: string;
 }
 
-export default function ResetPasswordPage() {
+// Composant de chargement
+function ResetPasswordLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+        <p className="text-gray-600">Vérification du lien...</p>
+      </div>
+    </div>
+  );
+}
+
+// Composant principal qui utilise useSearchParams
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState<FormData>({
     password: '',
@@ -152,14 +165,7 @@ export default function ResetPasswordPage() {
 
   // Affichage pendant la vérification du token
   if (tokenValid === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full space-y-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="text-gray-600">Vérification du lien...</p>
-        </div>
-      </div>
-    );
+    return <ResetPasswordLoading />;
   }
 
   // Affichage si le token n'est pas valide
@@ -308,5 +314,13 @@ export default function ResetPasswordPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<ResetPasswordLoading />}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

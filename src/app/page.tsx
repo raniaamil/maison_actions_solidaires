@@ -160,7 +160,7 @@ const HomePage: React.FC = () => {
   };
 
   return (
-    <div className={styles.homePage}>
+    <div className={styles.homePage}> 
       {/* Bannière Hero */}
       <section className={styles.heroBanner}>
         <div className={styles.heroContent}>
@@ -169,7 +169,7 @@ const HomePage: React.FC = () => {
             Ensemble, nous créons un monde plus inclusif où chacun trouve sa place, son autonomie et son bien-être
           </p>
           <div className={styles.heroCta}>
-            <Link href="#mission" className={`${styles.btn} ${styles.btnPrimary}`}>
+            <Link href="/nosactions" className={`${styles.btn} ${styles.btnPrimary}`}>
               Découvrir nos actions
             </Link>
             <Link href="/contact" className={`${styles.btn} ${styles.btnSecondary}`}>

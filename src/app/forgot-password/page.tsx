@@ -1,123 +1,146 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import Link from 'next/link';
-import styles from './forgot-password.module.css';
+
+interface FormErrors {
+  [key: string]: string;
+}
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState(''); // 'success' | 'error'
-  const [errors, setErrors] = useState({});
+  const [email, setEmail] = useState<string>('');
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<string>('');
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
     
     // Clear error when user starts typing
     if (errors.email) {
-      setErrors({});
+      setErrors(prev => ({
+        ...prev,
+        email: ''
+      }));
     }
     
-    // Clear messages
+    // Clear message when user starts typing
     if (message) {
       setMessage('');
-      setMessageType('');
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
 
-    if (!email.trim()) {
-      newErrors.email = 'L\'adresse e-mail est requise';
+    if (!email) {
+      newErrors.email = 'L\'adresse email est requise';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'L\'adresse e-mail n\'est pas valide';
+      newErrors.email = 'Veuillez entrer une adresse email valide';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
-    setMessage('');
-    setMessageType('');
 
     try {
+      // Remplacez cette partie par votre logique d'envoi d'email
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: email.trim() })
+        body: JSON.stringify({ email }),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
-        setMessage('Un email de réinitialisation a été envoyé à votre adresse. Vérifiez votre boîte de réception.');
-        setMessageType('success');
-        setEmail(''); // Clear form
+        setMessage('Un email de récupération a été envoyé à votre adresse email.');
+        setEmail('');
       } else {
-        setMessage(data.error || 'Une erreur est survenue lors de l\'envoi de l\'email');
-        setMessageType('error');
+        const errorData = await response.json();
+        setErrors({ email: errorData.message || 'Une erreur est survenue' });
       }
     } catch (error) {
-      console.error('Erreur:', error);
-      setMessage('Erreur de connexion au serveur. Veuillez réessayer.');
-      setMessageType('error');
+      setErrors({ email: 'Erreur de connexion. Veuillez réessayer.' });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.formCard}>
-        <h1 className={styles.title}>Mot de passe oublié</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Mot de passe oublié
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Entrez votre adresse email pour recevoir un lien de récupération
+          </p>
+        </div>
         
-        <p className={styles.description}>
-          Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.
-        </p>
-
-        {message && (
-          <div className={messageType === 'success' ? styles.successMessage : styles.errorMessage}>
-            {message}
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.inputGroup}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="email" className="sr-only">
+              Adresse email
+            </label>
             <input
+              id="email"
+              name="email"
               type="email"
-              placeholder="Adresse e-mail"
+              autoComplete="email"
+              required
+              className={`appearance-none rounded-md relative block w-full px-3 py-2 border ${
+                errors.email ? 'border-red-300' : 'border-gray-300'
+              } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
+              placeholder="Adresse email"
               value={email}
               onChange={handleInputChange}
-              className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
               disabled={isLoading}
             />
-            {errors.email && <span className={styles.errorText}>{errors.email}</span>}
+            {errors.email && (
+              <p className="mt-2 text-sm text-red-600">{errors.email}</p>
+            )}
           </div>
 
-          <button 
-            type="submit" 
-            className={styles.submitButton}
-            disabled={isLoading || messageType === 'success'}
-          >
-            {isLoading ? 'Envoi en cours...' : 'Envoyer le lien de réinitialisation'}
-          </button>
-        </form>
+          {message && (
+            <div className="rounded-md bg-green-50 p-4">
+              <p className="text-sm text-green-800">{message}</p>
+            </div>
+          )}
 
-        <div className={styles.backToLogin}>
-          <Link href="/login" className={styles.link}>← Retour à la connexion</Link>
-        </div>
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                isLoading
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+              }`}
+            >
+              {isLoading ? 'Envoi en cours...' : 'Envoyer le lien de récupération'}
+            </button>
+          </div>
+
+          <div className="text-center">
+            <Link
+              href="/login"
+              className="font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              Retour à la connexion
+            </Link>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { User, FileText, Users, Edit, Trash2, Plus, X, Eye, EyeOff, UploadCloud, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -13,7 +12,22 @@ type Tab = 'informations' | 'actualites' | 'utilisateurs';
 
 const MAX_CLIENT_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
 
-const EspaceAdministrateurPage = () => {
+// Composant de chargement
+function AdminLoading() {
+  return (
+    <div className="bg-gray-50 min-h-screen font-sans">
+      <div className="max-w-7xl mx-auto p-8">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Chargement de l'administration...</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Composant principal qui utilise useSearchParams
+function AdminContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, logout, isAdmin, getToken, updateUser, isAuthenticated } = useAuth();
@@ -105,12 +119,13 @@ const EspaceAdministrateurPage = () => {
 
     if (!file.type.startsWith('image/')) {
       alert('Veuillez sélectionner un fichier image (JPG, PNG, GIF, WebP).');
-      e.target.value = '';
+      const target = e.target as HTMLInputElement;
+      target.value = '';
       return;
     }
     if (file.size > MAX_CLIENT_IMAGE_SIZE) {
-      alert('L’image est trop volumineuse (max 5 Mo).');
-      e.target.value = '';
+      alert("L'image est trop volumineuse (max 5 Mo)."); // guillemets doubles ✅
+      (e.currentTarget as HTMLInputElement).value = '';  // reset propre du <input type="file">
       return;
     }
 
@@ -140,7 +155,9 @@ const EspaceAdministrateurPage = () => {
       alert(`Erreur upload de l'image: ${err?.message || err}`);
     } finally {
       setIsUploadingPhoto(false);
-      e.target.value = '';
+      if (photoInputRef.current) {
+        photoInputRef.current.value = '';
+      }
     }
   };
 
@@ -629,7 +646,7 @@ const EspaceAdministrateurPage = () => {
                               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
                             >
                               <ImageIcon className="w-4 h-4" />
-                              Changer l’image
+                              Changer l'image
                             </button>
                             <button
                               type="button"
@@ -1056,6 +1073,15 @@ const EspaceAdministrateurPage = () => {
         </div>
       </div>
     </ProtectedRoute>
+  );
+}
+
+// Composant principal avec Suspense
+const EspaceAdministrateurPage = () => {
+  return (
+    <Suspense fallback={<AdminLoading />}>
+      <AdminContent />
+    </Suspense>
   );
 };
 

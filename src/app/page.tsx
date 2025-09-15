@@ -278,7 +278,6 @@ const HomePage: React.FC = () => {
                     borderRadius: '15px',
                     overflow: 'hidden',
                     boxShadow: '0 8px 25px rgba(0, 0, 0, 0.08)',
-                    border: '1px solid rgba(139, 115, 85, 0.1)',
                     minHeight: '400px',
                     display: 'block',
                     opacity: 1,

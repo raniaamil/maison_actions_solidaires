@@ -223,7 +223,7 @@ function ResetPasswordContent() {
                     onClick={() => setShowPwd(s => !s)}
                     disabled={isLoading}
                   >
-                    {showPwd ? <EyeOff /> : <Eye />}
+                    {showPwd ? "👁️‍🗨️" : "👁️"}
                   </button>
                 </div>
                 {errors.password && <p className={styles.errorText}>{errors.password}</p>}
@@ -251,7 +251,7 @@ function ResetPasswordContent() {
                     onClick={() => setShowConfirm(s => !s)}
                     disabled={isLoading}
                   >
-                    {showConfirm ? <EyeOff /> : <Eye />}
+                    {showConfirm ? "👁️‍🗨️" : "👁️"}
                   </button>
                 </div>
                 {errors.confirmPassword && <p className={styles.errorText}>{errors.confirmPassword}</p>}

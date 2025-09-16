@@ -199,7 +199,6 @@ export async function POST(request) {
             <div style="font-size: 14px; color: #666;">
               <p><strong>Maison d'Actions Solidaires</strong></p>
               <div style="display: flex; align-items: flex-start; margin-top: 15px;">
-                <img src="cid:logo" alt="Logo MAACSO" style="width: 120px; height: auto; margin-right: 20px; flex-shrink: 0;">
                 <div style="flex: 1; padding-top: 10px;">
                   <p style="margin: 6px 0; line-height: 1.4;">📧 Email : maisondactionsolidaire@gmail.com</p>
                   <p style="margin: 6px 0; line-height: 1.4;">📞 Téléphone : 07 82 16 90 08</p>
@@ -209,11 +208,6 @@ export async function POST(request) {
             </div>
           </div>
         `,
-        attachments: [{
-          filename: 'logo_mas.png',
-          path: './public/images/navbar/logo_mas.png',
-          cid: 'logo'
-        }]
       };
 
       await transport.sendMail(confirmationOptions);

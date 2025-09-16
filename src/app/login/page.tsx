@@ -132,7 +132,7 @@ export default function LoginPage() {
                 onClick={() => setShowPassword(v => !v)}
                 disabled={isLoading}
               >
-                {showPassword ? '👁️‍🗨️' : '👁️'}
+                {showPassword ? '👁️' : '👁️‍🗨️'}
               </button>
             </div>
             {errors.password && <p className={styles.errorText}>{errors.password}</p>}

@@ -74,20 +74,19 @@ export default function ForgotPasswordPage() {
       <div className={styles.formCard}>
         <h1 className={styles.title}>Mot de passe oublié</h1>
         <p className={styles.description}>
-          Entrez votre adresse email pour recevoir un lien de récupération.
+          Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.
         </p>
 
         {message && <div className={styles.successMessage}>{message}</div>}
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <div className={styles.inputGroup}>
-            <label htmlFor="email">Adresse email</label>
             <input
               id="email"
               name="email"
               type="email"
               autoComplete="email"
-              placeholder="Adresse email"
+              placeholder="Adresse e-mail"
               value={email}
               onChange={handleInputChange}
               disabled={isLoading}
@@ -102,7 +101,7 @@ export default function ForgotPasswordPage() {
             disabled={isLoading}
             className={styles.submitButton}
           >
-            {isLoading ? 'Envoi en cours...' : 'Envoyer le lien de récupération'}
+            {isLoading ? 'Envoi en cours...' : 'Envoyer le lien de réinitialisation'}
           </button>
 
           <div className={styles.backToLogin}>

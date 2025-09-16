@@ -249,7 +249,7 @@ export default function RegisterPage() {
                   onClick={() => setShowPassword(v => !v)}
                   disabled={isLoading}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? "👁️" : "👁️‍🗨️"}
                 </button>
               </div>
               {errors.password && <p className={styles.errorText}>{errors.password}</p>}
@@ -263,7 +263,7 @@ export default function RegisterPage() {
                   name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  placeholder="Confirmez votre mot de passe"
+                  placeholder="Répétez le mot de passe"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   disabled={isLoading}
@@ -282,7 +282,7 @@ export default function RegisterPage() {
                   onClick={() => setShowConfirmPassword(v => !v)}
                   disabled={isLoading}
                 >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showConfirmPassword ? "👁️" : "👁️‍🗨️"}
                 </button>
               </div>
               {errors.confirmPassword && (

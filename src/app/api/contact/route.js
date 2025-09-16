@@ -2,8 +2,6 @@
 export const runtime = 'nodejs';
 import db from '../../../lib/db';
 import nodemailer from 'nodemailer';
-import fs from 'fs';
-import path from 'path';
 
 // Configuration du transporteur email
 const createTransport = () => {
@@ -197,25 +195,9 @@ export async function POST(request) {
             </div>
             
             <hr style="border: none; height: 1px; background-color: #eee; margin: 30px 0;">
-            
-            <div style="font-size: 14px; color: #666;">
-              <p><strong>Maison d'Actions Solidaires</strong></p>
-              <div style="display: flex; align-items: flex-start; margin-top: 15px;">
-                <img src="cid:logo" alt="Logo MAACSO" style="width: 120px; height: auto; margin-right: 20px; flex-shrink: 0;">
-                <div style="flex: 1; padding-top: 10px;">
-                  <p style="margin: 6px 0; line-height: 1.4;">📧 Email : maisondactionsolidaire@gmail.com</p>
-                  <p style="margin: 6px 0; line-height: 1.4;">📞 Téléphone : 07 82 16 90 08</p>
-                  <p style="margin: 6px 0; line-height: 1.4;">📍 Adresse : 12 rue de la Corne de Bœuf, 94500 Champigny-sur-Marne</p>
-                </div>
-              </div>
-            </div>
+          
           </div>
         `,
-        attachments: [{
-          filename: 'logo_mas.png',
-          path: path.join(process.cwd(), 'public', 'images', 'navbar', 'logo_mas.png'),
-          cid: 'logo'
-        }]
       };
 
       await transport.sendMail(confirmationOptions);

@@ -93,13 +93,12 @@ export default function LoginPage() {
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
           {/* Email */}
           <div className={styles.inputGroup}>
-            <label htmlFor="email">Adresse email</label>
             <input
               id="email"
               name="email"
               type="email"
               autoComplete="email"
-              placeholder="vous@exemple.com"
+              placeholder="Adresse e-mail"
               value={formData.email}
               onChange={handleInputChange}
               disabled={isLoading}
@@ -111,14 +110,13 @@ export default function LoginPage() {
 
           {/* Password */}
           <div className={styles.inputGroup}>
-            <label htmlFor="password">Mot de passe</label>
             <div className={styles.passwordWrapper}>
               <input
                 id="password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
-                placeholder="Votre mot de passe"
+                placeholder="Mot de passe"
                 value={formData.password}
                 onChange={handleInputChange}
                 disabled={isLoading}
@@ -134,7 +132,7 @@ export default function LoginPage() {
                 onClick={() => setShowPassword(v => !v)}
                 disabled={isLoading}
               >
-                {showPassword ? '🙈' : '👁️'}
+                {showPassword ? '👁️‍🗨️' : '👁️'}
               </button>
             </div>
             {errors.password && <p className={styles.errorText}>{errors.password}</p>}

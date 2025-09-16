@@ -17,24 +17,14 @@ export default function ForgotPasswordPage() {
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
 
-    // Nettoyer l'erreur du champ en cours
-    if (errors.email) {
-      setErrors(prev => ({ ...prev, email: '' }));
-    }
-
-    // Nettoyer le message succès si on retape
+    if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
     if (message) setMessage('');
   };
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-
-    if (!email) {
-      newErrors.email = "L'adresse email est requise";
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Veuillez entrer une adresse email valide';
-    }
-
+    if (!email) newErrors.email = "L'adresse email est requise";
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Veuillez entrer une adresse email valide';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -44,7 +34,6 @@ export default function ForgotPasswordPage() {
     if (!validateForm()) return;
 
     setIsLoading(true);
-
     try {
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
@@ -58,9 +47,7 @@ export default function ForgotPasswordPage() {
         setErrors({});
       } else {
         const errorData = await response.json();
-        setErrors({
-          email: errorData?.message || 'Une erreur est survenue',
-        });
+        setErrors({ email: errorData?.message || 'Une erreur est survenue' });
       }
     } catch {
       setErrors({ email: 'Erreur de connexion. Veuillez réessayer.' });
@@ -96,11 +83,7 @@ export default function ForgotPasswordPage() {
             {errors.email && <p className={styles.errorText}>{errors.email}</p>}
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={styles.submitButton}
-          >
+          <button type="submit" disabled={isLoading} className={styles.submitButton}>
             {isLoading ? 'Envoi en cours...' : 'Envoyer le lien de réinitialisation'}
           </button>
 
@@ -114,3 +97,4 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
+

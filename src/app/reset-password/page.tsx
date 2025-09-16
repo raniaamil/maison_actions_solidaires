@@ -3,6 +3,7 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import styles from './reset-password.module.css';
 
 interface FormData {
   password: string;
@@ -13,36 +14,48 @@ interface FormErrors {
   [key: string]: string;
 }
 
-// Composant de chargement
+// Icônes inline (pas de lib externe)
+const Eye = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+const EyeOff = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+    <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.8 20.8 0 0 1 5.06-6.94m3.27-1.67A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a20.7 20.7 0 0 1-3.24 4.52" />
+    <path d="M1 1l22 22" />
+  </svg>
+);
+
+// Écran de chargement (simple, sans Tailwind)
 function ResetPasswordLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-        <p className="text-gray-600">Vérification du lien...</p>
+    <div className={styles.container}>
+      <div className={styles.formCard}>
+        <h1 className={styles.title}>Vérification du lien…</h1>
+        <p className={styles.description}>Merci de patienter un instant.</p>
       </div>
     </div>
   );
 }
 
-// Composant principal qui utilise useSearchParams
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
-  const [formData, setFormData] = useState<FormData>({
-    password: '',
-    confirmPassword: ''
-  });
+  const [formData, setFormData] = useState<FormData>({ password: '', confirmPassword: '' });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>('');
   const [messageType, setMessageType] = useState<'success' | 'error' | ''>('');
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const [token, setToken] = useState<string>('');
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  // Vérifier le token au chargement de la page
+  // Vérifie le token à l'ouverture
   useEffect(() => {
     const tokenFromUrl = searchParams.get('token');
-    
+
     if (!tokenFromUrl) {
       setMessage('Lien de réinitialisation invalide ou expiré');
       setMessageType('error');
@@ -51,15 +64,12 @@ function ResetPasswordContent() {
     }
 
     setToken(tokenFromUrl);
-    
-    // Vérifier la validité du token
+
     const verifyToken = async () => {
       try {
         const response = await fetch('/api/auth/verify-reset-token', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token: tokenFromUrl }),
         });
 
@@ -71,7 +81,7 @@ function ResetPasswordContent() {
           setMessageType('error');
           setTokenValid(false);
         }
-      } catch (error) {
+      } catch {
         setMessage('Erreur de vérification du lien');
         setMessageType('error');
         setTokenValid(false);
@@ -83,20 +93,10 @@ function ResetPasswordContent() {
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
 
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
 
-    // Clear message when user starts typing
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
     if (message) {
       setMessage('');
       setMessageType('');
@@ -126,23 +126,14 @@ function ResetPasswordContent() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
-
     try {
       const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token,
-          password: formData.password,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password: formData.password }),
       });
 
       const data = await response.json();
@@ -155,7 +146,7 @@ function ResetPasswordContent() {
         setMessage(data.message || 'Erreur lors de la réinitialisation du mot de passe');
         setMessageType('error');
       }
-    } catch (error: any) {
+    } catch {
       setMessage('Erreur de connexion. Veuillez réessayer.');
       setMessageType('error');
     } finally {
@@ -163,151 +154,117 @@ function ResetPasswordContent() {
     }
   };
 
-  // Affichage pendant la vérification du token
-  if (tokenValid === null) {
-    return <ResetPasswordLoading />;
-  }
+  // En cours de vérification
+  if (tokenValid === null) return <ResetPasswordLoading />;
 
-  // Affichage si le token n'est pas valide
+  // Token invalide
   if (tokenValid === false) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-              Lien invalide
-            </h2>
-            <div className="mt-4 rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-800">{message}</p>
-            </div>
-            <div className="mt-6">
-              <Link
-                href="/forgot-password"
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Demander un nouveau lien de réinitialisation
-              </Link>
-            </div>
-            <div className="mt-4">
-              <Link
-                href="/login"
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Retour à la connexion
-              </Link>
-            </div>
+      <div className={styles.container}>
+        <div className={styles.formCard}>
+          <h1 className={styles.title}>Lien invalide</h1>
+          <div className={styles.errorMessage}>{message}</div>
+          <div className={styles.backToLogin}>
+            <Link href="/forgot-password" className={styles.link}>
+              Demander un nouveau lien de réinitialisation
+            </Link>
+          </div>
+          <div className={styles.backToLogin}>
+            <Link href="/login" className={styles.link}>
+              Retour à la connexion
+            </Link>
           </div>
         </div>
       </div>
     );
   }
 
+  // Formulaire principal
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Nouveau mot de passe
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Choisissez un nouveau mot de passe sécurisé
-          </p>
-        </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+    <div className={styles.container}>
+      <div className={styles.formCard}>
+        <h1 className={styles.title}>Nouveau mot de passe</h1>
+        <p className={styles.description}>Choisissez un nouveau mot de passe sécurisé pour votre compte.</p>
+
+        <form className={styles.form} onSubmit={handleSubmit} noValidate>
           {message && (
-            <div className={`rounded-md p-4 ${
-              messageType === 'success' ? 'bg-green-50' : 'bg-red-50'
-            }`}>
-              <p className={`text-sm ${
-                messageType === 'success' ? 'text-green-800' : 'text-red-800'
-              }`}>
-                {message}
-              </p>
+            <div className={messageType === 'success' ? styles.successMessage : styles.errorMessage}>
+              {message}
             </div>
           )}
 
           {messageType === 'success' ? (
-            <div className="space-y-4">
-              <Link
-                href="/login"
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
+            <div className={styles.backToLogin}>
+              <Link href="/login" className={styles.link}>
                 Se connecter
               </Link>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Nouveau mot de passe
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  className={`mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border ${
-                    errors.password ? 'border-red-300' : 'border-gray-300'
-                  } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
-                  placeholder="Minimum 8 caractères"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                />
-                {errors.password && (
-                  <p className="mt-2 text-sm text-red-600">{errors.password}</p>
-                )}
-                <p className="mt-1 text-xs text-gray-500">
-                  Le mot de passe doit contenir au moins 8 caractères avec une minuscule, une majuscule et un chiffre.
-                </p>
+            <>
+              {/* Mot de passe */}
+              <div className={styles.inputGroup}>
+                <div className={styles.passwordWrapper}>
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPwd ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    placeholder="Nouveau mot de passe"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    disabled={isLoading}
+                    required
+                    className={`${styles.input} ${styles.passwordInput} ${errors.password ? styles.inputError : ''}`}
+                  />
+                  <button
+                    type="button"
+                    aria-label={showPwd ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                    className={styles.togglePassword}
+                    onClick={() => setShowPwd(s => !s)}
+                    disabled={isLoading}
+                  >
+                    {showPwd ? <EyeOff /> : <Eye />}
+                  </button>
+                </div>
+                {errors.password && <p className={styles.errorText}>{errors.password}</p>}
               </div>
 
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                  Confirmer le nouveau mot de passe
-                </label>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  className={`mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border ${
-                    errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                  } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
-                  placeholder="Confirmez votre nouveau mot de passe"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                />
-                {errors.confirmPassword && (
-                  <p className="mt-2 text-sm text-red-600">{errors.confirmPassword}</p>
-                )}
+              {/* Confirmation */}
+              <div className={styles.inputGroup}>
+                <div className={styles.passwordWrapper}>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirm ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    placeholder="Confirmez le nouveau mot de passe"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    disabled={isLoading}
+                    required
+                    className={`${styles.input} ${styles.passwordInput} ${errors.confirmPassword ? styles.inputError : ''}`}
+                  />
+                  <button
+                    type="button"
+                    aria-label={showConfirm ? 'Masquer la confirmation' : 'Afficher la confirmation'}
+                    className={styles.togglePassword}
+                    onClick={() => setShowConfirm(s => !s)}
+                    disabled={isLoading}
+                  >
+                    {showConfirm ? <EyeOff /> : <Eye />}
+                  </button>
+                </div>
+                {errors.confirmPassword && <p className={styles.errorText}>{errors.confirmPassword}</p>}
               </div>
 
-              <div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                    isLoading
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
-                  }`}
-                >
-                  {isLoading ? 'Réinitialisation en cours...' : 'Réinitialiser le mot de passe'}
-                </button>
-              </div>
-            </div>
+              <button type="submit" disabled={isLoading} className={styles.submitButton}>
+                {isLoading ? 'Réinitialisation en cours...' : 'Mettre à jour le mot de passe'}
+              </button>
+            </>
           )}
 
-          <div className="text-center">
-            <Link
-              href="/login"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
+          <div className={styles.backToLogin}>
+            <Link href="/login" className={styles.link}>
               Retour à la connexion
             </Link>
           </div>

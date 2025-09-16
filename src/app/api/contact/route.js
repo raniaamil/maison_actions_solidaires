@@ -150,7 +150,7 @@ export async function POST(request) {
               <p><strong>Nom :</strong> ${firstname} ${surname}</p>
               <p><strong>Email :</strong> <a href="mailto:${email}">${email}</a></p>
               <p><strong>Sujet :</strong> ${subject}</p>
-              <p><strong>Date :</strong> ${new Date().toLocaleString('fr-FR')}</p>
+              <p><strong>Date :</strong> ${new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })}</p>
             </div>
             
             <div style="background-color: #fff; padding: 20px; border-left: 4px solid #838C58; margin: 20px 0;">
@@ -279,7 +279,7 @@ export async function GET(request) {
     // Formater les données
     const formattedMessages = messages.map(msg => ({
       ...msg,
-      date_creation: msg.date_creation ? new Date(msg.date_creation).toLocaleDateString('fr-FR') : '',
+      date_creation: msg.date_creation ? new Date(msg.date_creation).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' }) : '',
       apercu_message: msg.apercu_message + (msg.message.length > 150 ? '...' : '')
     }));
 

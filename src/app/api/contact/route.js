@@ -136,9 +136,9 @@ export async function POST(request) {
       
       // Email de notification à l'association
       const mailOptions = {
-        from: `"Site Web MAACSO" <${process.env.SMTP_USER}>`,
+        from: `"Maison d\'Actions Solidaires" <${process.env.SMTP_USER}>`,
         to: process.env.CONTACT_EMAIL,
-        subject: `Nouveau message de contact: ${subject.trim()}`,
+        subject: `Nouveau message: ${subject.trim()}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto;">
             <h2 style="color: #838C58; border-bottom: 2px solid #838C58; padding-bottom: 10px;">
@@ -159,8 +159,6 @@ export async function POST(request) {
             </div>
             
             <div style="font-size: 12px; color: #666; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-              <p>ID du message : ${messageId}</p>
-              <p>IP : ${ipAddress}</p>
               <p>Ce message a été envoyé via le formulaire de contact du site web de Maison d\'Actions Solidaires.</p>
             </div>
           </div>

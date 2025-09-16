@@ -149,7 +149,7 @@ export default function RegisterPage() {
   return (
     <div className={styles.container}>
       <div className={styles.formCard}>
-        <h1 className={styles.title}>Créer un compte</h1>
+        <h1 className={styles.title}>Inscription</h1>
 
         {errors.general && <div className={styles.generalError}>{errors.general}</div>}
 
@@ -175,13 +175,12 @@ export default function RegisterPage() {
           <div className={styles.formGrid}>
             {/* Prénom */}
             <div className={styles.inputGroup}>
-              <label htmlFor="firstName">Prénom *</label>
               <input
                 id="firstName"
                 name="firstName"
                 type="text"
                 autoComplete="given-name"
-                placeholder="Votre prénom"
+                placeholder="Prénom"
                 value={formData.firstName}
                 onChange={handleInputChange}
                 disabled={isLoading}
@@ -193,13 +192,12 @@ export default function RegisterPage() {
 
             {/* Nom */}
             <div className={styles.inputGroup}>
-              <label htmlFor="lastName">Nom *</label>
               <input
                 id="lastName"
                 name="lastName"
                 type="text"
                 autoComplete="family-name"
-                placeholder="Votre nom"
+                placeholder="Nom"
                 value={formData.lastName}
                 onChange={handleInputChange}
                 disabled={isLoading}
@@ -211,13 +209,12 @@ export default function RegisterPage() {
 
             {/* Email (pleine largeur) */}
             <div className={`${styles.inputGroup} ${styles.formGridFull}`}>
-              <label htmlFor="email">Adresse email *</label>
               <input
                 id="email"
                 name="email"
                 type="email"
                 autoComplete="email"
-                placeholder="votre.email@exemple.com"
+                placeholder="Adresse e-mail"
                 value={formData.email}
                 onChange={handleInputChange}
                 disabled={isLoading}
@@ -227,33 +224,15 @@ export default function RegisterPage() {
               {errors.email && <p className={styles.errorText}>{errors.email}</p>}
             </div>
 
-            {/* Téléphone (pleine largeur) */}
-            <div className={`${styles.inputGroup} ${styles.formGridFull}`}>
-              <label htmlFor="phone">Téléphone (optionnel)</label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                autoComplete="tel"
-                placeholder="06 12 34 56 78"
-                value={formData.phone}
-                onChange={handleInputChange}
-                disabled={isLoading}
-                className={`${styles.input} ${errors.phone ? styles.inputError : ''}`}
-              />
-              {errors.phone && <p className={styles.errorText}>{errors.phone}</p>}
-            </div>
-
             {/* Mot de passe */}
             <div className={styles.inputGroup}>
-              <label htmlFor="password">Mot de passe *</label>
               <div className={styles.passwordWrapper}>
                 <input
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  placeholder="Minimum 8 caractères"
+                  placeholder="Mot de passe"
                   value={formData.password}
                   onChange={handleInputChange}
                   disabled={isLoading}
@@ -274,14 +253,10 @@ export default function RegisterPage() {
                 </button>
               </div>
               {errors.password && <p className={styles.errorText}>{errors.password}</p>}
-              <p style={{ marginTop: 4, fontSize: 12, color: '#6b7280' }}>
-                Le mot de passe doit contenir au moins 8 caractères avec une minuscule, une majuscule et un chiffre.
-              </p>
             </div>
 
             {/* Confirmation mot de passe */}
             <div className={styles.inputGroup}>
-              <label htmlFor="confirmPassword">Confirmer le mot de passe *</label>
               <div className={styles.passwordWrapper}>
                 <input
                   id="confirmPassword"
@@ -314,35 +289,10 @@ export default function RegisterPage() {
                 <p className={styles.errorText}>{errors.confirmPassword}</p>
               )}
             </div>
-
-            {/* Conditions (pleine largeur) */}
-            <div className={`${styles.formGridFull}`}>
-              <label htmlFor="acceptTerms" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input
-                  id="acceptTerms"
-                  name="acceptTerms"
-                  type="checkbox"
-                  checked={formData.acceptTerms}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                />
-                <span>
-                  J&apos;accepte les{' '}
-                  <Link href="/conditions" className={styles.link}>
-                    conditions d&apos;utilisation
-                  </Link>{' '}
-                  et la{' '}
-                  <Link href="/confidentialite" className={styles.link}>
-                    politique de confidentialité
-                  </Link>
-                </span>
-              </label>
-              {errors.acceptTerms && <p className={styles.errorText}>{errors.acceptTerms}</p>}
-            </div>
           </div>
 
           <button type="submit" disabled={isLoading} className={styles.submitButton}>
-            {isLoading ? 'Création en cours...' : 'Créer mon compte'}
+            {isLoading ? 'Création en cours...' : 'S\'inscrire'}
           </button>
 
           <p className={styles.loginLink}>

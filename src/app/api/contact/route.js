@@ -2,10 +2,12 @@
 export const runtime = 'nodejs';
 import db from '../../../lib/db';
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 
 // Configuration du transporteur email
 const createTransport = () => {
-  return nodemailer.createTransport({
+  return nodemailer.createTransporter({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: false, // true pour 465, false pour les autres ports
@@ -130,6 +132,17 @@ export async function POST(request) {
     const messageId = result.rows[0].id;
     console.log('✅ Message sauvegardé en base avec l\'ID:', messageId);
 
+    // Charger le logo en base64
+    let logoBase64 = '';
+    try {
+      const logoPath = path.join(process.cwd(), 'public', 'images', 'navbar', 'logo_mas.png');
+      const logoBuffer = fs.readFileSync(logoPath);
+      logoBase64 = logoBuffer.toString('base64');
+      console.log('✅ Logo chargé en base64');
+    } catch (logoError) {
+      console.log('⚠️ Logo non trouvé, email sans logo:', logoError.message);
+    }
+
     // Envoi de l'email de notification
     try {
       const transport = createTransport();
@@ -199,6 +212,9 @@ export async function POST(request) {
             <div style="font-size: 14px; color: #666;">
               <p><strong>Maison d'Actions Solidaires</strong></p>
               <div style="display: flex; align-items: flex-start; margin-top: 15px;">
+                ${logoBase64 ? `
+                  <img src="data:image/png;base64,${logoBase64}" alt="Logo MAACSO" style="width: 120px; height: auto; margin-right: 20px; flex-shrink: 0;">
+                ` : ''}
                 <div style="flex: 1; padding-top: 10px;">
                   <p style="margin: 6px 0; line-height: 1.4;">📧 Email : maisondactionsolidaire@gmail.com</p>
                   <p style="margin: 6px 0; line-height: 1.4;">📞 Téléphone : 07 82 16 90 08</p>
@@ -207,7 +223,7 @@ export async function POST(request) {
               </div>
             </div>
           </div>
-        `,
+        `
       };
 
       await transport.sendMail(confirmationOptions);
@@ -215,6 +231,8 @@ export async function POST(request) {
 
     } catch (emailError) {
       console.error('❌ Erreur lors de l\'envoi des emails:', emailError);
+      console.error('Code erreur:', emailError.code);
+      console.error('Message erreur:', emailError.message);
       // Ne pas faire échouer la requête si l'email échoue
     }
 

@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
       });
 
       if (response.ok) {
-        setMessage('Un email de récupération a été envoyé à votre adresse email.');
+        setMessage('Un email de réinitialisation a été envoyé à votre adresse. Vérifiez votre boîte de réception.');
         setEmail('');
         setErrors({});
       } else {

@@ -164,13 +164,7 @@ export default function LoginPage() {
           <button type="submit" disabled={isLoading} className={styles.submitButton}>
             {isLoading ? 'Connexion en cours...' : 'Se connecter'}
           </button>
-
-          <p className={styles.registerLink}>
-            Pas encore de compte ?{' '}
-            <Link href="/register" className={styles.link}>
-              S&apos;inscrire
-            </Link>
-          </p>
+          
         </form>
       </div>
     </div>

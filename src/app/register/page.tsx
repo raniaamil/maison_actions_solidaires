@@ -189,7 +189,7 @@ export default function RegisterPage() {
                 <button type="button" className={styles.togglePassword}
                   aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                   aria-pressed={showPassword} onClick={() => setShowPassword(v => !v)} disabled={isLoading}>
-                  {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                  {showPassword ? '👁️' : '👁️‍🗨️'}
                 </button>
               </div>
               {errors.password && <p className={styles.errorText}>{errors.password}</p>}
@@ -205,7 +205,7 @@ export default function RegisterPage() {
                 <button type="button" className={styles.togglePassword}
                   aria-label={showConfirmPassword ? 'Masquer la confirmation' : 'Afficher la confirmation'}
                   aria-pressed={showConfirmPassword} onClick={() => setShowConfirmPassword(v => !v)} disabled={isLoading}>
-                  {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                  {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
                 </button>
               </div>
               {errors.confirmPassword && <p className={styles.errorText}>{errors.confirmPassword}</p>}

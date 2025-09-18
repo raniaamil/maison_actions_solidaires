@@ -4,18 +4,9 @@ import { query } from '../../../lib/db';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
-  console.log("🔄 Tentative d'inscription...");
   try {
     const body = await request.json();
-    const {
-      email,
-      password,
-      prenom,
-      nom,
-      firstName,
-      lastName,
-      role,          // optionnel : si tu veux permettre de passer un rôle précis
-    } = body;
+    const { email, password, prenom, nom, firstName, lastName, role } = body;
 
     const first = (prenom || firstName || '').trim();
     const last  = (nom || lastName || '').trim();
@@ -34,7 +25,6 @@ export async function POST(request) {
       return Response.json({ success: false, message: 'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre' }, { status: 400 });
     }
 
-    // Email déjà pris ?
     const existing = await query('SELECT id FROM users WHERE email = $1', [emailNorm]);
     if (existing.rows.length > 0) {
       return Response.json({ success: false, message: 'Cette adresse email est déjà utilisée' }, { status: 409 });
@@ -42,7 +32,6 @@ export async function POST(request) {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    // Insertion conforme aux colonnes de ta table Supabase
     const inserted = await query(
       `INSERT INTO users (prenom, nom, email, mot_de_passe, role, date_inscription, date_modification, actif)
        VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), TRUE)
@@ -74,14 +63,12 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('💥 Erreur inscription:', error);
-
-    if (error.code === '23505') { // unique_violation (PG)
+    if (error.code === '23505') {
       return Response.json({ success: false, message: 'Cette adresse email est déjà utilisée' }, { status: 409 });
     }
     if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
       return Response.json({ success: false, message: 'Erreur de connexion à la base de données' }, { status: 503 });
     }
-
     return Response.json({ success: false, message: "Erreur lors de l'inscription" }, { status: 500 });
   }
 }
@@ -93,5 +80,3 @@ export async function GET() {
     path: '/api/register'
   });
 }
-
-

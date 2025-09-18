@@ -3,7 +3,6 @@
 
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import Link from 'next/link';
-import { Eye, EyeOff } from 'lucide-react';
 import styles from './register.module.css';
 
 interface FormData {
@@ -12,8 +11,6 @@ interface FormData {
   email: string;
   password: string;
   confirmPassword: string;
-  phone?: string;
-  acceptTerms: boolean;
 }
 
 type FormErrors = Partial<Record<keyof FormData | 'general', string>>;
@@ -25,10 +22,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    phone: '',
-    acceptTerms: false,
   });
-
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -36,8 +30,8 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
 
     if (errors[name as keyof FormErrors]) setErrors(prev => ({ ...prev, [name]: undefined }));
     if (successMessage) setSuccessMessage('');
@@ -63,11 +57,6 @@ export default function RegisterPage() {
     if (!formData.confirmPassword) newErrors.confirmPassword = 'La confirmation du mot de passe est requise';
     else if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
 
-    if (formData.phone && !/^[\d\s\-\+\(\)]{10,}$/.test(formData.phone.replace(/\s/g, '')))
-      newErrors.phone = 'Veuillez entrer un numéro de téléphone valide';
-
-    if (!formData.acceptTerms) newErrors.acceptTerms = "Vous devez accepter les conditions d'utilisation";
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -84,13 +73,10 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // ⚠️ Correspondance exacte avec ta table Supabase (users)
-          prenom: formData.firstName.trim(),
-          nom: formData.lastName.trim(),
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
           email: formData.email.toLowerCase().trim(),
-          password: formData.password, // sera hashé côté API en 'mot_de_passe'
-          phone: formData.phone?.trim() || null,
-          acceptTerms: formData.acceptTerms,
+          password: formData.password,
         }),
       });
 
@@ -109,8 +95,6 @@ export default function RegisterPage() {
           email: '',
           password: '',
           confirmPassword: '',
-          phone: '',
-          acceptTerms: false,
         });
         setErrors({});
       } else {
@@ -158,146 +142,55 @@ export default function RegisterPage() {
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <div className={styles.formGrid}>
-            {/* Prénom */}
             <div className={styles.inputGroup}>
-              <input
-                id="firstName"
-                name="firstName"
-                type="text"
-                autoComplete="given-name"
-                placeholder="Prénom"
-                value={formData.firstName}
-                onChange={handleInputChange}
-                disabled={isLoading}
-                className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`}
-                required
-              />
+              <input id="firstName" name="firstName" type="text" autoComplete="given-name" placeholder="Prénom"
+                value={formData.firstName} onChange={handleInputChange} disabled={isLoading}
+                className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`} required />
               {errors.firstName && <p className={styles.errorText}>{errors.firstName}</p>}
             </div>
 
-            {/* Nom */}
             <div className={styles.inputGroup}>
-              <input
-                id="lastName"
-                name="lastName"
-                type="text"
-                autoComplete="family-name"
-                placeholder="Nom"
-                value={formData.lastName}
-                onChange={handleInputChange}
-                disabled={isLoading}
-                className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`}
-                required
-              />
+              <input id="lastName" name="lastName" type="text" autoComplete="family-name" placeholder="Nom"
+                value={formData.lastName} onChange={handleInputChange} disabled={isLoading}
+                className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`} required />
               {errors.lastName && <p className={styles.errorText}>{errors.lastName}</p>}
             </div>
 
-            {/* Email */}
             <div className={`${styles.inputGroup} ${styles.formGridFull}`}>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="Adresse e-mail"
-                value={formData.email}
-                onChange={handleInputChange}
-                disabled={isLoading}
-                className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
-                required
-              />
+              <input id="email" name="email" type="email" autoComplete="email" placeholder="Adresse e-mail"
+                value={formData.email} onChange={handleInputChange} disabled={isLoading}
+                className={`${styles.input} ${errors.email ? styles.inputError : ''}`} required />
               {errors.email && <p className={styles.errorText}>{errors.email}</p>}
             </div>
 
-            {/* Téléphone (optionnel) */}
-            <div className={styles.inputGroup}>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                autoComplete="tel"
-                placeholder="Téléphone (optionnel)"
-                value={formData.phone}
-                onChange={handleInputChange}
-                disabled={isLoading}
-                className={`${styles.input} ${errors.phone ? styles.inputError : ''}`}
-              />
-              {errors.phone && <p className={styles.errorText}>{errors.phone}</p>}
-            </div>
-
-            {/* Mot de passe */}
             <div className={styles.inputGroup}>
               <div className={styles.passwordWrapper}>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  placeholder="Mot de passe"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                  className={`${styles.input} ${styles.passwordInput} ${errors.password ? styles.inputError : ''}`}
-                  required
-                />
-                <button
-                  type="button"
-                  className={styles.togglePassword}
+                <input id="password" name="password" type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password" placeholder="Mot de passe"
+                  value={formData.password} onChange={handleInputChange} disabled={isLoading}
+                  className={`${styles.input} ${styles.passwordInput} ${errors.password ? styles.inputError : ''}`} required />
+                <button type="button" className={styles.togglePassword}
                   aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-                  aria-pressed={showPassword}
-                  onClick={() => setShowPassword(v => !v)}
-                  disabled={isLoading}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  aria-pressed={showPassword} onClick={() => setShowPassword(v => !v)} disabled={isLoading}>
+                  {showPassword ? '👁️' : '👁️‍🗨️'}
                 </button>
               </div>
               {errors.password && <p className={styles.errorText}>{errors.password}</p>}
             </div>
 
-            {/* Confirmation mot de passe */}
             <div className={styles.inputGroup}>
               <div className={styles.passwordWrapper}>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  placeholder="Répétez le mot de passe"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                  className={`${styles.input} ${styles.passwordInput} ${errors.confirmPassword ? styles.inputError : ''}`}
-                  required
-                />
-                <button
-                  type="button"
-                  className={styles.togglePassword}
+                <input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password" placeholder="Répétez le mot de passe"
+                  value={formData.confirmPassword} onChange={handleInputChange} disabled={isLoading}
+                  className={`${styles.input} ${styles.passwordInput} ${errors.confirmPassword ? styles.inputError : ''}`} required />
+                <button type="button" className={styles.togglePassword}
                   aria-label={showConfirmPassword ? 'Masquer la confirmation' : 'Afficher la confirmation'}
-                  aria-pressed={showConfirmPassword}
-                  onClick={() => setShowConfirmPassword(v => !v)}
-                  disabled={isLoading}
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  aria-pressed={showConfirmPassword} onClick={() => setShowConfirmPassword(v => !v)} disabled={isLoading}>
+                  {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
                 </button>
               </div>
               {errors.confirmPassword && <p className={styles.errorText}>{errors.confirmPassword}</p>}
-            </div>
-
-            {/* Conditions d'utilisation */}
-            <div className={`${styles.inputGroup} ${styles.formGridFull}`}>
-              <label className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  name="acceptTerms"
-                  checked={formData.acceptTerms}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                />
-                <span>
-                  J’accepte les <Link href="/conditions" className={styles.link}>conditions d’utilisation</Link>.
-                </span>
-              </label>
-              {errors.acceptTerms && <p className={styles.errorText}>{errors.acceptTerms}</p>}
             </div>
           </div>
 
@@ -313,3 +206,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+

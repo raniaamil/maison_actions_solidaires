@@ -36,7 +36,7 @@ export async function POST(request) {
       `INSERT INTO users (prenom, nom, email, mot_de_passe, role, date_inscription, date_modification, actif)
        VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), TRUE)
        RETURNING id`,
-      [first, last, emailNorm, hashed, role || 'Utilisateur']
+      [first, last, emailNorm, hashed, role || 'Administrateur']
     );
 
     const userId = inserted.rows[0].id;

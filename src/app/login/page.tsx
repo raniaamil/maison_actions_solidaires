@@ -58,20 +58,16 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrors(prev => ({ ...prev, general: undefined }));
 
-    try {
-      await login(formData.email, formData.password);
-      // Redirection gérée par le contexte si besoin
-      if (rememberMe) {
-        // Si tu veux réellement mémoriser l'email, tu peux utiliser localStorage ici
-        // localStorage.setItem('rememberEmail', formData.email);
-      }
-    } catch (error: any) {
-      setErrors({
-        general: error?.message || 'Erreur de connexion. Vérifiez vos identifiants.',
-      });
-    } finally {
+    // login() renvoie { success: boolean, error?: string }
+    const result = await login(formData.email, formData.password, rememberMe);
+
+    if (!result?.success) {
+      setErrors({ general: result?.error || 'Identifiants incorrects.' });
       setIsLoading(false);
+      return;
     }
+
+    // En cas de succès, la redirection est gérée dans login() (router.push('/administrateur'))
   };
 
   return (
@@ -162,9 +158,9 @@ export default function LoginPage() {
           <button type="submit" disabled={isLoading} className={styles.submitButton}>
             {isLoading ? 'Connexion en cours...' : 'Se connecter'}
           </button>
-          
         </form>
       </div>
     </div>
   );
 }
+

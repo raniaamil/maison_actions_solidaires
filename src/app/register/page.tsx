@@ -1,3 +1,4 @@
+// src/app/register/page.tsx
 'use client';
 
 import React, { useState, ChangeEvent, FormEvent } from 'react';
@@ -27,6 +28,7 @@ export default function RegisterPage() {
     phone: '',
     acceptTerms: false,
   });
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -82,11 +84,13 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
+          // ⚠️ Correspondance exacte avec ta table Supabase (users)
+          prenom: formData.firstName.trim(),
+          nom: formData.lastName.trim(),
           email: formData.email.toLowerCase().trim(),
-          password: formData.password,
+          password: formData.password, // sera hashé côté API en 'mot_de_passe'
           phone: formData.phone?.trim() || null,
+          acceptTerms: formData.acceptTerms,
         }),
       });
 
@@ -153,62 +157,147 @@ export default function RegisterPage() {
         )}
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
-          {/* ... tes champs (inchangés) ... */}
           <div className={styles.formGrid}>
             {/* Prénom */}
             <div className={styles.inputGroup}>
-              <input id="firstName" name="firstName" type="text" autoComplete="given-name" placeholder="Prénom"
-                value={formData.firstName} onChange={handleInputChange} disabled={isLoading}
-                className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`} required />
+              <input
+                id="firstName"
+                name="firstName"
+                type="text"
+                autoComplete="given-name"
+                placeholder="Prénom"
+                value={formData.firstName}
+                onChange={handleInputChange}
+                disabled={isLoading}
+                className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`}
+                required
+              />
               {errors.firstName && <p className={styles.errorText}>{errors.firstName}</p>}
             </div>
 
             {/* Nom */}
             <div className={styles.inputGroup}>
-              <input id="lastName" name="lastName" type="text" autoComplete="family-name" placeholder="Nom"
-                value={formData.lastName} onChange={handleInputChange} disabled={isLoading}
-                className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`} required />
+              <input
+                id="lastName"
+                name="lastName"
+                type="text"
+                autoComplete="family-name"
+                placeholder="Nom"
+                value={formData.lastName}
+                onChange={handleInputChange}
+                disabled={isLoading}
+                className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`}
+                required
+              />
               {errors.lastName && <p className={styles.errorText}>{errors.lastName}</p>}
             </div>
 
             {/* Email */}
             <div className={`${styles.inputGroup} ${styles.formGridFull}`}>
-              <input id="email" name="email" type="email" autoComplete="email" placeholder="Adresse e-mail"
-                value={formData.email} onChange={handleInputChange} disabled={isLoading}
-                className={`${styles.input} ${errors.email ? styles.inputError : ''}`} required />
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                placeholder="Adresse e-mail"
+                value={formData.email}
+                onChange={handleInputChange}
+                disabled={isLoading}
+                className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
+                required
+              />
               {errors.email && <p className={styles.errorText}>{errors.email}</p>}
             </div>
 
-            {/* MDP */}
+            {/* Téléphone (optionnel) */}
+            <div className={styles.inputGroup}>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="Téléphone (optionnel)"
+                value={formData.phone}
+                onChange={handleInputChange}
+                disabled={isLoading}
+                className={`${styles.input} ${errors.phone ? styles.inputError : ''}`}
+              />
+              {errors.phone && <p className={styles.errorText}>{errors.phone}</p>}
+            </div>
+
+            {/* Mot de passe */}
             <div className={styles.inputGroup}>
               <div className={styles.passwordWrapper}>
-                <input id="password" name="password" type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password" placeholder="Mot de passe"
-                  value={formData.password} onChange={handleInputChange} disabled={isLoading}
-                  className={`${styles.input} ${styles.passwordInput} ${errors.password ? styles.inputError : ''}`} required />
-                <button type="button" className={styles.togglePassword}
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder="Mot de passe"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  disabled={isLoading}
+                  className={`${styles.input} ${styles.passwordInput} ${errors.password ? styles.inputError : ''}`}
+                  required
+                />
+                <button
+                  type="button"
+                  className={styles.togglePassword}
                   aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-                  aria-pressed={showPassword} onClick={() => setShowPassword(v => !v)} disabled={isLoading}>
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword(v => !v)}
+                  disabled={isLoading}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {errors.password && <p className={styles.errorText}>{errors.password}</p>}
             </div>
 
-            {/* Confirmation MDP */}
+            {/* Confirmation mot de passe */}
             <div className={styles.inputGroup}>
               <div className={styles.passwordWrapper}>
-                <input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'}
-                  autoComplete="new-password" placeholder="Répétez le mot de passe"
-                  value={formData.confirmPassword} onChange={handleInputChange} disabled={isLoading}
-                  className={`${styles.input} ${styles.passwordInput} ${errors.confirmPassword ? styles.inputError : ''}`} required />
-                <button type="button" className={styles.togglePassword}
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder="Répétez le mot de passe"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  disabled={isLoading}
+                  className={`${styles.input} ${styles.passwordInput} ${errors.confirmPassword ? styles.inputError : ''}`}
+                  required
+                />
+                <button
+                  type="button"
+                  className={styles.togglePassword}
                   aria-label={showConfirmPassword ? 'Masquer la confirmation' : 'Afficher la confirmation'}
-                  aria-pressed={showConfirmPassword} onClick={() => setShowConfirmPassword(v => !v)} disabled={isLoading}>
-                  {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                  aria-pressed={showConfirmPassword}
+                  onClick={() => setShowConfirmPassword(v => !v)}
+                  disabled={isLoading}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {errors.confirmPassword && <p className={styles.errorText}>{errors.confirmPassword}</p>}
+            </div>
+
+            {/* Conditions d'utilisation */}
+            <div className={`${styles.inputGroup} ${styles.formGridFull}`}>
+              <label className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  name="acceptTerms"
+                  checked={formData.acceptTerms}
+                  onChange={handleInputChange}
+                  disabled={isLoading}
+                />
+                <span>
+                  J’accepte les <Link href="/conditions" className={styles.link}>conditions d’utilisation</Link>.
+                </span>
+              </label>
+              {errors.acceptTerms && <p className={styles.errorText}>{errors.acceptTerms}</p>}
             </div>
           </div>
 

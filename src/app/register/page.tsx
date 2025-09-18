@@ -11,7 +11,6 @@ interface FormData {
   email: string;
   password: string;
   confirmPassword: string;
-  phone?: string;
   acceptTerms: boolean;
 }
 
@@ -24,7 +23,6 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    phone: '',
     acceptTerms: false,
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -41,11 +39,11 @@ export default function RegisterPage() {
       [name]: type === 'checkbox' ? checked : value,
     }));
 
-    // clear error du champ en cours
+    // Clear l'erreur du champ édité
     if (errors[name as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
-    // clear le message succès si on modifie le formulaire
+    // Clear le message de succès si on retouche le formulaire
     if (successMessage) setSuccessMessage('');
   };
 
@@ -85,10 +83,6 @@ export default function RegisterPage() {
       newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
     }
 
-    if (formData.phone && !/^[\d\s\-\+\(\)]{10,}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Veuillez entrer un numéro de téléphone valide';
-    }
-
     if (!formData.acceptTerms) {
       newErrors.acceptTerms = "Vous devez accepter les conditions d'utilisation";
     }
@@ -113,13 +107,19 @@ export default function RegisterPage() {
           lastName: formData.lastName.trim(),
           email: formData.email.toLowerCase().trim(),
           password: formData.password,
-          phone: formData.phone?.trim() || null,
         }),
       });
 
-      const data = await res.json();
+      // Parsing robuste : tente JSON, sinon fallback texte
+      let data: any;
+      try {
+        data = await res.json();
+      } catch {
+        const text = await res.text();
+        data = { message: text };
+      }
 
-      if (res.ok) {
+      if (res.ok && data?.success !== false) {
         setSuccessMessage('Compte créé avec succès ! Vous pouvez maintenant vous connecter.');
         setFormData({
           firstName: '',
@@ -127,13 +127,14 @@ export default function RegisterPage() {
           email: '',
           password: '',
           confirmPassword: '',
-          phone: '',
           acceptTerms: false,
         });
         setErrors({});
       } else {
         setErrors({
-          general: data?.message || 'Erreur lors de la création du compte. Veuillez réessayer.',
+          general:
+            data?.message ||
+            'Erreur lors de la création du compte. Veuillez réessayer.',
         });
       }
     } catch {
@@ -151,7 +152,11 @@ export default function RegisterPage() {
       <div className={styles.formCard}>
         <h1 className={styles.title}>Inscription</h1>
 
-        {errors.general && <div className={styles.generalError}>{errors.general}</div>}
+        {errors.general && (
+          <div role="alert" aria-live="assertive" className={styles.generalError}>
+            {errors.general}
+          </div>
+        )}
 
         {successMessage && (
           <div
@@ -207,7 +212,7 @@ export default function RegisterPage() {
               {errors.lastName && <p className={styles.errorText}>{errors.lastName}</p>}
             </div>
 
-            {/* Email (pleine largeur) */}
+            {/* Email */}
             <div className={`${styles.inputGroup} ${styles.formGridFull}`}>
               <input
                 id="email"
@@ -249,7 +254,7 @@ export default function RegisterPage() {
                   onClick={() => setShowPassword(v => !v)}
                   disabled={isLoading}
                 >
-                  {showPassword ? "👁️" : "👁️‍🗨️"}
+                  {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
               </div>
               {errors.password && <p className={styles.errorText}>{errors.password}</p>}
@@ -282,7 +287,7 @@ export default function RegisterPage() {
                   onClick={() => setShowConfirmPassword(v => !v)}
                   disabled={isLoading}
                 >
-                  {showConfirmPassword ? "👁️" : "👁️‍🗨️"}
+                  {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
               </div>
               {errors.confirmPassword && (
@@ -292,7 +297,7 @@ export default function RegisterPage() {
           </div>
 
           <button type="submit" disabled={isLoading} className={styles.submitButton}>
-            {isLoading ? 'Création en cours...' : 'S\'inscrire'}
+            {isLoading ? 'Création en cours...' : "S'inscrire"}
           </button>
 
           <p className={styles.loginLink}>

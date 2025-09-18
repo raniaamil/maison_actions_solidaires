@@ -11,6 +11,7 @@ interface FormData {
   email: string;
   password: string;
   confirmPassword: string;
+  phone?: string;
   acceptTerms: boolean;
 }
 
@@ -23,6 +24,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    phone: '',
     acceptTerms: false,
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -33,59 +35,36 @@ export default function RegisterPage() {
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-
-    // Clear l'erreur du champ édité
-    if (errors[name as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
-    }
-    // Clear le message de succès si on retouche le formulaire
+    if (errors[name as keyof FormErrors]) setErrors(prev => ({ ...prev, [name]: undefined }));
     if (successMessage) setSuccessMessage('');
   };
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'Le prénom est requis';
-    } else if (formData.firstName.trim().length < 2) {
-      newErrors.firstName = 'Le prénom doit contenir au moins 2 caractères';
-    }
+    if (!formData.firstName.trim()) newErrors.firstName = 'Le prénom est requis';
+    else if (formData.firstName.trim().length < 2) newErrors.firstName = 'Le prénom doit contenir au moins 2 caractères';
 
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Le nom est requis';
-    } else if (formData.lastName.trim().length < 2) {
-      newErrors.lastName = 'Le nom doit contenir au moins 2 caractères';
-    }
+    if (!formData.lastName.trim()) newErrors.lastName = 'Le nom est requis';
+    else if (formData.lastName.trim().length < 2) newErrors.lastName = 'Le nom doit contenir au moins 2 caractères';
 
-    if (!formData.email) {
-      newErrors.email = "L'adresse email est requise";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Veuillez entrer une adresse email valide';
-    }
+    if (!formData.email) newErrors.email = "L'adresse email est requise";
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Veuillez entrer une adresse email valide';
 
-    if (!formData.password) {
-      newErrors.password = 'Le mot de passe est requis';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password =
-        'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre';
-    }
+    if (!formData.password) newErrors.password = 'Le mot de passe est requis';
+    else if (formData.password.length < 8) newErrors.password = 'Le mot de passe doit contenir au moins 8 caractères';
+    else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password))
+      newErrors.password = 'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre';
 
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'La confirmation du mot de passe est requise';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
-    }
+    if (!formData.confirmPassword) newErrors.confirmPassword = 'La confirmation du mot de passe est requise';
+    else if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
 
-    if (!formData.acceptTerms) {
-      newErrors.acceptTerms = "Vous devez accepter les conditions d'utilisation";
-    }
+    if (formData.phone && !/^[\d\s\-\+\(\)]{10,}$/.test(formData.phone.replace(/\s/g, '')))
+      newErrors.phone = 'Veuillez entrer un numéro de téléphone valide';
+
+    if (!formData.acceptTerms) newErrors.acceptTerms = "Vous devez accepter les conditions d'utilisation";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -99,7 +78,7 @@ export default function RegisterPage() {
     setErrors(prev => ({ ...prev, general: undefined }));
 
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -107,16 +86,15 @@ export default function RegisterPage() {
           lastName: formData.lastName.trim(),
           email: formData.email.toLowerCase().trim(),
           password: formData.password,
+          phone: formData.phone?.trim() || null,
         }),
       });
 
-      // Parsing robuste : tente JSON, sinon fallback texte
       let data: any;
       try {
         data = await res.json();
       } catch {
-        const text = await res.text();
-        data = { message: text };
+        data = { message: await res.text() };
       }
 
       if (res.ok && data?.success !== false) {
@@ -127,20 +105,18 @@ export default function RegisterPage() {
           email: '',
           password: '',
           confirmPassword: '',
+          phone: '',
           acceptTerms: false,
         });
         setErrors({});
       } else {
         setErrors({
-          general:
-            data?.message ||
-            'Erreur lors de la création du compte. Veuillez réessayer.',
+          general: data?.message || 'Erreur lors de la création du compte. Veuillez réessayer.',
         });
       }
     } catch {
       setErrors({
-        general:
-          'Erreur de connexion. Veuillez vérifier votre connexion internet et réessayer.',
+        general: 'Erreur de connexion. Veuillez vérifier votre connexion internet et réessayer.',
       });
     } finally {
       setIsLoading(false);
@@ -177,122 +153,62 @@ export default function RegisterPage() {
         )}
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
+          {/* ... tes champs (inchangés) ... */}
           <div className={styles.formGrid}>
             {/* Prénom */}
             <div className={styles.inputGroup}>
-              <input
-                id="firstName"
-                name="firstName"
-                type="text"
-                autoComplete="given-name"
-                placeholder="Prénom"
-                value={formData.firstName}
-                onChange={handleInputChange}
-                disabled={isLoading}
-                className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`}
-                required
-              />
+              <input id="firstName" name="firstName" type="text" autoComplete="given-name" placeholder="Prénom"
+                value={formData.firstName} onChange={handleInputChange} disabled={isLoading}
+                className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`} required />
               {errors.firstName && <p className={styles.errorText}>{errors.firstName}</p>}
             </div>
 
             {/* Nom */}
             <div className={styles.inputGroup}>
-              <input
-                id="lastName"
-                name="lastName"
-                type="text"
-                autoComplete="family-name"
-                placeholder="Nom"
-                value={formData.lastName}
-                onChange={handleInputChange}
-                disabled={isLoading}
-                className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`}
-                required
-              />
+              <input id="lastName" name="lastName" type="text" autoComplete="family-name" placeholder="Nom"
+                value={formData.lastName} onChange={handleInputChange} disabled={isLoading}
+                className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`} required />
               {errors.lastName && <p className={styles.errorText}>{errors.lastName}</p>}
             </div>
 
             {/* Email */}
             <div className={`${styles.inputGroup} ${styles.formGridFull}`}>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="Adresse e-mail"
-                value={formData.email}
-                onChange={handleInputChange}
-                disabled={isLoading}
-                className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
-                required
-              />
+              <input id="email" name="email" type="email" autoComplete="email" placeholder="Adresse e-mail"
+                value={formData.email} onChange={handleInputChange} disabled={isLoading}
+                className={`${styles.input} ${errors.email ? styles.inputError : ''}`} required />
               {errors.email && <p className={styles.errorText}>{errors.email}</p>}
             </div>
 
-            {/* Mot de passe */}
+            {/* MDP */}
             <div className={styles.inputGroup}>
               <div className={styles.passwordWrapper}>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  placeholder="Mot de passe"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                  className={`${styles.input} ${styles.passwordInput} ${
-                    errors.password ? styles.inputError : ''
-                  }`}
-                  required
-                />
-                <button
-                  type="button"
-                  className={styles.togglePassword}
+                <input id="password" name="password" type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password" placeholder="Mot de passe"
+                  value={formData.password} onChange={handleInputChange} disabled={isLoading}
+                  className={`${styles.input} ${styles.passwordInput} ${errors.password ? styles.inputError : ''}`} required />
+                <button type="button" className={styles.togglePassword}
                   aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-                  aria-pressed={showPassword}
-                  onClick={() => setShowPassword(v => !v)}
-                  disabled={isLoading}
-                >
+                  aria-pressed={showPassword} onClick={() => setShowPassword(v => !v)} disabled={isLoading}>
                   {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
               </div>
               {errors.password && <p className={styles.errorText}>{errors.password}</p>}
             </div>
 
-            {/* Confirmation mot de passe */}
+            {/* Confirmation MDP */}
             <div className={styles.inputGroup}>
               <div className={styles.passwordWrapper}>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  placeholder="Répétez le mot de passe"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                  className={`${styles.input} ${styles.passwordInput} ${
-                    errors.confirmPassword ? styles.inputError : ''
-                  }`}
-                  required
-                />
-                <button
-                  type="button"
-                  className={styles.togglePassword}
-                  aria-label={
-                    showConfirmPassword ? 'Masquer la confirmation' : 'Afficher la confirmation'
-                  }
-                  aria-pressed={showConfirmPassword}
-                  onClick={() => setShowConfirmPassword(v => !v)}
-                  disabled={isLoading}
-                >
+                <input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password" placeholder="Répétez le mot de passe"
+                  value={formData.confirmPassword} onChange={handleInputChange} disabled={isLoading}
+                  className={`${styles.input} ${styles.passwordInput} ${errors.confirmPassword ? styles.inputError : ''}`} required />
+                <button type="button" className={styles.togglePassword}
+                  aria-label={showConfirmPassword ? 'Masquer la confirmation' : 'Afficher la confirmation'}
+                  aria-pressed={showConfirmPassword} onClick={() => setShowConfirmPassword(v => !v)} disabled={isLoading}>
                   {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
               </div>
-              {errors.confirmPassword && (
-                <p className={styles.errorText}>{errors.confirmPassword}</p>
-              )}
+              {errors.confirmPassword && <p className={styles.errorText}>{errors.confirmPassword}</p>}
             </div>
           </div>
 
@@ -301,10 +217,7 @@ export default function RegisterPage() {
           </button>
 
           <p className={styles.loginLink}>
-            Déjà un compte ?{' '}
-            <Link href="/login" className={styles.link}>
-              Se connecter
-            </Link>
+            Déjà un compte ? <Link href="/login" className={styles.link}>Se connecter</Link>
           </p>
         </form>
       </div>

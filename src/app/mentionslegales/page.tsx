@@ -25,17 +25,17 @@ export default function MentionsLegales() {
 
       <h2 className={styles.heading}>2. Hébergeur</h2>
       <p className={styles.paragraph}>
-        Nom de l’hébergeur : [exemple : OVH, Hostinger, Infomaniak, etc.]<br />
-        Raison sociale : [à compléter]<br />
-        Adresse : [à compléter]<br />
-        Téléphone : [à compléter]<br />
-        Site web : [à compléter]
+        Nom de l’hébergeur : Vercel Inc.<br />
+        Raison sociale : Vercel Inc.<br />
+        Adresse : 340 S Lemon Ave #4133, Walnut, CA 91789, United States<br />
+        Téléphone : +1 (559) 288-7060<br />
+        Site web : https://vercel.com
       </p>
 
       <h2 className={styles.heading}>3. Développement et maintenance du site</h2>
       <p className={styles.paragraph}>
         Le site a été développé par : Rania AMIL<br />
-        Adresse : 26/ rue de l’abbé Glatz, 92600 Asnières-sur-Seine<br />
+        Adresse : 26/ rue de l’abbé glatz, 92600 Asnières-sur-Seine<br />
         Email : mademoiselleamil@gmail.com<br />
         Téléphone : 07 61 39 90 82
       </p>

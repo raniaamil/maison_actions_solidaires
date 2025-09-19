@@ -2,6 +2,7 @@
     background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 50%, #f8fdf8 100%);
     min-height: 100vh;
     padding: 0;
+    color-scheme: light; /* Force le mode clair sur iOS */
 }
 
 .contactContainer {
@@ -34,6 +35,7 @@
 
 .description {
     margin-bottom: 30px;
+    color: #333;
 }
 
 .contactItem {
@@ -66,11 +68,13 @@
 
 .contactDetail {
     margin: 0;
+    color: #333;
 }
 
 .followUs {
     margin-top: 20px;
     font-weight: bold;
+    color: #333;
 }
 
 .socialIcons {
@@ -120,6 +124,7 @@
     font-weight: bold;
     font-size: 0.8em;
     margin-bottom: 5px;
+    color: #333;
 }
 
 .contactForm input, 
@@ -129,6 +134,10 @@
     border-radius: 5px;
     border: 1px solid #ccc;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    -webkit-appearance: none;
+    -webkit-border-radius: 5px;
+    font-size: 16px; /* Évite le zoom automatique sur iOS */
+    color: #333;
 }
 
 .contactForm input:focus,
@@ -187,11 +196,25 @@
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     transition: all 0.3s ease;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .checkbox:checked {
     background-color: #838C58;
     border-color: #838C58;
+}
+
+.checkbox:checked::after {
+    content: '✓';
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
 }
 
 .checkbox:disabled {
@@ -314,26 +337,72 @@
         font-size: 2em;
     }
     
+    .title {
+        color: #5a6238; /* Version plus foncée pour meilleur contraste */
+        font-weight: 600;
+    }
+    
+    .contactType {
+        color: #5a6238;
+        font-weight: 600;
+    }
+    
     .socialIcons {
         justify-content: flex-start;
     }
 
     .captcha {
         margin-right: 0;
-        flex-direction: column;
-        text-align: center;
-        min-height: auto;
-        padding: 15px;
+        padding: 20px 15px;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 15px;
+        min-height: 70px;
+        flex-wrap: nowrap;
     }
 
     .captcha img {
-        width: 20%;
-        margin-top: 10px;
+        width: 40px;
+        height: auto;
+        flex-shrink: 0;
+    }
+    
+    .checkboxText {
+        flex: 1;
+        text-align: left;
+        font-size: 0.9em;
+        font-weight: 500;
+        color: #333;
     }
 
     .submitButton {
         width: 100%;
         margin-top: 20px;
+    }
+    
+    .contactForm input,
+    .contactForm textarea {
+        padding: 12px;
+        font-size: 16px;
+    }
+    
+    .contactForm label {
+        font-size: 0.9em;
+        margin-bottom: 8px;
+        color: #333;
+    }
+    
+    .errorMessage {
+        font-size: 0.8rem;
+        line-height: 1.3;
+        margin-top: 6px;
+    }
+    
+    .description,
+    .followUs,
+    .contactDetail {
+        color: #333 !important;
     }
 }
 
@@ -346,11 +415,55 @@
         padding: 15px;
     }
 
+    .captcha {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 15px;
+        text-align: center;
+    }
+    
     .captcha img {
-        width: 25%;
+        width: 50px;
+        margin-top: 10px;
+    }
+    
+    .checkboxText {
+        text-align: center;
+        width: 100%;
     }
 
     .mainTitle {
         font-size: 1.8em;
+    }
+}
+
+/* Corrections spécifiques pour Safari iOS */
+@media screen and (-webkit-min-device-pixel-ratio: 2) {
+    .contactForm input,
+    .contactForm textarea {
+        -webkit-appearance: none;
+        border-radius: 5px;
+    }
+    
+    .checkbox {
+        -webkit-appearance: none;
+        appearance: none;
+    }
+}
+
+/* Assurer la visibilité sur tous les thèmes iOS */
+@media (prefers-color-scheme: dark) {
+    .pageWrapper {
+        color-scheme: light !important;
+    }
+    
+    .title,
+    .contactType,
+    .checkboxText,
+    .description,
+    .followUs,
+    .contactDetail {
+        color: #333 !important;
     }
 }

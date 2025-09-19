@@ -82,7 +82,7 @@ const MaisonActionsSolidaires = () => {
                   className={styles.teamPhoto}
                 />
               </div>
-              <h4 className={styles.teamName}>Alvine NGUEMCHE</h4>
+              <h4 className={styles.teamName}>Marie Flore Alvine NGUEMCHE</h4>
               <p className={styles.teamRole}>Présidente & Fondatrice</p>
               <div className={styles.teamBioExtended}>
                 <p>

@@ -170,7 +170,7 @@ function ResetPasswordContent() {
             </Link>
           </div>
           <div className={styles.backToLogin}>
-            <Link href="/login" className={styles.link}>
+            <Link href="/se-connecter" className={styles.link}>
               Retour à la connexion
             </Link>
           </div>
@@ -195,7 +195,7 @@ function ResetPasswordContent() {
 
           {messageType === 'success' ? (
             <div className={styles.backToLogin}>
-              <Link href="/login" className={styles.link}>
+              <Link href="/se-connecter" className={styles.link}>
                 Se connecter
               </Link>
             </div>
@@ -264,7 +264,7 @@ function ResetPasswordContent() {
           )}
 
           <div className={styles.backToLogin}>
-            <Link href="/login" className={styles.link}>
+            <Link href="/se-connecter" className={styles.link}>
               ← Retour à la connexion
             </Link>
           </div>

@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     console.log('🚪 Déconnexion utilisateur');
     clearAuthData();
-    router.push('/login');
+    router.push('/se-connecter'); // ← CHANGEMENT ICI : /login → /se-connecter
   };
 
   const isAuthenticated = () => {

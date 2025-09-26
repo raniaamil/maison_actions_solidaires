@@ -218,7 +218,7 @@ export async function POST(request) {
               </div>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/login" 
+                <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/se-connecter" 
                    style="background: linear-gradient(135deg, #8b9467 0%, #a4b070 100%); 
                           color: white; 
                           text-decoration: none; 

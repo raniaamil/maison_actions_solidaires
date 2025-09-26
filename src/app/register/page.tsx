@@ -199,7 +199,7 @@ export default function RegisterPage() {
           </button>
 
           <p className={styles.loginLink}>
-            Déjà un compte ? <Link href="/login" className={styles.link}>Se connecter</Link>
+            Déjà un compte ? <Link href="/se-connecter" className={styles.link}>Se connecter</Link>
           </p>
         </form>
       </div>

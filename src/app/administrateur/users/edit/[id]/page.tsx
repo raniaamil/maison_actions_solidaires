@@ -57,7 +57,7 @@ export default function EditUserPage() {
           if (mounted) setFormData(data);
         } else if (res.status === 401) {
           console.error('Token invalide ou expiré');
-          router.push('/login');
+          router.push('/se-connecter');
         } else {
           console.error('Utilisateur non trouvé');
           router.push('/administrateur?tab=utilisateurs');
@@ -109,7 +109,7 @@ export default function EditUserPage() {
         setShowSuccessModal(true);
       } else if (response.status === 401) {
         alert('Session expirée. Veuillez vous reconnecter.');
-        router.push('/login');
+        router.push('/se-connecter');
       } else {
         const data = await response.json();
         alert(data.error || 'Erreur lors de la mise à jour');

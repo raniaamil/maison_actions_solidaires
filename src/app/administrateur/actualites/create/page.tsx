@@ -361,7 +361,7 @@ Conseil: compressez l’image (JPEG/WebP) ou réduisez sa résolution, puis rée
     safeContent = ensureMediaPlayable(safeContent);
 
     if (!validateForm(safeContent)) return;
-    if (!user?.id) { router.push('/login'); return; }
+    if (!user?.id) { router.push('/se-connecter'); return; }
 
     setIsLoading(true);
     try {
@@ -395,7 +395,7 @@ Conseil: compressez l’image (JPEG/WebP) ou réduisez sa résolution, puis rée
       if (response.ok) {
         router.push('/administrateur?tab=actualites');
       } else {
-        if (response.status === 401) router.push('/login');
+        if (response.status === 401) router.push('/se-connecter');
         else if (response.status === 403) alert("Erreur: Vous n'avez pas les permissions pour créer une actualité.");
         else if (data?.error) alert(`Erreur: ${data.error}`);
         else alert(`Erreur ${response.status}: Une erreur est survenue`);

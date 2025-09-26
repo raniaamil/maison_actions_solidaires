@@ -281,7 +281,7 @@ function AdminContent() {
       } else {
         if (response.status === 401) {
           alert('Session expirée. Veuillez vous reconnecter.');
-          router.push('/login');
+          router.push('/se-connecter');
         } else {
           alert(data.error || 'Erreur lors de la mise à jour du profil');
         }
@@ -335,7 +335,7 @@ function AdminContent() {
       } else {
         if (response.status === 401) {
           alert('Session expirée. Veuillez vous reconnecter.');
-          router.push('/login');
+          router.push('/se-connecter');
         } else {
           alert(data.error || 'Erreur lors du changement de mot de passe');
         }
@@ -359,7 +359,7 @@ function AdminContent() {
   // Initialiser l'onglet selon les paramètres URL et les permissions
   useEffect(() => {
     if (!isAuthenticated()) {
-      router.replace('/login');
+      router.replace('/se-connecter');
       return;
     }
     

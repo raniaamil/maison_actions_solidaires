@@ -228,7 +228,7 @@ const MaisonActionsSolidaires = () => {
             </div>
             
             <div className={styles.otherMemberCard}>
-              <h4 className={styles.otherMemberName}>Cataracte SMARTINS</h4>
+              <h4 className={styles.otherMemberName}>Catarina SMARTINS</h4>
               <p className={styles.otherMemberRole}>AESH/Enseignante - Pôle Junior</p>
               <p className={styles.otherMemberDescription}>Accompagnante des enfants en situation de handicap par des ateliers récréatifs</p>
             </div>

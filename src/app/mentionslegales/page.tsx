@@ -48,20 +48,20 @@ export default function MentionsLegales() {
         une contrefaçon sanctionnée par les articles L.335-2 et suivants du Code de la propriété intellectuelle.
       </p>
 
-      <h2 className={styles.heading}>5. Données personnelles</h2>
+      {/* <h2 className={styles.heading}>5. Données personnelles</h2>
       <p className={styles.paragraph}>
         Les données personnelles collectées via le site sont traitées dans le respect du Règlement Général sur la Protection des Données (RGPD).
         Pour plus d’informations, consultez notre Politique de confidentialité.
         Vous disposez d’un droit d’accès, de rectification, de suppression, d’opposition, et de portabilité de vos données.
-      </p>
+      </p> */}
 
-      <h2 className={styles.heading}>6. Cookies</h2>
+      <h2 className={styles.heading}>5. Cookies</h2>
       <p className={styles.paragraph}>
         Le site peut utiliser des cookies pour améliorer l’expérience utilisateur et mesurer l’audience.
         Lors de votre première visite, un bandeau vous informe et vous permet de gérer vos préférences.
       </p>
 
-      <h2 className={styles.heading}>7. Limitation de responsabilité</h2>
+      <h2 className={styles.heading}>6. Limitation de responsabilité</h2>
       <p className={styles.paragraph}>MAACSO s’efforce de fournir des informations fiables et à jour, mais ne peut garantir l’absence d’erreurs.</p>
       <p className={styles.paragraph}>Elle ne saurait être tenue pour responsable en cas :</p>
       <ul className={styles.list}>
@@ -70,7 +70,7 @@ export default function MentionsLegales() {
         <li className={styles.listItem}>De dommages liés à l’utilisation du site</li>
       </ul>
 
-      <h2 className={styles.heading}>8. Droit applicable</h2>
+      <h2 className={styles.heading}>7. Droit applicable</h2>
       <p className={styles.paragraph}>
         Les présentes mentions légales sont régies par le droit français.
         Tout litige relatif à l’utilisation du site est soumis à la compétence exclusive des juridictions françaises.

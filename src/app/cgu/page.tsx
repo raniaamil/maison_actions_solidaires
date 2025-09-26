@@ -68,19 +68,19 @@ export default function ConditionsUtilisation() {
         L’utilisateur reste seul responsable de l’usage qu’il fait des informations et contenus disponibles.
       </p>
 
-      <h2 className={styles.heading}>6. Données personnelles</h2>
+      {/* <h2 className={styles.heading}>6. Données personnelles</h2>
       <p className={styles.paragraph}>
         La collecte et le traitement de vos données personnelles sont régis par notre [Politique de Confidentialité] accessible ici : [lien à insérer].
         Conformément au RGPD, vous disposez d’un droit d’accès, de rectification, de suppression, de limitation et d’opposition concernant vos données.
-      </p>
+      </p> */}
 
-      <h2 className={styles.heading}>7. Liens hypertextes</h2>
+      <h2 className={styles.heading}>6. Liens hypertextes</h2>
       <p className={styles.paragraph}>
         Le site peut contenir des liens vers d’autres sites internet. MAACSO décline toute responsabilité quant au contenu de ces sites externes, sur lesquels elle n’a aucun contrôle.
         Tout lien vers le site de MAACSO depuis un site tiers doit faire l’objet d’une autorisation écrite préalable.
       </p>
 
-      <h2 className={styles.heading}>8. Engagements de l’utilisateur</h2>
+      <h2 className={styles.heading}>7. Engagements de l’utilisateur</h2>
       <ul className={styles.list}>
         <li className={styles.listItem}>Utiliser le site dans le respect des lois et règlements en vigueur</li>
         <li className={styles.listItem}>Ne pas porter atteinte aux droits de tiers ou à l’intégrité du site</li>
@@ -90,13 +90,13 @@ export default function ConditionsUtilisation() {
         En cas de non-respect, MAACSO se réserve le droit de prendre toute mesure appropriée, y compris de restreindre l’accès au site.
       </p>
 
-      <h2 className={styles.heading}>9. Modification des CGU</h2>
+      <h2 className={styles.heading}>8. Modification des CGU</h2>
       <p className={styles.paragraph}>
         MAACSO se réserve le droit de modifier les présentes CGU à tout moment. Les nouvelles conditions entreront en vigueur dès leur publication sur le site.
         L’utilisateur est invité à les consulter régulièrement.
       </p>
 
-      <h2 className={styles.heading}>10. Droit applicable et juridiction compétente</h2>
+      <h2 className={styles.heading}>9. Droit applicable et juridiction compétente</h2>
       <p className={styles.paragraph}>
         Les présentes CGU sont régies par le droit français.
         En cas de litige, et après échec de toute tentative amiable, compétence exclusive est attribuée aux tribunaux français.

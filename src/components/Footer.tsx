@@ -13,11 +13,11 @@ const Footer = () => {
           <div className={styles.footerSection}>
             <h3>Informations Légales</h3>
             <ul className={styles.footerLinks}>
-              <li>
+              {/* <li>
                 <Link href="/politiquedeconfidentialite">
                   Politique de Confidentialité
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link href="/cgu">
                   Conditions Générales d'Utilisation

@@ -35,6 +35,9 @@ export default function FaireUnDonPage() {
     }
   ];
 
+  // Remplacez cette URL par votre lien PayPal réel
+  const paypalDonationUrl = "https://www.paypal.com/donate/?hosted_button_id=VOTRE_ID_BOUTON_ICI";
+
   return (
     <div className={styles.donationContainer}>
       <section className={styles.hero}>
@@ -94,6 +97,23 @@ export default function FaireUnDonPage() {
                   <li>Par chèque à l&apos;ordre de « Maison d&apos;Actions Solidaires »</li>
                   <li>Par virement bancaire en toute simplicité</li>
                 </ul>
+                
+                <div className={styles.paypalSection}>
+                  <a 
+                    href={paypalDonationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.paypalButton}
+                  >
+                    <div className={styles.paypalButtonContent}>
+                      <div className={styles.paypalLogo}>
+                        <span className={styles.paypalText}>Pay</span>
+                        <span className={styles.paypalTextBlue}>Pal</span>
+                      </div>
+                      <span className={styles.donateText}>Faire un don</span>
+                    </div>
+                  </a>
+                </div>
               </div>
             </div>
             <div className={styles.qrCodeSection}>

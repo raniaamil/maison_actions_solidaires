@@ -338,12 +338,12 @@
     }
     
     .title {
-        color: #5a6238; /* Version plus foncée pour meilleur contraste */
-        font-weight: 600;
+        color: #838C58;
+        font-weight: bold;
     }
     
     .contactType {
-        color: #5a6238;
+        color: #838C58;
         font-weight: 600;
     }
     

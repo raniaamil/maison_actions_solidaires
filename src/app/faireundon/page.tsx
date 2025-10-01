@@ -100,7 +100,7 @@ export default function FaireUnDonPage() {
                 
                 <div className={styles.paypalSection}>
                   <a 
-                    href={paypalDonationUrl}
+                    href="https://www.paypal.com/donate/?hosted_button_id=VRBP4WVZKSF8N"
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.paypalButton}

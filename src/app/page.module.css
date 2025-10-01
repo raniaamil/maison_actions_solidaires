@@ -101,18 +101,15 @@
   text-decoration: none;
 }
 
-/* Correction du conflit : suppression de la marge globale */
 .btnSecondaryAlt {
   background: #8b7355;
   color: white;
 }
 
-/* Marge uniquement pour le bouton "Voir toutes les actualités" dans la section Actus */
 .newsSection .newsCta .btnSecondaryAlt {
   margin-bottom: 45px;
 }
 
-/* Aligne proprement les deux boutons du CTA final */
 .ctaButtons .btn {
   display: inline-flex;
   align-items: center;
@@ -126,7 +123,7 @@
 /* Section Mission */
 .missionSection {
   padding: 6rem 2rem;
-  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  background: #ffffff;
   position: relative;
 }
 
@@ -217,7 +214,7 @@
 /* Section Actualités */
 .newsSection {
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  background: #ffffff;
 }
 
 .newsGrid {
@@ -381,7 +378,7 @@
 /* Section CTA */
 .ctaSection {
   padding: 6rem 2rem;
-  background: linear-gradient(135deg, #f0f9f0 0%, #ffffff 100%);
+  background: #ffffff;
   text-align: center;
 }
 

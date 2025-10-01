@@ -50,7 +50,7 @@
 }
 
 .mainContent {
-  background-color: white;
+  background-color: #ffffff;
   border-radius: 1.5rem 1.5rem 0 0;
   margin-top: -2rem;
   position: relative;
@@ -440,7 +440,6 @@
   color: #374151;
 }
 
-/* Styles pour la section de téléchargement */
 .downloadSection {
   text-align: center;
   margin-top: 3rem;

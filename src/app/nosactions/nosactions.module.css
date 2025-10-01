@@ -2,7 +2,7 @@
   font-family: 'Poppins', sans-serif;
   line-height: 1.6;
   color: #333;
-  background: #90B995;
+  background: #ffffff;
   min-height: 100vh;
   margin: 0;
   padding: 0;
@@ -25,29 +25,26 @@
   text-align: center;
   margin-bottom: 50px;
   margin-top: 30px;
-  padding: 40px 0;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  padding: 40px 20px;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(129, 199, 132, 0.1) 100%);
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
 }
 
 .nosActionsHeader h1 {
   font-size: 3rem;
-  color: #ffffff;
+  color: #4CAF50;
   margin-bottom: 15px;
   font-weight: 700;
   margin-top: 0px;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .nosActionsHeader p {
   font-size: 1.2rem;
-  color: #ffffff;
+  color: #555;
   max-width: 800px;
   margin: 0 auto;
   font-weight: 400;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .polesGrid {
@@ -58,19 +55,20 @@
 }
 
 .poleCard {
-  background: rgba(255, 255, 255, 0.95);
+  background: #ffffff;
   border-radius: 20px;
   padding: 0;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid #e0e0e0;
   position: relative;
   overflow: hidden;
 }
 
 .poleCard:hover {
   transform: translateY(-10px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  border-color: #4CAF50;
 }
 
 .poleImageContainer {
@@ -121,26 +119,28 @@
   position: relative;
   font-family: 'Poppins', sans-serif;
   font-weight: 400;
+  color: #555;
 }
 
 .poleCard li:before {
   content: '✓';
   position: absolute;
   left: 0;
-  color: #667eea;
+  color: #4CAF50;
   font-weight: bold;
+  font-size: 1.1rem;
 }
 
 .objectif {
-  background: rgba(102, 126, 234, 0.1);
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(129, 199, 132, 0.1) 100%);
   padding: 15px;
   border-radius: 10px;
   margin-top: 15px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #4CAF50;
 }
 
 .objectif h4 {
-  color: #667eea;
+  color: #4CAF50;
   margin-bottom: 8px;
   font-size: 1.1rem;
   font-weight: 600;
@@ -157,59 +157,67 @@
 
 .ctaSection {
   text-align: center;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(129, 199, 132, 0.1) 100%);
   border-radius: 20px;
-  padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 40px 20px;
+  box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+  margin-bottom: 30px;
 }
 
 .ctaSection h2 {
-  color: #ffffff;
+  color: #4CAF50;
   font-size: 2.5rem;
   margin-bottom: 20px;
   font-weight: 700;
   font-family: 'Poppins', sans-serif;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .ctaSection p {
-  color: #ffffff;
+  color: #555;
   font-size: 1.1rem;
   margin-bottom: 30px;
   font-family: 'Poppins', sans-serif;
   font-weight: 400;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .nosActionsBtn {
   display: inline-block;
   background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
   color: #ffffff;
-  padding: 15px 30px;
+  padding: 15px 40px;
   border-radius: 50px;
   text-decoration: none;
   font-weight: 600;
   transition: all 0.3s ease;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
   font-family: 'Poppins', sans-serif;
   margin-bottom: 15px;
+  font-size: 1.1rem;
 }
 
 .nosActionsBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(76, 175, 80, 0.6);
   color: #ffffff;
   text-decoration: none;
+  background: linear-gradient(135deg, #45a049 0%, #72b676 100%);
 }
 
 @media (max-width: 768px) {
+  .nosActionsHeader {
+    padding: 30px 15px;
+  }
+
   .nosActionsHeader h1 {
     font-size: 2rem;
   }
   
   .nosActionsHeader p {
     font-size: 1rem;
+    padding: 0 10px;
   }
   
   .polesGrid {
@@ -229,16 +237,34 @@
     height: 150px;
   }
   
+  .ctaSection {
+    padding: 30px 15px;
+  }
+
   .ctaSection h2 {
     font-size: 2rem;
+  }
+
+  .ctaSection p {
+    font-size: 1rem;
+    padding: 0 10px;
   }
   
   .nosActionsContainer {
     padding: 15px 1rem;
   }
+
+  .nosActionsBtn {
+    padding: 12px 30px;
+    font-size: 1rem;
+  }
 }
 
 @media (max-width: 480px) {
+  .nosActionsHeader {
+    padding: 25px 10px;
+  }
+
   .nosActionsHeader h1 {
     font-size: 1.8rem;
   }
@@ -253,5 +279,18 @@
   
   .poleImageContainer {
     height: 120px;
+  }
+
+  .ctaSection {
+    padding: 25px 10px;
+  }
+
+  .ctaSection h2 {
+    font-size: 1.8rem;
+  }
+
+  .nosActionsBtn {
+    padding: 10px 25px;
+    font-size: 0.95rem;
   }
 }

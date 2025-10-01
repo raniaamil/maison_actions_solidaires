@@ -1,5 +1,5 @@
 .pageWrapper {
-    background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 50%, #f8fdf8 100%);
+    background: #ffffff;
     min-height: 100vh;
     padding: 0;
     color-scheme: light; /* Force le mode clair sur iOS */

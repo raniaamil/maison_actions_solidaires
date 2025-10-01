@@ -1,5 +1,5 @@
 .container {
-  background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 50%, #f8fdf8 100%);
+  background: #ffffff;
   min-height: 100vh;
   padding: 40px 0;
 }
@@ -157,7 +157,7 @@
 
 /* Informations pratiques améliorées */
 .eventInfo {
-  background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 100%);
+  background: #ffffff;
   padding: 1.5rem;
   border-radius: 15px;
   border-left: 4px solid #8b7355;
@@ -193,7 +193,7 @@
   line-height: 1.6;
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 100%);
+  background: #ffffff;
   border-left: 4px solid #8b7355;
   border-radius: 0 15px 15px 0;
   box-shadow: 0 4px 15px rgba(139, 115, 85, 0.1);
@@ -279,7 +279,7 @@
 /* Section d'inscription redesignée */
 .registrationSection {
   padding: 3rem 2rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: #ffffff;
   border-top: 1px solid #e5e7eb;
   text-align: center;
   position: relative;

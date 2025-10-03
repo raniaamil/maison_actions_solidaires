@@ -211,6 +211,26 @@ const MaisonActionsSolidaires = () => {
                 </p>
               </div>
             </div>
+
+            {/* Carole F. */}
+            <div className={styles.teamCard}>
+              <div className={styles.teamAvatar}>
+                <div className={styles.teamInitials}>CF</div>
+              </div>
+              <h4 className={styles.teamName}>Carole F.</h4>
+              <p className={styles.teamRole}>Accompagnement Psycho-émotionnel</p>
+              <div className={styles.teamBioExtended}>
+                <p>
+                  "Je suis Carole F. Je propose des accompagnements individuels et collectifs visant à soutenir 
+                  le bien-être psycho-émotionnel, corporel et relationnel des personnes fragilisées par la précarité, 
+                  le handicap ou la charge d'aidant.
+                </p>
+                <p>
+                  Je travaille en coordination avec les équipes sociales, médicales et éducatives pour un soutien 
+                  cohérent et global."
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Section Autres Membres */}

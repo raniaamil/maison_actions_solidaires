@@ -5,6 +5,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../contexts/AuthContext';
 import Avatar from '../ui/Avatar';
+import Pagination from '../ui/Pagination';
+
+const ITEMS_PER_PAGE = 20;
 
 export default function CommentsModeration() {
   const { getToken } = useAuth();
@@ -16,6 +19,7 @@ export default function CommentsModeration() {
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Charger tous les commentaires
   const fetchAllComments = async () => {
@@ -59,7 +63,7 @@ export default function CommentsModeration() {
     }
 
     try {
-      const token = getToken(); // ✅ Changé ici
+      const token = getToken();
       
       if (!token) {
         throw new Error('Non authentifié');
@@ -106,7 +110,7 @@ export default function CommentsModeration() {
     setIsSubmitting(true);
 
     try {
-      const token = getToken(); // ✅ Changé ici
+      const token = getToken();
       
       if (!token) {
         throw new Error('Non authentifié');
@@ -172,6 +176,27 @@ export default function CommentsModeration() {
         return acc;
       }, {})
     : null;
+
+  // Calculer les commentaires paginés
+  const getPaginatedComments = () => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredComments.slice(startIndex, endIndex);
+  };
+
+  // Calculer les articles groupés paginés
+  const getPaginatedGroupedArticles = () => {
+    if (!groupedByArticle) return null;
+    const articles = Object.entries(groupedByArticle);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return articles.slice(startIndex, endIndex);
+  };
+
+  // Réinitialiser la page lors du changement de filtre ou de recherche
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchTerm]);
 
   // Format date
   const formatDate = (dateString) => {
@@ -293,61 +318,81 @@ export default function CommentsModeration() {
         </div>
       ) : filter === 'byArticle' ? (
         // Vue groupée par article
-        <div className="space-y-6">
-          {Object.entries(groupedByArticle).map(([articleId, { article, comments: articleComments }]) => (
-            <div key={articleId} className="bg-white border rounded-lg p-6">
-              <div className="mb-4 pb-4 border-b">
-                <Link 
-                  href={`/actualites/${articleId}`}
-                  className="text-xl font-bold text-blue-600 hover:underline"
-                >
-                  {article?.titre || 'Article sans titre'}
-                </Link>
-                <p className="text-sm text-gray-500 mt-1">
-                  {articleComments.length} commentaire{articleComments.length !== 1 ? 's' : ''}
-                </p>
-              </div>
+        <>
+          <div className="space-y-6">
+            {getPaginatedGroupedArticles().map(([articleId, { article, comments: articleComments }]) => (
+              <div key={articleId} className="bg-white border rounded-lg p-6">
+                <div className="mb-4 pb-4 border-b">
+                  <Link 
+                    href={`/actualites/${articleId}`}
+                    className="text-xl font-bold text-blue-600 hover:underline"
+                  >
+                    {article?.titre || 'Article sans titre'}
+                  </Link>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {articleComments.length} commentaire{articleComments.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
 
-              <div className="space-y-4">
-                {articleComments.map(comment => (
-                  <CommentCard
-                    key={comment.id}
-                    comment={comment}
-                    editingId={editingId}
-                    editContent={editContent}
-                    setEditContent={setEditContent}
-                    isSubmitting={isSubmitting}
-                    startEdit={startEdit}
-                    cancelEdit={cancelEdit}
-                    saveEdit={saveEdit}
-                    handleDelete={handleDelete}
-                    formatDate={formatDate}
-                  />
-                ))}
+                <div className="space-y-4">
+                  {articleComments.map(comment => (
+                    <CommentCard
+                      key={comment.id}
+                      comment={comment}
+                      editingId={editingId}
+                      editContent={editContent}
+                      setEditContent={setEditContent}
+                      isSubmitting={isSubmitting}
+                      startEdit={startEdit}
+                      cancelEdit={cancelEdit}
+                      saveEdit={saveEdit}
+                      handleDelete={handleDelete}
+                      formatDate={formatDate}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {/* Pagination pour vue groupée */}
+          <Pagination
+            currentPage={currentPage}
+            totalItems={Object.keys(groupedByArticle).length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
+        </>
       ) : (
         // Vue liste simple
-        <div className="space-y-4">
-          {filteredComments.map(comment => (
-            <CommentCard
-              key={comment.id}
-              comment={comment}
-              editingId={editingId}
-              editContent={editContent}
-              setEditContent={setEditContent}
-              isSubmitting={isSubmitting}
-              startEdit={startEdit}
-              cancelEdit={cancelEdit}
-              saveEdit={saveEdit}
-              handleDelete={handleDelete}
-              formatDate={formatDate}
-              showArticle={true}
-            />
-          ))}
-        </div>
+        <>
+          <div className="space-y-4">
+            {getPaginatedComments().map(comment => (
+              <CommentCard
+                key={comment.id}
+                comment={comment}
+                editingId={editingId}
+                editContent={editContent}
+                setEditContent={setEditContent}
+                isSubmitting={isSubmitting}
+                startEdit={startEdit}
+                cancelEdit={cancelEdit}
+                saveEdit={saveEdit}
+                handleDelete={handleDelete}
+                formatDate={formatDate}
+                showArticle={true}
+              />
+            ))}
+          </div>
+
+          {/* Pagination pour vue liste */}
+          <Pagination
+            currentPage={currentPage}
+            totalItems={filteredComments.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
+        </>
       )}
     </div>
   );
@@ -371,7 +416,7 @@ function CommentCard({
     <div className="bg-white border rounded-lg p-6 hover:shadow-md transition-shadow">
       {/* En-tête avec avatar */}
       <div className="flex gap-4 mb-4">
-        {/* ✅ Avatar ajouté */}
+        {/* Avatar */}
         <Avatar 
           src={comment.users?.photo_profil}
           alt={`${comment.users?.prenom || ''} ${comment.users?.nom || ''}`}

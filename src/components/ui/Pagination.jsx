@@ -1,11 +1,10 @@
-// src/components/ui/Pagination.jsx
-'use client';
+import React from 'react';
 
-export default function Pagination({ 
-  currentPage, 
-  totalItems, 
-  itemsPerPage, 
-  onPageChange 
+export default function Pagination({
+  currentPage,
+  totalItems,
+  itemsPerPage,
+  onPageChange
 }) {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   
@@ -57,7 +56,7 @@ export default function Pagination({
         <span className="font-medium">{endItem}</span> sur{' '}
         <span className="font-medium">{totalItems}</span> résultat{totalItems > 1 ? 's' : ''}
       </div>
-
+      
       {/* Boutons de pagination */}
       <div className="flex items-center gap-2">
         {/* Bouton Précédent */}
@@ -71,7 +70,7 @@ export default function Pagination({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-
+        
         {/* Numéros de page */}
         {getPageNumbers().map((page, index) => (
           <button
@@ -89,7 +88,7 @@ export default function Pagination({
             {page}
           </button>
         ))}
-
+        
         {/* Bouton Suivant */}
         <button
           onClick={() => handlePageClick(currentPage + 1)}

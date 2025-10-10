@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const AdminActualitesFilters = ({ 
   articles = [], // Valeur par défaut
@@ -48,7 +48,7 @@ const AdminActualitesFilters = ({
     { value: 'annee', label: 'Cette année' }
   ];
 
-  // Fonction de filtrage
+  // Fonction de filtrage - CORRECTION ICI
   useEffect(() => {
     if (!articles || !Array.isArray(articles) || articles.length === 0) {
       setFilteredArticles([]);
@@ -120,7 +120,7 @@ const AdminActualitesFilters = ({
     if (onFilteredArticlesChange) {
       onFilteredArticlesChange(filtered);
     }
-  }, [articles, filters, currentUser, onFilteredArticlesChange]);
+  }, [articles, filters, currentUser]); // ✅ ENLEVÉ onFilteredArticlesChange des dépendances
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => ({

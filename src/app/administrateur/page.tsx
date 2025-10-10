@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef, Suspense } from 'react';
+import React, { useEffect, useState, useRef, Suspense, useCallback } from 'react';
 import { User, FileText, Users, Edit, Trash2, Plus, X, Eye, EyeOff, UploadCloud, Image as ImageIcon, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,10 +9,12 @@ import ProtectedRoute from '../../components/ProtectedRoute';
 import AdminActualitesFilters from '../../components/AdminActualitesFilters';
 import CommentsModeration from '../../components/admin/CommentsModeration';
 import UserComments from '../../components/dashboard/UserComments';
+import Pagination from '../../components/ui/Pagination';
 
 type Tab = 'informations' | 'actualites' | 'utilisateurs' | 'commentaires';
 
 const MAX_CLIENT_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
+const ITEMS_PER_PAGE = 20; // Nombre d'éléments par page
 
 // Composant de chargement
 function AdminLoading() {
@@ -42,6 +44,16 @@ function AdminContent() {
   const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [deleteType, setDeleteType] = useState<'article' | 'user' | null>(null);
   const [filteredArticles, setFilteredArticles] = useState([]);
+
+  // États pour la pagination
+  const [actualitesPage, setActualitesPage] = useState(1);
+  const [utilisateursPage, setUtilisateursPage] = useState(1);
+
+  // Fonction pour gérer le changement des articles filtrés
+  const handleFilteredArticlesChange = useCallback((filtered: any[]) => {
+    setFilteredArticles(filtered);
+    setActualitesPage(1); // Réinitialiser à la page 1 lors du filtrage
+  }, []);
 
   // États pour le profil utilisateur
   const [profileData, setProfileData] = useState({
@@ -442,6 +454,13 @@ function AdminContent() {
       return;
     }
     
+    // Réinitialiser les pages lors du changement d'onglet
+    if (tab === 'actualites') {
+      setActualitesPage(1);
+    } else if (tab === 'utilisateurs') {
+      setUtilisateursPage(1);
+    }
+    
     setActiveTab(tab);
     router.replace(`?tab=${tab}`, { scroll: false });
   };
@@ -503,6 +522,20 @@ function AdminContent() {
     } catch {
       return dateString;
     }
+  };
+
+  // Calculer les actualités paginées
+  const getPaginatedActualites = () => {
+    const startIndex = (actualitesPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredArticles.slice(startIndex, endIndex);
+  };
+
+  // Calculer les utilisateurs paginés
+  const getPaginatedUsers = () => {
+    const startIndex = (utilisateursPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return users.slice(startIndex, endIndex);
   };
 
   return (
@@ -873,7 +906,7 @@ function AdminContent() {
 
                   <AdminActualitesFilters
                     articles={articles}
-                    onFilteredArticlesChange={setFilteredArticles}
+                    onFilteredArticlesChange={handleFilteredArticlesChange}
                     currentUser={user}
                     loading={loading}
                   />
@@ -883,74 +916,86 @@ function AdminContent() {
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-6">
-                      {filteredArticles.length > 0 ? (
-                        filteredArticles.map((article: any) => (
-                          <div
-                            key={article.id}
-                            className="bg-white border border-green-500 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
-                          >
-                            <div className="flex justify-between items-start mb-4">
-                              <h3 className="text-lg font-semibold text-gray-900 flex-1 mr-4">
-                                {article.titre || article.title}
-                              </h3>
-                              <span
-                                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  (article.statut || article.status) === 'Publié' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-gray-200 text-gray-800'
-                                }`}
-                              >
-                                {article.statut || article.status}
-                              </span>
+                    <>
+                      <div className="flex flex-col gap-6">
+                        {filteredArticles.length > 0 ? (
+                          getPaginatedActualites().map((article: any) => (
+                            <div
+                              key={article.id}
+                              className="bg-white border border-green-500 rounded-lg p-6 transition-shadow duration-200 hover:shadow-md"
+                            >
+                              <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-lg font-semibold text-gray-900 flex-1 mr-4">
+                                  {article.titre || article.title}
+                                </h3>
+                                <span
+                                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                    (article.statut || article.status) === 'Publié' 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : 'bg-gray-200 text-gray-800'
+                                  }`}
+                                >
+                                  {article.statut || article.status}
+                                </span>
+                              </div>
+                              <div className="flex gap-4 mb-4">
+                                <span className="text-sm text-gray-600 flex items-center gap-2">
+                                  📅 {formatDate(article.date_creation) || article.date}
+                                </span>
+                                <span className="text-sm text-gray-600 flex items-center gap-2">
+                                  🏷️ {article.type}
+                                </span>
+                                <span className="text-sm text-gray-600 flex items-center gap-2">
+                                  👤 {article.auteur?.prenom} {article.auteur?.nom}
+                                </span>
+                              </div>
+                              <p className="text-gray-600 leading-relaxed mb-6">{article.description}</p>
+                              <div className="flex gap-4">
+                                <Link
+                                  href={`/administrateur/actualites/edit/${article.id}`}
+                                  className="flex items-center gap-2 px-4 py-2 bg-none border border-gray-400 rounded-md text-sm cursor-pointer transition-all duration-200 text-gray-700 hover:bg-gray-200 hover:border-gray-500 no-underline"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                  Modifier
+                                </Link>
+                                <button
+                                  className="flex items-center gap-2 px-4 py-2 bg-none border border-red-300 rounded-md text-sm cursor-pointer transition-all duration-200 text-red-600 hover:bg-red-50 hover:border-red-400"
+                                  onClick={() => handleDeleteClick(article, 'article')}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Supprimer
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex gap-4 mb-4">
-                              <span className="text-sm text-gray-600 flex items-center gap-2">
-                                📅 {formatDate(article.date_creation) || article.date}
-                              </span>
-                              <span className="text-sm text-gray-600 flex items-center gap-2">
-                                🏷️ {article.type}
-                              </span>
-                              <span className="text-sm text-gray-600 flex items-center gap-2">
-                                👤 {article.auteur?.prenom} {article.auteur?.nom}
-                              </span>
-                            </div>
-                            <p className="text-gray-600 leading-relaxed mb-6">{article.description}</p>
-                            <div className="flex gap-4">
-                              <Link
-                                href={`/administrateur/actualites/edit/${article.id}`}
-                                className="flex items-center gap-2 px-4 py-2 bg-none border border-gray-400 rounded-md text-sm cursor-pointer transition-all duration-200 text-gray-700 hover:bg-gray-200 hover:border-gray-500 no-underline"
-                              >
-                                <Edit className="w-4 h-4" />
-                                Modifier
-                              </Link>
-                              <button
-                                className="flex items-center gap-2 px-4 py-2 bg-none border border-red-300 rounded-md text-sm cursor-pointer transition-all duration-200 text-red-600 hover:bg-red-50 hover:border-red-400"
-                                onClick={() => handleDeleteClick(article, 'article')}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Supprimer
-                              </button>
-                            </div>
+                          ))
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-12 text-center text-gray-600">
+                            <p className="mb-6 text-lg">
+                              {articles.length === 0 
+                                ? "Aucune actualité trouvée." 
+                                : "Aucune actualité ne correspond à vos critères."
+                              }
+                            </p>
+                            <p className="text-sm text-gray-500 mb-4">
+                              {articles.length === 0 
+                                ? "Vos actualités apparaîtront ici une fois créées."
+                                : "Modifiez vos filtres ou créez une nouvelle actualité."
+                              }
+                            </p>
                           </div>
-                        ))
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-12 text-center text-gray-600">
-                          <p className="mb-6 text-lg">
-                            {articles.length === 0 
-                              ? "Aucune actualité trouvée." 
-                              : "Aucune actualité ne correspond à vos critères."
-                            }
-                          </p>
-                          <p className="text-sm text-gray-500 mb-4">
-                            {articles.length === 0 
-                              ? "Vos actualités apparaîtront ici une fois créées."
-                              : "Modifiez vos filtres ou créez une nouvelle actualité."
-                            }
-                          </p>
-                        </div>
+                        )}
+                      </div>
+
+                      {/* Pagination pour les actualités */}
+                      {filteredArticles.length > 0 && (
+                        <Pagination
+                          currentPage={actualitesPage}
+                          totalItems={filteredArticles.length}
+                          itemsPerPage={ITEMS_PER_PAGE}
+                          onPageChange={setActualitesPage}
+                        />
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
               )}
@@ -980,10 +1025,10 @@ function AdminContent() {
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                     </div>
                   ) : (
-                    <div>
+                    <>
                       {users.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {users.map((u: any) => (
+                          {getPaginatedUsers().map((u: any) => (
                             <div key={u.id} className="bg-white border border-gray-300 rounded-lg p-6">
                               <div className="flex items-center mb-4">
                                 <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center mr-4 overflow-hidden">
@@ -1033,7 +1078,17 @@ function AdminContent() {
                           <p className="mb-6 text-lg">Aucun utilisateur trouvé.</p>
                         </div>
                       )}
-                    </div>
+
+                      {/* Pagination pour les utilisateurs */}
+                      {users.length > 0 && (
+                        <Pagination
+                          currentPage={utilisateursPage}
+                          totalItems={users.length}
+                          itemsPerPage={ITEMS_PER_PAGE}
+                          onPageChange={setUtilisateursPage}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               )}

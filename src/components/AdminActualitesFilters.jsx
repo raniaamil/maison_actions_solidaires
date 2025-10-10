@@ -1,10 +1,42 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const AdminActualitesFilters = ({ 
-  articles = [], // Valeur par défaut
+interface Article {
+  id: number;
+  titre?: string;
+  title?: string;
+  type: string;
+  statut?: string;
+  status?: string;
+  date_creation?: string;
+  date?: string;
+  auteur?: {
+    id: number;
+    prenom: string;
+    nom: string;
+  };
+  auteur_id?: number;
+  [key: string]: any;
+}
+
+interface User {
+  id: number;
+  prenom: string;
+  nom: string;
+  [key: string]: any;
+}
+
+interface AdminActualitesFiltersProps {
+  articles?: Article[];
+  onFilteredArticlesChange: (filtered: Article[]) => void;
+  currentUser: User | null;
+  loading?: boolean;
+}
+
+const AdminActualitesFilters: React.FC<AdminActualitesFiltersProps> = ({ 
+  articles = [],
   onFilteredArticlesChange, 
   currentUser,
-  loading = false // Valeur par défaut
+  loading = false
 }) => {
   const [filters, setFilters] = useState({
     category: 'toutes',
@@ -13,7 +45,7 @@ const AdminActualitesFilters = ({
     dateRange: 'toutes'
   });
 
-  const [filteredArticles, setFilteredArticles] = useState(articles);
+  const [filteredArticles, setFilteredArticles] = useState<Article[]>(articles);
 
   // Options de filtres
   const categories = [
@@ -48,7 +80,7 @@ const AdminActualitesFilters = ({
     { value: 'annee', label: 'Cette année' }
   ];
 
-  // Fonction de filtrage - CORRECTION ICI
+  // Fonction de filtrage
   useEffect(() => {
     if (!articles || !Array.isArray(articles) || articles.length === 0) {
       setFilteredArticles([]);
@@ -91,7 +123,7 @@ const AdminActualitesFilters = ({
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
       filtered = filtered.filter(article => {
-        const articleDate = new Date(article.date_creation || article.date);
+        const articleDate = new Date(article.date_creation || article.date || '');
         
         switch (filters.dateRange) {
           case 'aujourd-hui':
@@ -120,9 +152,9 @@ const AdminActualitesFilters = ({
     if (onFilteredArticlesChange) {
       onFilteredArticlesChange(filtered);
     }
-  }, [articles, filters, currentUser]); // ✅ ENLEVÉ onFilteredArticlesChange des dépendances
+  }, [articles, filters, currentUser, onFilteredArticlesChange]);
 
-  const handleFilterChange = (filterType, value) => {
+  const handleFilterChange = (filterType: string, value: string) => {
     setFilters(prev => ({
       ...prev,
       [filterType]: value

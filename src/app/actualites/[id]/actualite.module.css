@@ -4,7 +4,6 @@
   padding: 40px 0;
 }
 
-/* Breadcrumb amélioré */
 .breadcrumb {
   max-width: 1200px;
   margin: 0 auto 2rem auto;
@@ -15,23 +14,12 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #ffffff;
-  background: linear-gradient(135deg, #8b7355 0%, #a4845e 100%);
+  color: #8b7355;
   padding: 12px 24px;
   text-decoration: none;
   font-weight: 600;
   font-size: 0.95rem;
   border-radius: 50px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(139, 115, 85, 0.2);
-}
-
-.breadcrumbLink:hover {
-  background: linear-gradient(135deg, #6d5a42 0%, #826b4a 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 115, 85, 0.3);
-  text-decoration: none;
-  color: #ffffff;
 }
 
 .breadcrumbLink::before {

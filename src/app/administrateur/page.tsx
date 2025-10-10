@@ -37,13 +37,13 @@ function AdminContent() {
   const { user, logout, isAdmin, getToken, updateUser, isAuthenticated } = useAuth();
 
   const [activeTab, setActiveTab] = useState<Tab>('informations');
-  const [articles, setArticles] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [articles, setArticles] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [deleteType, setDeleteType] = useState<'article' | 'user' | null>(null);
-  const [filteredArticles, setFilteredArticles] = useState([]);
+  const [filteredArticles, setFilteredArticles] = useState<any[]>([]);
 
   // États pour la pagination
   const [actualitesPage, setActualitesPage] = useState(1);

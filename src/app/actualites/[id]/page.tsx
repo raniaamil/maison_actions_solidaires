@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import styles from './actualite.module.css';
+import CommentsSection from '@/components/CommentsSection';
+
 
 interface Article {
   id: number;
@@ -231,6 +233,9 @@ const Page: React.FC = () => {
           </div>
         )}
       </article>
+
+      {/* 🆕 Section commentaires */}
+      <CommentsSection articleId={article.id} />
     </div>
   );
 };

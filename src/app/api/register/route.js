@@ -6,12 +6,13 @@ import bcrypt from 'bcryptjs';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { email, password, prenom, nom, firstName, lastName, role } = body;
+    const { email, password, prenom, nom, firstName, lastName } = body;
 
     const first = (prenom || firstName || '').trim();
     const last  = (nom || lastName || '').trim();
     const emailNorm = (email || '').toLowerCase().trim();
 
+    // Validation des champs
     if (!emailNorm || !password || !first || !last) {
       return Response.json({ success: false, message: 'Tous les champs sont requis' }, { status: 400 });
     }
@@ -25,18 +26,21 @@ export async function POST(request) {
       return Response.json({ success: false, message: 'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre' }, { status: 400 });
     }
 
+    // Vérifier si l'email existe déjà
     const existing = await query('SELECT id FROM users WHERE email = $1', [emailNorm]);
     if (existing.rows.length > 0) {
       return Response.json({ success: false, message: 'Cette adresse email est déjà utilisée' }, { status: 409 });
     }
 
+    // Hacher le mot de passe
     const hashed = await bcrypt.hash(password, 10);
 
+    // 🆕 IMPORTANT : Le rôle est TOUJOURS "Utilisateur" pour les inscriptions publiques
     const inserted = await query(
       `INSERT INTO users (prenom, nom, email, mot_de_passe, role, date_inscription, date_modification, actif)
        VALUES ($1, $2, $3, $4, $5, NOW(), NOW(), TRUE)
        RETURNING id`,
-      [first, last, emailNorm, hashed, role || 'Administrateur']
+      [first, last, emailNorm, hashed, 'Utilisateur']
     );
 
     const userId = inserted.rows[0].id;
@@ -75,8 +79,10 @@ export async function POST(request) {
 
 export async function GET() {
   return Response.json({
-    message: 'Route d’inscription active',
+    message: "Route d'inscription active",
     timestamp: new Date().toISOString(),
     path: '/api/register'
   });
 }
+
+

@@ -1,4 +1,4 @@
-// src/middleware.js — Auth simplifiée + CSRF (Origin/Referer) + Rate limiting login
+// src/middleware.js
 import { NextResponse } from 'next/server';
 
 const isStateChangingMethod = (m) =>
@@ -37,7 +37,7 @@ function checkLoginRateLimit(ip) {
   return true;
 }
 
-// Nettoyage périodique du cache (optionnel, évite l'accumulation)
+// Nettoyage périodique du cache
 setInterval(() => {
   const now = Date.now();
   for (const [key, data] of loginAttempts.entries()) {
@@ -45,9 +45,9 @@ setInterval(() => {
       loginAttempts.delete(key);
     }
   }
-}, LOGIN_WINDOW_MS); // Nettoie toutes les 15 minutes
+}, LOGIN_WINDOW_MS);
 
-// Récupère l'origine du navigateur : Origin, sinon Referer -> origin
+// Récupère l'origine du navigateur
 function getRequestOrigin(request) {
   const origin = request.headers.get('origin');
   if (origin) return origin;
@@ -60,34 +60,23 @@ function getRequestOrigin(request) {
 
 const norm = (s) => (s ? s.replace(/\/+$/, '') : s);
 
-// Origines autorisées (prod + dev)
+// Origines autorisées
 function getAllowedOrigins(request) {
   const set = new Set();
-
-  // Domaine courant (utile sur environnements dynamiques)
   set.add(norm(request.nextUrl.origin));
-
-  // ✅ Domaines de prod
   set.add('https://maison-dactions-solidaires.fr');
   set.add('https://www.maison-dactions-solidaires.fr');
-
-  // Optionnel : variables d'env si tu veux ajouter d'autres origines sans modifier le code
+  
   const envOrigin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL;
   if (envOrigin) set.add(norm(envOrigin));
-
-  // Dev local
+  
   set.add('http://localhost:3000');
   set.add('http://127.0.0.1:3000');
-
+  
   return set;
 }
 
-// Endpoints à exclure du CSRF si nécessaire (ex: webhooks externes)
-const CSRF_EXCLUDE_PATHS = [
-  // '/api/webhooks/stripe',
-];
-
-// Autoriser requêtes sans Origin (Postman/cURL) si CSRF_ALLOW_NO_ORIGIN=true
+const CSRF_EXCLUDE_PATHS = [];
 const ALLOW_NO_ORIGIN = process.env.CSRF_ALLOW_NO_ORIGIN === 'true';
 
 export function middleware(request) {
@@ -129,12 +118,11 @@ export function middleware(request) {
         console.warn(`❌ CSRF: Origin refusé ${requestOrigin}`);
         return NextResponse.json({ error: 'Forbidden – CSRF check failed' }, { status: 403 });
       }
-      // ✅ OK CSRF
     }
   }
 
-  // --- 3) Auth "version simplifiée sans rôles" (ton code existant) ---
-
+  // --- 3) Vérification basique de la présence du token (pas de vérification JWT) ---
+  
   // Routes publiques (pas d'auth requise)
   const publicRoutes = [
     '/api/test-db',
@@ -157,16 +145,23 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  // Inscription (création de compte) autorisée sans token
+  // Lecture publique des commentaires
+  if (pathname.startsWith('/api/comments') && method === 'GET') {
+    console.log('✅ Lecture commentaires publique autorisée');
+    return NextResponse.next();
+  }
+
+  // Inscription autorisée sans token
   if (pathname === '/api/users' && method === 'POST') {
     console.log('✅ Inscription utilisateur autorisée sans token');
     return NextResponse.next();
   }
 
-  // Routes protégées par token
+  // Routes protégées - vérifier uniquement la PRÉSENCE du token
   const protectedWriteRoutes = [
     { pattern: /^\/api\/actualites(?:\/.*)?$/, methods: ['POST', 'PUT', 'DELETE'] },
     { pattern: /^\/api\/users\/.*$/, methods: ['GET', 'PUT', 'DELETE'] },
+    { pattern: /^\/api\/comments(?:\/.*)?$/, methods: ['POST', 'PUT', 'DELETE'] },
   ];
 
   const needsAuth = protectedWriteRoutes.some(
@@ -178,7 +173,7 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  console.log('🔐 Route protégée, vérification du token...');
+  console.log('🔐 Route protégée, vérification de la présence du token...');
 
   const authHeader = request.headers.get('authorization') || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
@@ -188,24 +183,9 @@ export function middleware(request) {
     return NextResponse.json({ error: "Token d'authentification requis" }, { status: 401 });
   }
 
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) throw new Error('Token invalide');
-
-    const payload = JSON.parse(
-      Buffer.from(parts[1], 'base64url').toString()
-    );
-
-    if (payload.exp && payload.exp < Date.now() / 1000) {
-      throw new Error('Token expiré');
-    }
-
-    console.log('✅ Token valide, accès autorisé');
-    return NextResponse.next();
-  } catch (error) {
-    console.error('❌ Erreur d\'authentification:', error.message || error);
-    return NextResponse.json({ error: 'Token invalide ou expiré' }, { status: 401 });
-  }
+  // ✅ Token présent - la vérification JWT sera faite dans chaque route API avec Node.js runtime
+  console.log('✅ Token présent, redirection vers la route API pour vérification complète');
+  return NextResponse.next();
 }
 
 export const config = {

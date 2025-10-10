@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useEffect, useState, useRef, Suspense } from 'react';
-import { User, FileText, Users, Edit, Trash2, Plus, X, Eye, EyeOff, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { User, FileText, Users, Edit, Trash2, Plus, X, Eye, EyeOff, UploadCloud, Image as ImageIcon, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import AdminActualitesFilters from '../../components/AdminActualitesFilters';
+import CommentsModeration from '../../components/admin/CommentsModeration';
+import UserComments from '../../components/dashboard/UserComments';
 
-type Tab = 'informations' | 'actualites' | 'utilisateurs';
+type Tab = 'informations' | 'actualites' | 'utilisateurs' | 'commentaires';
 
 const MAX_CLIENT_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
 
@@ -19,7 +21,7 @@ function AdminLoading() {
       <div className="max-w-7xl mx-auto p-8">
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600">Chargement de l'administration...</span>
+          <span className="ml-3 text-gray-600">Chargement...</span>
         </div>
       </div>
     </div>
@@ -124,14 +126,13 @@ function AdminContent() {
       return;
     }
     if (file.size > MAX_CLIENT_IMAGE_SIZE) {
-      alert("L'image est trop volumineuse (max 5 Mo)."); // guillemets doubles ✅
-      (e.currentTarget as HTMLInputElement).value = '';  // reset propre du <input type="file">
+      alert("L'image est trop volumineuse (max 5 Mo).");
+      (e.currentTarget as HTMLInputElement).value = '';
       return;
     }
 
     setIsUploadingPhoto(true);
     try {
-      // Si on remplace une image déjà téléversée durant cette session, on la supprime côté serveur
       if (uploadedPhotoFilename) {
         try {
           await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedPhotoFilename)}`, { method: 'DELETE' });
@@ -161,7 +162,7 @@ function AdminContent() {
     }
   };
 
-  // Supprimer la photo (si téléversée pendant cette session)
+  // Supprimer la photo
   const handleRemovePhoto = async () => {
     if (uploadedPhotoFilename) {
       try {
@@ -267,7 +268,6 @@ function AdminContent() {
       const data = await response.json();
 
       if (response.ok) {
-        // Mettre à jour les données utilisateur dans le contexte
         updateUser({
           prenom: profileData.prenom.trim(),
           nom: profileData.nom.trim(),
@@ -326,7 +326,6 @@ function AdminContent() {
         showSuccessMessage('Mot de passe modifié avec succès !');
         console.log('✅ Mot de passe modifié');
         
-        // Réinitialiser le formulaire
         setPasswordData({
           currentPassword: '',
           newPassword: '',
@@ -369,7 +368,7 @@ function AdminContent() {
 
   // Charger les données selon l'onglet actif
   useEffect(() => {
-    if (activeTab === 'actualites') {
+    if (activeTab === 'actualites' && isAdmin()) {
       loadActualites();
     } else if (activeTab === 'utilisateurs' && isAdmin()) {
       loadUsers();
@@ -438,7 +437,8 @@ function AdminContent() {
   };
 
   const goTab = (tab: Tab) => {
-    if ((tab === 'utilisateurs' || tab === 'informations') && !isAdmin()) {
+    // Vérifier les permissions
+    if (!isAdmin() && (tab === 'utilisateurs' || tab === 'actualites')) {
       return;
     }
     
@@ -521,11 +521,11 @@ function AdminContent() {
             </div>
           )}
 
-          {/* Header */}
+          {/* Header dynamique selon le rôle */}
           <div className="mb-8 flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Espace Administrateur
+                {isAdmin() ? 'Espace Administrateur' : 'Espace Utilisateur'}
               </h1>
               <p className="text-gray-600">
                 Bienvenue, {user?.prenom} {user?.nom}
@@ -533,33 +533,33 @@ function AdminContent() {
             </div>
           </div>
 
-          {/* Onglets */}
+          {/* Onglets dynamiques selon le rôle */}
           <div className="flex mb-8 border-b border-gray-200">
-            {isAdmin() && (
-              <button
-                className={`flex items-center gap-2 px-0 py-4 mr-8 bg-none border-none text-base cursor-pointer border-b-2 transition-all duration-200 ${
-                  activeTab === 'informations'
-                    ? 'text-blue-600 border-blue-600'
-                    : 'text-gray-500 border-transparent hover:text-gray-700'
-                }`}
-                onClick={() => goTab('informations')}
-              >
-                <User className="w-5 h-5" />
-                Informations personnelles
-              </button>
-            )}
-
             <button
               className={`flex items-center gap-2 px-0 py-4 mr-8 bg-none border-none text-base cursor-pointer border-b-2 transition-all duration-200 ${
-                activeTab === 'actualites'
+                activeTab === 'informations'
                   ? 'text-blue-600 border-blue-600'
                   : 'text-gray-500 border-transparent hover:text-gray-700'
               }`}
-              onClick={() => goTab('actualites')}
+              onClick={() => goTab('informations')}
             >
-              <FileText className="w-5 h-5" />
-              Actualités
+              <User className="w-5 h-5" />
+              Informations personnelles
             </button>
+
+            {isAdmin() && (
+              <button
+                className={`flex items-center gap-2 px-0 py-4 mr-8 bg-none border-none text-base cursor-pointer border-b-2 transition-all duration-200 ${
+                  activeTab === 'actualites'
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-500 border-transparent hover:text-gray-700'
+                }`}
+                onClick={() => goTab('actualites')}
+              >
+                <FileText className="w-5 h-5" />
+                Actualités
+              </button>
+            )}
 
             {isAdmin() && (
               <button
@@ -574,6 +574,18 @@ function AdminContent() {
                 Utilisateurs
               </button>
             )}
+
+            <button
+              className={`flex items-center gap-2 px-0 py-4 mr-8 bg-none border-none text-base cursor-pointer border-b-2 transition-all duration-200 ${
+                activeTab === 'commentaires'
+                  ? 'text-blue-600 border-blue-600'
+                  : 'text-gray-500 border-transparent hover:text-gray-700'
+              }`}
+              onClick={() => goTab('commentaires')}
+            >
+              <MessageSquare className="w-5 h-5" />
+              {isAdmin() ? 'Commentaires' : 'Mes commentaires'}
+            </button>
           </div>
 
           {/* Contenu des onglets */}
@@ -595,9 +607,8 @@ function AdminContent() {
                       <h3 className="text-xl font-semibold text-gray-900">Informations générales</h3>
                     </div>
 
-                    {/* Avatar + Upload (local) */}
+                    {/* Avatar + Upload */}
                     <div className="flex items-center gap-6 mb-8 p-6 bg-gray-50 rounded-lg">
-                      {/* Aperçu */}
                       <div className="flex flex-col items-center">
                         <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-md mb-4 flex items-center justify-center overflow-hidden">
                           {profileData.photo ? (
@@ -613,9 +624,7 @@ function AdminContent() {
                         <span className="text-sm text-gray-600">Photo de profil</span>
                       </div>
 
-                      {/* Actions upload */}
                       <div className="flex-1">
-                        {/* input file caché */}
                         <input
                           ref={photoInputRef}
                           type="file"
@@ -845,8 +854,8 @@ function AdminContent() {
                 </div>
               )}
 
-              {/* Onglet Actualités */}
-              {activeTab === 'actualites' && (
+              {/* Onglet Actualités - Admin uniquement */}
+              {activeTab === 'actualites' && isAdmin() && (
                 <div>
                   <div className="flex justify-between items-start mb-8">
                     <div>
@@ -862,7 +871,6 @@ function AdminContent() {
                     </Link>
                   </div>
 
-                  {/* Barre de filtres */}
                   <AdminActualitesFilters
                     articles={articles}
                     onFilteredArticlesChange={setFilteredArticles}
@@ -947,7 +955,7 @@ function AdminContent() {
                 </div>
               )}
 
-              {/* Onglet Utilisateurs */}
+              {/* Onglet Utilisateurs - Admin uniquement */}
               {activeTab === 'utilisateurs' && isAdmin() && (
                 <div>
                   <div className="flex justify-between items-start mb-8">
@@ -1026,6 +1034,17 @@ function AdminContent() {
                         </div>
                       )}
                     </div>
+                  )}
+                </div>
+              )}
+
+              {/* Onglet Commentaires - Admin et Utilisateurs */}
+              {activeTab === 'commentaires' && (
+                <div>
+                  {isAdmin() ? (
+                    <CommentsModeration />
+                  ) : (
+                    <UserComments />
                   )}
                 </div>
               )}

@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
         userData.token = storedToken;
         userData.storageType = storageType;
         setUser(userData);
-        console.log(`✅ Utilisateur restauré depuis ${storageType}:`, userData.email);
+        console.log(`✅ Utilisateur restauré depuis ${storageType}:`, userData.email, '| Rôle:', userData.role);
       }
     } catch (error) {
       console.error('❌ Erreur lors de l\'initialisation de l\'auth:', error);
@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }) => {
           }
         }
         
-        console.log('✅ Connexion réussie:', userWithToken.email);
+        console.log('✅ Connexion réussie:', userWithToken.email, '| Rôle:', userWithToken.role);
         router.push('/administrateur');
         return { success: true };
       } else {
@@ -136,21 +136,23 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     console.log('🚪 Déconnexion utilisateur');
     clearAuthData();
-    router.push('/se-connecter'); // ← CHANGEMENT ICI : /login → /se-connecter
+    router.push('/se-connecter');
   };
 
   const isAuthenticated = () => {
     return !!user && !!user.token;
   };
 
-  // SIMPLIFIÉ : Plus de vérification de rôle - tous les utilisateurs connectés sont admins
+  // ✅ CORRIGÉ : Vérifier le rôle réel de l'utilisateur
   const isAdmin = () => {
-    return isAuthenticated();
+    if (!isAuthenticated()) return false;
+    return user.role === 'Administrateur';
   };
 
-  // SIMPLIFIÉ : Fonction hasRole toujours vraie pour les utilisateurs connectés
+  // ✅ CORRIGÉ : Vérifier le rôle spécifique
   const hasRole = (role) => {
-    return isAuthenticated(); // Tous les utilisateurs connectés ont tous les rôles
+    if (!isAuthenticated()) return false;
+    return user.role === role;
   };
 
   const getToken = () => {

@@ -757,21 +757,23 @@ function AdminContent() {
                       </div>
                     </div>
 
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Biographie</label>
-                      <textarea
-                        name="bio"
-                        value={profileData.bio}
-                        onChange={handleProfileChange}
-                        rows={4}
-                        placeholder="Parlez-nous un peu de vous, votre rôle dans l'association, vos expériences..."
-                        className="w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 resize-vertical"
-                        disabled={profileLoading}
-                      />
-                      <p className="text-sm text-gray-600 mt-1">
-                        Cette biographie sera visible dans vos articles.
-                      </p>
-                    </div>
+                    {isAdmin() && (
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Biographie</label>
+                        <textarea
+                          name="bio"
+                          value={profileData.bio}
+                          onChange={handleProfileChange}
+                          rows={4}
+                          placeholder="Parlez-nous un peu de vous, votre rôle dans l'association, vos expériences..."
+                          className="w-full px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100 resize-vertical"
+                          disabled={profileLoading}
+                        />
+                        <p className="text-sm text-gray-600 mt-1">
+                          Cette biographie sera visible dans vos articles.
+                        </p>
+                      </div>
+                    )}
 
                     <button 
                       onClick={handleSaveProfile}

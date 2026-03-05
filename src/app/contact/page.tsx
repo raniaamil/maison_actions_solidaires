@@ -172,7 +172,7 @@ const Contact: React.FC = () => {
 
           <p className={styles.followUs}>Suivez-nous sur:</p>
           <div className={styles.socialIcons}>
-            <a href="https://www.facebook.com/share/1AwFeYHwqJ/" className={styles.socialIcon} aria-label="Facebook">
+            <a href="https://www.facebook.com/61553550644677/" className={styles.socialIcon} aria-label="Facebook">
               <FaFacebookF size={24} color="#838C58" />
             </a>
           </div>

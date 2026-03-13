@@ -1,6 +1,6 @@
 // src/app/api/users/[id]/route.js
 export const runtime = 'nodejs';
-import db from '../../../../lib/db';
+import { query } from '../../../../lib/db';
 import bcrypt from 'bcryptjs';
 
 // GET - Récupérer un utilisateur par ID
@@ -16,7 +16,7 @@ export async function GET(request, { params }) {
       );
     }
 
-    const result = await db.query(
+    const result = await query(
       `SELECT 
         id, prenom, nom, email, photo, bio, role, 
         date_inscription, date_modification, actif
@@ -85,7 +85,7 @@ export async function PUT(request, { params }) {
     } = body;
 
     // Vérifier que l'utilisateur existe
-    const existingResult = await db.query(
+    const existingResult = await query(
       'SELECT id, email FROM users WHERE id = $1 AND actif = TRUE',
       [userId]
     );
@@ -99,9 +99,9 @@ export async function PUT(request, { params }) {
 
     const existingUser = existingResult.rows[0];
 
-    // Validation du rôle si fourni
+    // Validation du rôle si fourni — inclut 'Utilisateur' pour les inscriptions publiques
     if (role) {
-      const rolesAutorises = ['Administrateur', 'Rédacteur'];
+      const rolesAutorises = ['Administrateur', 'Rédacteur', 'Utilisateur'];
       if (!rolesAutorises.includes(role)) {
         return Response.json(
           { error: 'Rôle non valide' },
@@ -122,7 +122,7 @@ export async function PUT(request, { params }) {
 
       // Vérifier que l'email n'est pas déjà utilisé par un autre utilisateur
       if (email.toLowerCase().trim() !== existingUser.email) {
-        const emailCheckResult = await db.query(
+        const emailCheckResult = await query(
           'SELECT id FROM users WHERE email = $1 AND id != $2 AND actif = TRUE',
           [email.toLowerCase().trim(), userId]
         );
@@ -204,13 +204,13 @@ export async function PUT(request, { params }) {
     // Ajouter l'ID utilisateur à la fin
     updateParams.push(userId);
 
-    await db.query(
+    await query(
       `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
       updateParams
     );
 
     // Récupérer l'utilisateur mis à jour (sans le mot de passe)
-    const updatedResult = await db.query(
+    const updatedResult = await query(
       `SELECT 
         id, prenom, nom, email, photo, bio, role, 
         date_inscription, date_modification, actif
@@ -243,13 +243,13 @@ export async function PUT(request, { params }) {
     let errorMessage = 'Erreur serveur lors de la mise à jour de l\'utilisateur';
     let statusCode = 500;
     
-    if (error.code === '23505') { // unique_violation
+    if (error.code === '23505') {
       errorMessage = 'Cette adresse e-mail est déjà utilisée';
       statusCode = 409;
-    } else if (error.code === '22001') { // string_data_right_truncation
+    } else if (error.code === '22001') {
       errorMessage = 'Données trop longues pour un ou plusieurs champs';
       statusCode = 400;
-    } else if (error.code === '23502') { // not_null_violation
+    } else if (error.code === '23502') {
       errorMessage = 'Un champ obligatoire est manquant';
       statusCode = 400;
     }
@@ -264,7 +264,7 @@ export async function PUT(request, { params }) {
   }
 }
 
-// DELETE - Supprimer un utilisateur (suppression logique)
+// DELETE - Supprimer un utilisateur
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
@@ -278,7 +278,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Vérifier que l'utilisateur existe
-    const existingResult = await db.query(
+    const existingResult = await query(
       'SELECT id, role FROM users WHERE id = $1 AND actif = TRUE',
       [userId]
     );
@@ -294,12 +294,12 @@ export async function DELETE(request, { params }) {
 
     // Empêcher la suppression si c'est le dernier administrateur
     if (existingUser.role === 'Administrateur') {
-      const adminCountResult = await db.query(
+      const adminCountResult = await query(
         'SELECT COUNT(*) as count FROM users WHERE role = $1 AND actif = TRUE',
         ['Administrateur']
       );
 
-      if (adminCountResult.rows[0].count <= 1) {
+      if (parseInt(adminCountResult.rows[0].count) <= 1) {
         return Response.json(
           { error: 'Impossible de supprimer le dernier administrateur' },
           { status: 400 }
@@ -307,7 +307,7 @@ export async function DELETE(request, { params }) {
       }
     }
 
-    await db.query('DELETE FROM users WHERE id = $1', [userId]);
+    await query('DELETE FROM users WHERE id = $1', [userId]);
 
     return Response.json({
       message: 'Utilisateur supprimé avec succès'

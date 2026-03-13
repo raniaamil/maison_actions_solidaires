@@ -1,6 +1,6 @@
-// src/app/api/users/route.js - VERSION AVEC ENVOI D'EMAIL
+// src/app/api/users/route.js - VERSION POSTGRESQL avec envoi d'email
 export const runtime = 'nodejs';
-import db from '../../../lib/db';
+import { query } from '../../../lib/db';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
 
@@ -9,7 +9,7 @@ const createTransporter = () => {
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false, // true pour 465, false pour les autres ports
+    secure: process.env.SMTP_PORT === '465',
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
@@ -27,7 +27,7 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const result = await db.query(`
+    const result = await query(`
       SELECT 
         id, prenom, nom, email, photo, bio, role, 
         date_inscription, date_modification, actif
@@ -37,7 +37,6 @@ export async function GET(request) {
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
 
-    // Transformer les données
     const users = result.rows.map(row => ({
       id: row.id,
       prenom: row.prenom,
@@ -80,10 +79,9 @@ export async function POST(request) {
       password, 
       photo, 
       bio,
-      role = 'Administrateur' // Valeur par défaut
+      role = 'Administrateur'
     } = body;
 
-    // Support pour les deux formats de noms (compatibilité)
     const finalFirstName = firstName || prenom;
     const finalLastName = lastName || nom;
 
@@ -103,7 +101,6 @@ export async function POST(request) {
     if (!email || !email.trim()) {
       errors.email = 'L\'email est requis';
     } else {
-      // Validation de l'email
       const emailRegex = /\S+@\S+\.\S+/;
       if (!emailRegex.test(email.trim())) {
         errors.email = 'L\'adresse e-mail n\'est pas valide';
@@ -126,7 +123,7 @@ export async function POST(request) {
 
     // Vérifier si l'utilisateur existe déjà
     console.log('🔍 Vérification utilisateur existant...');
-    const existingResult = await db.query(
+    const existingResult = await query(
       'SELECT id FROM users WHERE email = $1',
       [email.toLowerCase().trim()]
     );
@@ -143,9 +140,9 @@ export async function POST(request) {
     console.log('🔐 Hachage du mot de passe...');
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Insérer l'utilisateur (PostgreSQL avec RETURNING)
+    // Insérer l'utilisateur
     console.log('💾 Insertion en base...');
-    const insertResult = await db.query(`
+    const insertResult = await query(`
       INSERT INTO users (prenom, nom, email, mot_de_passe, photo, bio, role, date_inscription) 
       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
       RETURNING id
@@ -163,7 +160,7 @@ export async function POST(request) {
     console.log('✅ Utilisateur inséré avec ID:', userId);
 
     // Récupérer l'utilisateur créé (sans le mot de passe)
-    const userResult = await db.query(`
+    const userResult = await query(`
       SELECT id, prenom, nom, email, photo, bio, role, date_inscription 
       FROM users 
       WHERE id = $1
@@ -189,14 +186,17 @@ export async function POST(request) {
     };
 
     // 📧 ENVOI DE L'EMAIL DE BIENVENUE
+    let emailSent = false;
     try {
       console.log('📧 Envoi de l\'email de bienvenue...');
       const transporter = createTransporter();
       
+      const siteUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://maison-dactions-solidaires.fr';
+
       const mailOptions = {
         from: `"Maison d'Actions Solidaires" <${process.env.SMTP_USER}>`,
         to: userCreated.email,
-        subject: '🔐 Vos identifiants de connexion',
+        subject: 'Vos identifiants de connexion',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #8b9467 0%, #a4b070 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
@@ -207,18 +207,18 @@ export async function POST(request) {
               <p style="color: #333; font-size: 16px; line-height: 1.6;">Bonjour ${userCreated.prenom} ${userCreated.nom},</p>
               
               <p style="color: #333; font-size: 16px; line-height: 1.6;">
-                Félicitations ! Votre compte administrateur a été créé avec succès sur la plateforme de Maison d'Actions Solidaires.
+                Votre compte a été créé avec succès sur la plateforme de Maison d'Actions Solidaires.
               </p>
               
               <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8b9467;">
-                <h3 style="color: #8b9467; margin-top: 0;">🔑 Vos identifiants de connexion :</h3>
+                <h3 style="color: #8b9467; margin-top: 0;">Vos identifiants de connexion :</h3>
                 <p style="margin: 10px 0;"><strong>Email :</strong> ${userCreated.email}</p>
                 <p style="margin: 10px 0;"><strong>Mot de passe temporaire :</strong> <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${password}</span></p>
                 <p style="margin: 10px 0;"><strong>Rôle :</strong> ${userCreated.role}</p>
               </div>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/se-connecter" 
+                <a href="${siteUrl}/se-connecter" 
                    style="background: linear-gradient(135deg, #8b9467 0%, #a4b070 100%); 
                           color: white; 
                           text-decoration: none; 
@@ -233,23 +233,13 @@ export async function POST(request) {
               
               <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
                 <p style="margin: 0; color: #856404; font-size: 14px;">
-                  <strong>⚠️ Important :</strong> Pour votre sécurité, nous vous recommandons vivement de changer ce mot de passe temporaire lors de votre première connexion.
+                  <strong>Important :</strong> Nous vous recommandons de changer ce mot de passe temporaire lors de votre première connexion.
                 </p>
               </div>
               
-              <h3 style="color: #8b9467;">📋 Vos prochaines étapes :</h3>
-              <ol style="color: #333; line-height: 1.6;">
-                <li>Connectez-vous à la plateforme avec vos identifiants</li>
-                <li>Modifiez votre mot de passe temporaire</li>
-                <li>Complétez votre profil (photo, biographie)</li>
-                <li>Explorez l'interface d'administration</li>
-                <li>Commencez à créer des actualités !</li>
-              </ol>
-              
               <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px;">
                 <p style="color: #999; font-size: 12px; margin: 0; text-align: center;">
-                  Cet email a été envoyé automatiquement par la plateforme Maison d\'Actions Solidaires<br>
-                  Si vous avez des questions, contactez-nous à maisondactionsolidaire@gmail.com
+                  Cet email a été envoyé automatiquement par la plateforme Maison d'Actions Solidaires
                 </p>
               </div>
             </div>
@@ -258,12 +248,12 @@ export async function POST(request) {
       };
 
       await transporter.sendMail(mailOptions);
+      emailSent = true;
       console.log('✅ Email de bienvenue envoyé à:', userCreated.email);
 
     } catch (emailError) {
       console.error('❌ Erreur lors de l\'envoi de l\'email:', emailError);
       // On ne fait pas échouer la création si l'email ne peut pas être envoyé
-      // L'utilisateur est créé, c'est l'essentiel
     }
 
     console.log('✅ Utilisateur créé avec succès:', userCreated.email);
@@ -271,46 +261,35 @@ export async function POST(request) {
     return Response.json({
       message: 'Utilisateur créé avec succès',
       user: userCreated,
-      emailSent: true // Indique que l'email a été tenté
+      emailSent
     }, { status: 201 });
 
   } catch (error) {
     console.error('❌ Erreur lors de la création de l\'utilisateur:', error);
-    console.error('❌ Stack trace:', error.stack);
     
-    // Gestion des erreurs spécifiques PostgreSQL
     let errorMessage = 'Erreur serveur lors de la création de l\'utilisateur';
     let statusCode = 500;
     
-    if (error.code === '23505') { // unique_violation
+    if (error.code === '23505') {
       errorMessage = 'Cette adresse e-mail est déjà utilisée';
       statusCode = 409;
-    } else if (error.code === '22001') { // string_data_right_truncation
+    } else if (error.code === '22001') {
       errorMessage = 'Données trop longues pour un ou plusieurs champs';
       statusCode = 400;
-    } else if (error.code === '23502') { // not_null_violation
+    } else if (error.code === '23502') {
       errorMessage = 'Un champ obligatoire est manquant';
       statusCode = 400;
-    } else if (error.code === '42P01') { // undefined_table
+    } else if (error.code === '42P01') {
       errorMessage = 'Table utilisateurs non trouvée dans la base de données';
-      statusCode = 500;
-    } else if (error.code === '42601') { // syntax_error
-      errorMessage = 'Erreur de syntaxe SQL';
-      statusCode = 500;
-    } else if (error.code === '28P01') { // invalid_authorization_specification
-      errorMessage = 'Accès refusé à la base de données';
-      statusCode = 500;
     } else if (error.code === 'ECONNREFUSED') {
       errorMessage = 'Impossible de se connecter à la base de données';
-      statusCode = 500;
     }
 
     return Response.json({ 
       message: errorMessage,
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Une erreur est survenue lors de la création de l\'utilisateur',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Une erreur est survenue',
       details: process.env.NODE_ENV === 'development' ? {
         code: error.code,
-        sqlMessage: error.sqlMessage,
         stack: error.stack
       } : undefined
     }, { status: statusCode });

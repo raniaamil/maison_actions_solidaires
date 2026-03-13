@@ -164,7 +164,7 @@ const HomePage: React.FC = () => {
       {/* Bannière Hero */}
       <section className={styles.heroBanner}>
         <div className={styles.heroContent}>
-          <h1 className={styles.heroTitle}>Maison d'Actions Solidaires</h1>
+          <h1 className={styles.heroTitle}>Maison d&apos;Actions Solidaires</h1>
           <p className={styles.heroSubtitle}>
             Ensemble, nous créons un monde plus inclusif où chacun trouve sa place, son autonomie et son bien-être
           </p>
@@ -185,7 +185,7 @@ const HomePage: React.FC = () => {
           <div className={`${styles.sectionHeader} ${styles.animateOnScroll}`}>
             <h2 className={styles.sectionTitle}>Notre Mission</h2>
             <p className={styles.sectionDescription}>
-              Basée à Champigny-sur-Marne, l'association Maison d'Actions Solidaires s'engage à créer un environnement inclusif et bienveillant pour tous. Nous développons des actions concrètes pour répondre aux besoins spécifiques de chaque personne accompagnée.
+              Basée à Champigny-sur-Marne, l&apos;association Maison d&apos;Actions Solidaires s&apos;engage à créer un environnement inclusif et bienveillant pour tous. Nous développons des actions concrètes pour répondre aux besoins spécifiques de chaque personne accompagnée.
             </p>
           </div>
 
@@ -201,21 +201,21 @@ const HomePage: React.FC = () => {
               <div className={styles.valueIcon}>🌱</div>
               <h3 className={styles.valueTitle}>Autonomie</h3>
               <p className={styles.valueDesc}>
-                Nous accompagnons chaque personne vers plus d'indépendance et de confiance en soi.
+                Nous accompagnons chaque personne vers plus d&apos;indépendance et de confiance en soi.
               </p>
             </div>
             <div className={`${styles.valueCard} ${styles.animateOnScroll}`}>
               <div className={styles.valueIcon}>🤝</div>
               <h3 className={styles.valueTitle}>Solidarité</h3>
               <p className={styles.valueDesc}>
-                Nous favorisons l'entraide et le soutien mutuel au sein de notre communauté.
+                Nous favorisons l&apos;entraide et le soutien mutuel au sein de notre communauté.
               </p>
             </div>
             <div className={`${styles.valueCard} ${styles.animateOnScroll}`}>
               <div className={styles.valueIcon}>💝</div>
               <h3 className={styles.valueTitle}>Bienveillance</h3>
               <p className={styles.valueDesc}>
-                Nous plaçons l'écoute, le respect et la compassion au cœur de toutes nos actions.
+                Nous plaçons l&apos;écoute, le respect et la compassion au cœur de toutes nos actions.
               </p>
             </div>
           </div>
@@ -246,7 +246,7 @@ const HomePage: React.FC = () => {
                 {fetchError}
               </p>
               <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.875rem', color: '#7f1d1d' }}>
-                Veuillez réessayer plus tard ou contactez l'administrateur si le problème persiste.
+                Veuillez réessayer plus tard ou contactez l&apos;administrateur si le problème persiste.
               </p>
             </div>
           ) : loadingArticles ? (
@@ -257,115 +257,40 @@ const HomePage: React.FC = () => {
               </span>
             </div>
           ) : latestArticles.length > 0 ? (
-            <div
-              className={styles.newsGrid}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-                gap: '2rem',
-                marginTop: '3rem',
-                minHeight: '400px',
-                border: '2px dashed red',
-                padding: '1rem'
-              }}
-            >
-              {latestArticles.map((article, index) => (
+            <div className={styles.newsGrid}>
+              {latestArticles.map((article) => (
                 <article
                   key={article.id}
                   className={`${styles.newsCard} ${styles.animateOnScroll}`}
-                  style={{
-                    background: 'white',
-                    borderRadius: '15px',
-                    overflow: 'hidden',
-                    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.08)',
-                    minHeight: '400px',
-                    display: 'block',
-                    opacity: 1,
-                    transform: 'translateY(0)',
-                    border: `3px solid ${index === 0 ? 'blue' : index === 1 ? 'green' : 'purple'}`
-                  }}
                 >
-                  <div
-                    className={styles.newsImage}
-                    style={{
-                      position: 'relative',
-                      height: '200px',
-                      overflow: 'hidden',
-                      backgroundColor: '#f3f4f6'
-                    }}
-                  >
+                  <div className={styles.newsImage}>
                     <img
                       src={article.image || '/images/actualites/default.jpg'}
                       alt={article.titre || article.title || 'Article'}
-                      width={400}
-                      height={200}
                       className={styles.newsImg}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => {
-                        console.warn('Erreur chargement image:', e.currentTarget.src);
                         e.currentTarget.src = '/images/actualites/default.jpg';
                       }}
                     />
                     {article.type && (
-                      <span
-                        className={`${styles.newsCategory} ${getTypeColor(article.type)}`}
-                        style={{
-                          position: 'absolute',
-                          top: '12px',
-                          left: '12px',
-                          padding: '6px 12px',
-                          borderRadius: '20px',
-                          fontSize: '0.875rem',
-                          fontWeight: '500',
-                          textTransform: 'lowercase',
-                          color: 'white',
-                          backgroundColor: '#8b7355'
-                        }}
-                      >
+                      <span className={`${styles.newsCategory} ${getTypeColor(article.type)}`}>
                         {article.type}
                       </span>
                     )}
                   </div>
-                  <div className={styles.newsContent} style={{ padding: '1.5rem' }}>
-                    <div
-                      className={styles.newsMeta}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '1rem',
-                        fontSize: '0.875rem',
-                        color: '#6b7280'
-                      }}
-                    >
-                      <span className={styles.newsDate} style={{ fontWeight: '500' }}>
+                  <div className={styles.newsContent}>
+                    <div className={styles.newsMeta}>
+                      <span className={styles.newsDate}>
                         {formatDate(article.date_creation || article.date)}
                       </span>
-                      <span className={styles.newsAuthor} style={{ color: '#8b7355', fontWeight: '600' }}>
+                      <span className={styles.newsAuthor}>
                         Par {getAuthorName(article)}
                       </span>
                     </div>
-                    <h3
-                      className={styles.newsTitle}
-                      style={{
-                        fontSize: '1.25rem',
-                        fontWeight: '600',
-                        color: '#1f2937',
-                        marginBottom: '1rem',
-                        lineHeight: '1.4'
-                      }}
-                    >
+                    <h3 className={styles.newsTitle}>
                       {article.titre || article.title || 'Titre non disponible'}
                     </h3>
-                    <p
-                      className={styles.newsExcerpt}
-                      style={{
-                        color: '#4b5563',
-                        lineHeight: '1.6',
-                        marginBottom: '1.5rem',
-                        fontSize: '0.95rem'
-                      }}
-                    >
+                    <p className={styles.newsExcerpt}>
                       {article.description || 'Description non disponible'}
                     </p>
                     <Link href={`/actualites/${article.id}`} className={styles.newsLink}>
@@ -422,7 +347,7 @@ const HomePage: React.FC = () => {
           <div className={styles.statsGrid}>
             <div className={`${styles.statItem} ${styles.animateOnScroll}`}>
               <div className={styles.statNumber}>5</div>
-              <div className={styles.statLabel}>Pôles d'Action</div>
+              <div className={styles.statLabel}>Pôles d&apos;Action</div>
             </div>
             <div className={`${styles.statItem} ${styles.animateOnScroll}`}>
               <div className={styles.statNumber}>50+</div>
@@ -432,7 +357,6 @@ const HomePage: React.FC = () => {
               <div className={styles.statNumber}>75</div>
               <div className={styles.statLabel}>Appels mensuels</div>
             </div>
-            {/* ✅ Carte ajoutée : 100% Bienveillance */}
             <div className={`${styles.statItem} ${styles.animateOnScroll}`}>
               <div className={styles.statNumber}>100%</div>
               <div className={styles.statLabel}>Bienveillance</div>
@@ -447,14 +371,14 @@ const HomePage: React.FC = () => {
           <div className={`${styles.ctaContent} ${styles.animateOnScroll}`}>
             <h2 className={styles.ctaTitle}>Rejoignez Notre Mission</h2>
             <p className={styles.ctaText}>
-              Ensemble, nous pouvons créer un monde plus inclusif. Découvrez comment vous pouvez nous aider à faire la différence dans la vie de personnes en situation de handicap, d'aidants et de familles.
+              Ensemble, nous pouvons créer un monde plus inclusif. Découvrez comment vous pouvez nous aider à faire la différence dans la vie de personnes en situation de handicap, d&apos;aidants et de familles.
             </p>
             <div className={styles.ctaButtons}>
               <Link href="/faireundon" className={`${styles.btn} ${styles.btnPrimary}`}>
                 Faire un don
               </Link>
               <Link href="/association" className={`${styles.btn} ${styles.btnSecondaryAlt}`}>
-                Découvrir l'équipe
+                Découvrir l&apos;équipe
               </Link>
             </div>
           </div>

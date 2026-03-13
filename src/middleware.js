@@ -1,4 +1,5 @@
-// src/middleware.js
+// src/middleware.js — Auth simplifiée + CSRF (Origin/Referer) + Rate limiting login
+// Compatible Edge Runtime (Vercel) : pas de Buffer, pas de setInterval, pas de Node.js APIs
 import { NextResponse } from 'next/server';
 
 const isStateChangingMethod = (m) =>
@@ -13,6 +14,13 @@ function checkLoginRateLimit(ip) {
   const now = Date.now();
   const key = `login:${ip}`;
   
+  // Nettoyage paresseux à chaque appel (pas de setInterval en Edge Runtime)
+  for (const [k, data] of loginAttempts.entries()) {
+    if (now - data.firstAttempt > LOGIN_WINDOW_MS) {
+      loginAttempts.delete(k);
+    }
+  }
+  
   if (!loginAttempts.has(key)) {
     loginAttempts.set(key, { count: 1, firstAttempt: now });
     return true;
@@ -20,32 +28,19 @@ function checkLoginRateLimit(ip) {
   
   const attempts = loginAttempts.get(key);
   
-  // Reset si la fenêtre de temps est dépassée
   if (now - attempts.firstAttempt > LOGIN_WINDOW_MS) {
     loginAttempts.set(key, { count: 1, firstAttempt: now });
     return true;
   }
   
-  // Incrémenter les tentatives
   attempts.count++;
   
-  // Bloquer si trop de tentatives
   if (attempts.count > MAX_LOGIN_ATTEMPTS) {
     return false;
   }
   
   return true;
 }
-
-// Nettoyage périodique du cache
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, data] of loginAttempts.entries()) {
-    if (now - data.firstAttempt > LOGIN_WINDOW_MS) {
-      loginAttempts.delete(key);
-    }
-  }
-}, LOGIN_WINDOW_MS);
 
 // Récupère l'origine du navigateur
 function getRequestOrigin(request) {
@@ -121,7 +116,7 @@ export function middleware(request) {
     }
   }
 
-  // --- 3) Vérification basique de la présence du token (pas de vérification JWT) ---
+  // --- 3) Vérification basique de la présence du token ---
   
   // Routes publiques (pas d'auth requise)
   const publicRoutes = [
@@ -157,7 +152,7 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  // Routes protégées - vérifier uniquement la PRÉSENCE du token
+  // Routes protégées - vérifier la PRÉSENCE du token
   const protectedWriteRoutes = [
     { pattern: /^\/api\/actualites(?:\/.*)?$/, methods: ['POST', 'PUT', 'DELETE'] },
     { pattern: /^\/api\/users\/.*$/, methods: ['GET', 'PUT', 'DELETE'] },
@@ -183,8 +178,29 @@ export function middleware(request) {
     return NextResponse.json({ error: "Token d'authentification requis" }, { status: 401 });
   }
 
-  // ✅ Token présent - la vérification JWT sera faite dans chaque route API avec Node.js runtime
-  console.log('✅ Token présent, redirection vers la route API pour vérification complète');
+  // Vérification basique du format JWT
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    console.log('❌ Format de token invalide');
+    return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+  }
+
+  // Vérification d'expiration avec atob() (disponible en Edge Runtime, pas Buffer)
+  try {
+    const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payloadJson = atob(payloadBase64);
+    const payload = JSON.parse(payloadJson);
+
+    if (payload.exp && payload.exp < Date.now() / 1000) {
+      console.log('❌ Token expiré');
+      return NextResponse.json({ error: 'Token expiré' }, { status: 401 });
+    }
+  } catch (e) {
+    console.error('❌ Erreur décodage token:', e.message || e);
+    return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+  }
+
+  console.log('✅ Token présent et non expiré, redirection vers la route API');
   return NextResponse.next();
 }
 

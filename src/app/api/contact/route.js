@@ -1,6 +1,6 @@
 // src/app/api/contact/route.js
 export const runtime = 'nodejs';
-import db from '../../../lib/db';
+import { query } from '../../../lib/db';
 import nodemailer from 'nodemailer';
 
 // Configuration du transporteur email
@@ -8,7 +8,7 @@ const createTransport = () => {
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false, // true pour 465, false pour les autres ports
+    secure: process.env.SMTP_PORT === '465',
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
@@ -78,7 +78,7 @@ export async function POST(request) {
     }
 
     // Création de la table des messages si elle n'existe pas (PostgreSQL)
-    await db.query(`
+    await query(`
       CREATE TABLE IF NOT EXISTS contact_messages (
         id SERIAL PRIMARY KEY,
         prenom VARCHAR(100) NOT NULL,
@@ -86,7 +86,7 @@ export async function POST(request) {
         email VARCHAR(255) NOT NULL,
         sujet VARCHAR(255) NOT NULL,
         message TEXT NOT NULL,
-        ip_address INET DEFAULT NULL,
+        ip_address VARCHAR(45) DEFAULT NULL,
         user_agent TEXT DEFAULT NULL,
         date_creation TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         statut VARCHAR(10) DEFAULT 'nouveau' CHECK (statut IN ('nouveau', 'lu', 'traite'))
@@ -94,24 +94,18 @@ export async function POST(request) {
     `);
 
     // Créer les index s'ils n'existent pas
-    await db.query(`
-      CREATE INDEX IF NOT EXISTS idx_contact_email ON contact_messages (email)
-    `);
-    await db.query(`
-      CREATE INDEX IF NOT EXISTS idx_contact_date ON contact_messages (date_creation)
-    `);
-    await db.query(`
-      CREATE INDEX IF NOT EXISTS idx_contact_statut ON contact_messages (statut)
-    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_contact_email ON contact_messages (email)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_contact_date ON contact_messages (date_creation)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_contact_statut ON contact_messages (statut)`);
 
     // Récupérer l'IP et user agent
     const forwardedFor = request.headers.get('x-forwarded-for');
     const realIp = request.headers.get('x-real-ip');
-    const ipAddress = forwardedFor?.split(',')[0] || realIp || 'unknown';
+    const ipAddress = forwardedFor?.split(',')[0] || realIp || null;
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
     // Insérer le message en base (PostgreSQL avec RETURNING)
-    const result = await db.query(
+    const result = await query(
       `INSERT INTO contact_messages 
        (prenom, nom, email, sujet, message, ip_address, user_agent) 
        VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -122,7 +116,7 @@ export async function POST(request) {
         email.toLowerCase().trim(),
         subject.trim(),
         message.trim(),
-        ipAddress === 'unknown' ? null : ipAddress,
+        ipAddress,
         userAgent
       ]
     );
@@ -136,8 +130,8 @@ export async function POST(request) {
       
       // Email de notification à l'association
       const mailOptions = {
-        from: `"Maison d\'Actions Solidaires" <${process.env.SMTP_USER}>`,
-        to: process.env.CONTACT_EMAIL,
+        from: `"Maison d'Actions Solidaires" <${process.env.SMTP_USER}>`,
+        to: process.env.CONTACT_EMAIL || process.env.SMTP_USER,
         subject: `Nouveau message: ${subject.trim()}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto;">
@@ -159,7 +153,7 @@ export async function POST(request) {
             </div>
             
             <div style="font-size: 12px; color: #666; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-              <p>Ce message a été envoyé via le formulaire de contact du site web de Maison d\'Actions Solidaires.</p>
+              <p>Ce message a été envoyé via le formulaire de contact du site web.</p>
             </div>
           </div>
         `
@@ -172,7 +166,7 @@ export async function POST(request) {
       const confirmationOptions = {
         from: `"Maison d'Actions Solidaires" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: '✅ Confirmation de réception de votre message - Maison d\'Actions Solidaires',
+        subject: 'Confirmation de réception de votre message - Maison d\'Actions Solidaires',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto;">
             <h2 style="color: #838C58; border-bottom: 2px solid #838C58; padding-bottom: 10px;">
@@ -195,7 +189,6 @@ export async function POST(request) {
             </div>
             
             <hr style="border: none; height: 1px; background-color: #eee; margin: 30px 0;">
-          
           </div>
         `,
       };
@@ -206,6 +199,7 @@ export async function POST(request) {
     } catch (emailError) {
       console.error('❌ Erreur lors de l\'envoi des emails:', emailError);
       // Ne pas faire échouer la requête si l'email échoue
+      // Le message est bien sauvegardé en base
     }
 
     return Response.json({
@@ -217,8 +211,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('❌ Erreur lors du traitement du formulaire de contact:', error);
     
-    // Gestion des erreurs spécifiques PostgreSQL
-    if (error.code === '22001') { // string_data_right_truncation
+    if (error.code === '22001') {
       return Response.json({ 
         success: false,
         message: 'Données trop longues',
@@ -244,15 +237,15 @@ export async function GET(request) {
 
     // Vérifier que la table existe
     try {
-      await db.query('SELECT 1 FROM contact_messages LIMIT 1');
+      await query('SELECT 1 FROM contact_messages LIMIT 1');
     } catch (tableError) {
-      if (tableError.code === '42P01') { // undefined_table
+      if (tableError.code === '42P01') {
         return Response.json([]);
       }
       throw tableError;
     }
 
-    let query = `
+    let queryText = `
       SELECT 
         id, prenom, nom, email, sujet, message, 
         date_creation, statut,
@@ -265,22 +258,21 @@ export async function GET(request) {
     let paramIndex = 1;
 
     if (statut && ['nouveau', 'lu', 'traite'].includes(statut)) {
-      query += ` AND statut = $${paramIndex}`;
+      queryText += ` AND statut = $${paramIndex}`;
       params.push(statut);
       paramIndex++;
     }
 
-    query += ` ORDER BY date_creation DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    queryText += ` ORDER BY date_creation DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     params.push(limit, offset);
 
-    const result = await db.query(query, params);
+    const result = await query(queryText, params);
     const messages = result.rows;
 
-    // Formater les données
     const formattedMessages = messages.map(msg => ({
       ...msg,
       date_creation: msg.date_creation ? new Date(msg.date_creation).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' }) : '',
-      apercu_message: msg.apercu_message + (msg.message.length > 150 ? '...' : '')
+      apercu_message: msg.apercu_message + (msg.message && msg.message.length > 150 ? '...' : '')
     }));
 
     return Response.json(formattedMessages);

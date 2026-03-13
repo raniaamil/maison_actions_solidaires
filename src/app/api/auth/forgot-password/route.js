@@ -6,10 +6,11 @@ import nodemailer from 'nodemailer';
 
 // Configuration du transporteur email
 const createTransport = () => {
+  const port = parseInt(process.env.SMTP_PORT || '587');
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false, // true pour 465, false pour les autres ports
+    port,
+    secure: port === 465, // true uniquement pour le port 465
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
@@ -34,7 +35,6 @@ export async function POST(request) {
 
     const emailTrimmed = email.toLowerCase().trim();
     
-    // Validation basique du format email
     const emailRegex = /\S+@\S+\.\S+/;
     if (!emailRegex.test(emailTrimmed)) {
       return Response.json(
@@ -43,14 +43,13 @@ export async function POST(request) {
       );
     }
 
-    // Vérifier si l'utilisateur existe - PostgreSQL
+    // Vérifier si l'utilisateur existe
     const result = await query(
       'SELECT id, prenom, nom, email FROM users WHERE email = $1 AND actif = true',
       [emailTrimmed]
     );
 
     // Pour des raisons de sécurité, on renvoie toujours le même message
-    // même si l'email n'existe pas
     if (result.rows.length === 0) {
       console.log(`⚠️ Tentative de réinitialisation pour email inexistant: ${emailTrimmed}`);
       return Response.json(
@@ -71,14 +70,14 @@ export async function POST(request) {
       [user.id]
     );
 
-    // Insérer le nouveau token - PostgreSQL
+    // Insérer le nouveau token
     await query(
       'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
       [user.id, resetToken, resetTokenExpiry]
     );
 
     // Créer le lien de réinitialisation
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://maison-dactions-solidaires.fr';
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
     // Envoyer l'email de réinitialisation
@@ -88,7 +87,7 @@ export async function POST(request) {
       const mailOptions = {
         from: `"Maison d'Actions Solidaires" <${process.env.SMTP_USER}>`,
         to: user.email,
-        subject: ' Réinitialisation de votre mot de passe - Maison d\'Actions Solidaires',
+        subject: 'Réinitialisation de votre mot de passe - Maison d\'Actions Solidaires',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #8b9467 0%, #a4b070 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">

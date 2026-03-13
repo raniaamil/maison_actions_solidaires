@@ -1,14 +1,13 @@
-// src/app/api/test-db/route.js
 export const runtime = 'nodejs';
-import db from '../../../lib/db';
+import { query } from '../../../lib/db';
 
 export async function GET() {
   try {
-    const [rows] = await db.execute('SELECT 1 AS test, NOW() AS now_time');
+    const result = await query('SELECT 1 AS test, NOW() AS now_time');
     return Response.json({
       success: true,
       message: 'Connexion à la base de données réussie !',
-      data: rows,
+      data: result.rows,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

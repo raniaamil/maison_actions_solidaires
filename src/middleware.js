@@ -146,7 +146,7 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  // Inscription autorisée sans token
+  // Inscription autorisée sans token (POST /api/users sans sous-chemin)
   if (pathname === '/api/users' && method === 'POST') {
     console.log('✅ Inscription utilisateur autorisée sans token');
     return NextResponse.next();
@@ -155,7 +155,8 @@ export function middleware(request) {
   // Routes protégées - vérifier la PRÉSENCE du token
   const protectedWriteRoutes = [
     { pattern: /^\/api\/actualites(?:\/.*)?$/, methods: ['POST', 'PUT', 'DELETE'] },
-    { pattern: /^\/api\/users\/.*$/, methods: ['GET', 'PUT', 'DELETE'] },
+    // ✅ CORRIGÉ : Protéger aussi GET /api/users (liste) ET /api/users/:id
+    { pattern: /^\/api\/users(?:\/.*)?$/, methods: ['GET', 'PUT', 'DELETE'] },
     { pattern: /^\/api\/comments(?:\/.*)?$/, methods: ['POST', 'PUT', 'DELETE'] },
   ];
 

@@ -23,10 +23,11 @@ export default function CommentItem({
   const [editContent, setEditContent] = useState(comment.contenu);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
-  // Vérifier si l'utilisateur courant peut modifier/supprimer ce commentaire
+  // ✅ CORRIGÉ : utiliser currentUser.id (pas .userId)
+  // L'objet user du AuthContext contient { id, prenom, nom, email, role, ... }
   const canModify = currentUser && (
-    currentUser.userId === comment.user_id || 
-    currentUser.isAdmin
+    currentUser.id === comment.user_id || 
+    currentUser.role === 'Administrateur'
   );
 
   const isAuthorAdmin = comment.users?.role === 'Administrateur';

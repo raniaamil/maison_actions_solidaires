@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node tests/run-all-tests.js"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.12",
@@ -29,7 +30,6 @@
     "jodit-react": "^5.2.19",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.540.0",
-    "mysql2": "^3.6.5",
     "next": "15.4.10",
     "nodemailer": "^7.0.5",
     "pg": "^8.16.3",

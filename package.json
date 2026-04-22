@@ -10,6 +10,7 @@
     "test": "node tests/run-all-tests.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.104.0",
     "@tailwindcss/postcss": "^4.1.12",
     "@tiptap/extension-color": "^3.3.0",
     "@tiptap/extension-image": "^3.3.0",

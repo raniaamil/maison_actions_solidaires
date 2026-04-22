@@ -88,24 +88,12 @@ const HomePage: React.FC = () => {
 
         if (response.ok) {
           const data = await response.json();
+          console.log('[Actualités] Réponse API:', data);
 
           if (Array.isArray(data) && data.length > 0) {
-            const validArticles = data.filter((article: Article) => {
-              const hasTitle = !!(article.titre || article.title);
-              const hasDescription = !!article.description;
-              return hasTitle && hasDescription;
-            });
-
-            const sorted = validArticles
-              .sort((a: Article, b: Article) => {
-                const dateA = new Date(a.date_creation || a.date || '1970-01-01').getTime();
-                const dateB = new Date(b.date_creation || b.date || '1970-01-01').getTime();
-                return dateB - dateA;
-              })
-              .slice(0, 3);
-
-            setLatestArticles(sorted);
+            setLatestArticles(data.slice(0, 3));
           } else {
+            console.log('[Actualités] Tableau vide ou non-array:', data);
             setLatestArticles([]);
           }
         } else {

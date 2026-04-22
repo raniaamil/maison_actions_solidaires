@@ -30,7 +30,7 @@ const HomePage: React.FC = () => {
   const [loadingArticles, setLoadingArticles] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Animation au scroll
+  // Animation au scroll — relancée aussi quand les articles sont chargés
   useEffect(() => {
     const observerOptions = {
       threshold: 0.1,
@@ -72,7 +72,7 @@ const HomePage: React.FC = () => {
         anchor.removeEventListener('click', handleSmoothScroll);
       });
     };
-  }, []);
+  }, [latestArticles]);
 
   // Récupérer les actualités
   useEffect(() => {

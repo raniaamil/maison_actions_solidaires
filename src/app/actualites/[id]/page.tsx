@@ -136,14 +136,16 @@ const Page: React.FC = () => {
         {/* Header de l'article */}
         <header className={styles.articleHeader}>
           <div className={styles.imageContainer}>
-            <img 
-              src={article.image || '/images/actualites/default.jpg'} 
-              alt={article.titre || article.title}
-              className={styles.articleImage}
-              onError={(e) => {
-                e.currentTarget.src = '/images/actualites/default.jpg';
-              }}
-            />
+            {article.image && (
+              <img
+                src={article.image}
+                alt={article.titre || article.title}
+                className={styles.articleImage}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            )}
             <span className={`${styles.typeTag} ${getTypeColor(article.type)}`}>
               {article.type}
             </span>

@@ -264,14 +264,18 @@ const HomePage: React.FC = () => {
                   className={`${styles.newsCard} ${styles.animateOnScroll}`}
                 >
                   <div className={styles.newsImage}>
-                    <img
-                      src={article.image || '/images/actualites/default.jpg'}
-                      alt={article.titre || article.title || 'Article'}
-                      className={styles.newsImg}
-                      onError={(e) => {
-                        e.currentTarget.src = '/images/actualites/default.jpg';
-                      }}
-                    />
+                    {article.image ? (
+                      <img
+                        src={article.image}
+                        alt={article.titre || article.title || 'Article'}
+                        className={styles.newsImg}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className={styles.newsImgPlaceholder} />
+                    )}
                     {article.type && (
                       <span className={`${styles.newsCategory} ${getTypeColor(article.type)}`}>
                         {article.type}

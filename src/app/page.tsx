@@ -81,7 +81,7 @@ const HomePage: React.FC = () => {
         setLoadingArticles(true);
         setFetchError(null);
 
-        const response = await fetch('/api/actualites?statut=Publié&limit=3', {
+        const response = await fetch(`/api/actualites?statut=${encodeURIComponent('Publié')}&limit=3`, {
           cache: 'no-store',
           headers: { 'Content-Type': 'application/json' }
         });

@@ -72,7 +72,7 @@ const Page: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetch('/api/actualites?statut=Publié', {
+        const response = await fetch(`/api/actualites?statut=${encodeURIComponent('Publié')}`, {
           cache: 'no-store'
         });
         

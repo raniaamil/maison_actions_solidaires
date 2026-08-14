@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 import path from 'path';
+import { requireEditor } from '../../../../lib/auth';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/ogg'];
@@ -54,6 +55,11 @@ function validateFile(file, fileBuffer) {
 
 export async function POST(request) {
   try {
+    // 🔐 Upload réservé aux rôles éditoriaux : empêche un visiteur anonyme
+    // de déposer des fichiers dans le bucket Supabase de production.
+    const { error: authError } = requireEditor(request);
+    if (authError) return authError;
+
     const contentType = request.headers.get('content-type');
     if (!contentType || !contentType.includes('multipart/form-data')) {
       return NextResponse.json({ error: 'Content-Type doit être multipart/form-data' }, { status: 400 });
@@ -112,6 +118,10 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   try {
+    // 🔐 Suppression de fichier réservée aux rôles éditoriaux
+    const { error: authError } = requireEditor(request);
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const filename = searchParams.get('filename');
 

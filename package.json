@@ -28,7 +28,7 @@
     "bcryptjs": "^2.4.3",
     "dotenv": "^17.2.1",
     "html-react-parser": "^5.2.6",
-    "jodit-react": "^5.2.19",
+    "jodit-react": "^5.4.72",
     "jose": "^6.2.8",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.540.0",

@@ -2,6 +2,7 @@
 export const runtime = 'nodejs';
 import { query } from '../../../lib/db';
 import nodemailer from 'nodemailer';
+import { requireEditor } from '../../../lib/auth';
 
 // Configuration du transporteur email
 const createTransport = () => {
@@ -230,6 +231,11 @@ export async function POST(request) {
 // GET - Récupérer les messages de contact (pour l'admin)
 export async function GET(request) {
   try {
+    // 🔐 Ces messages contiennent des données personnelles de visiteurs (nom, email,
+    // contenu du message) : accès réservé aux rôles Administrateur / Rédacteur (RGPD).
+    const { error } = requireEditor(request);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const statut = searchParams.get('statut');
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);

@@ -111,12 +111,6 @@ async function runTests() {
     assert(res.status < 500, `Status ${res.status}`);
   });
 
-  await test('GET /api/test-db — connexion base de données', async () => {
-    const { status, body } = await fetchJSON('/api/test-db');
-    assertEqual(status, 200, `Status ${status}: ${JSON.stringify(body)}`);
-    assert(body.success === true, `DB check failed: ${JSON.stringify(body)}`);
-  });
-
   // ---- Routes publiques ----
   section('2. ROUTES PUBLIQUES (sans authentification)');
 

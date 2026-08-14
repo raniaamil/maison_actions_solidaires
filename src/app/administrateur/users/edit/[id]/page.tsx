@@ -20,7 +20,7 @@ type UserRecord = {
 export default function EditUserPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const { getToken } = useAuth(); // Ajout de l'authentification
+  useAuth(); // Ajout de l'authentification
   const userId = useMemo(() => Number(params?.id), [params?.id]);
 
   const [loading, setLoading] = useState(true);
@@ -40,14 +40,10 @@ export default function EditUserPage() {
     let mounted = true;
     async function load() {
       try {
-        const token = getToken();
         const headers: any = { 'Content-Type': 'application/json' };
         
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const res = await fetch(`/api/users/${userId}`, { 
+        const res = await fetch(`/api/users/${userId}`, {
+        credentials: 'same-origin', 
           cache: 'no-store',
           headers
         });
@@ -73,7 +69,7 @@ export default function EditUserPage() {
     return () => {
       mounted = false;
     };
-  }, [userId, router, getToken]);
+  }, [userId, router]);
 
   const handleBackToList = () => {
     router.push('/administrateur?tab=utilisateurs');
@@ -92,14 +88,10 @@ export default function EditUserPage() {
     if (!isFormValid) return;
     setSaving(true);
     try {
-      const token = getToken();
       const headers: any = { 'Content-Type': 'application/json' };
       
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       const response = await fetch(`/api/users/${userId}`, {
+        credentials: 'same-origin',
         method: 'PUT',
         headers,
         body: JSON.stringify(formData),

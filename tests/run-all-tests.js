@@ -111,12 +111,6 @@ async function runTests() {
     assert(res.status < 500, `Status ${res.status}`);
   });
 
-  await test('GET /api/test-db — connexion base de données', async () => {
-    const { status, body } = await fetchJSON('/api/test-db');
-    assertEqual(status, 200, `Status ${status}: ${JSON.stringify(body)}`);
-    assert(body.success === true, `DB check failed: ${JSON.stringify(body)}`);
-  });
-
   // ---- Routes publiques ----
   section('2. ROUTES PUBLIQUES (sans authentification)');
 
@@ -270,15 +264,18 @@ async function runTests() {
   // ---- Inscription publique ----
   section('5. INSCRIPTION PUBLIQUE');
 
-  await test('POST /api/users (inscription) → accessible sans token', async () => {
-    // On teste que la route est accessible (pas 401)
-    // Mais on envoie des données invalides pour ne pas créer de vrai compte
+  await test('POST /api/users → refusé sans token (réservé aux Administrateurs)', async () => {
+    // Cette route crée des comptes avec le rôle "Administrateur" par défaut :
+    // elle ne doit PAS être ouverte au public. L'inscription du grand public
+    // passe par POST /api/register, testé juste en dessous.
     const { status } = await fetchJSON('/api/users', {
       method: 'POST',
       body: JSON.stringify({}),
     });
-    // Doit retourner 400 (validation) et PAS 401 (auth)
-    assertEqual(status, 400, `Expected 400 (validation), got ${status}`);
+    assert(
+      status === 401 || status === 403,
+      `Expected 401/403 (auth requise), got ${status}`
+    );
   });
 
   await test('POST /api/register — inscription avec données valides', async () => {

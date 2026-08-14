@@ -34,7 +34,7 @@ function AdminLoading() {
 function AdminContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, logout, isAdmin, getToken, updateUser, isAuthenticated } = useAuth();
+  const { user, logout, isAdmin, updateUser, isAuthenticated } = useAuth();
 
   const [activeTab, setActiveTab] = useState<Tab>('informations');
   const [articles, setArticles] = useState<any[]>([]);
@@ -147,18 +147,17 @@ function AdminContent() {
     try {
       if (uploadedPhotoFilename) {
         try {
-          await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedPhotoFilename)}`, { method: 'DELETE' });
+          await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedPhotoFilename)}`, {
+        credentials: 'same-origin', method: 'DELETE' });
         } catch { /* ignore */ }
       }
 
       const form = new FormData();
       form.append('image', file, file.name);
 
-      const token = getToken?.();
       const headers: Record<string, string> = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch('/api/upload/image', { method: 'POST', body: form, headers });
+      const res = await fetch('/api/upload/image', {
+        credentials: 'same-origin', method: 'POST', body: form, headers });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || `Upload échoué (${res.status})`);
 
@@ -178,7 +177,8 @@ function AdminContent() {
   const handleRemovePhoto = async () => {
     if (uploadedPhotoFilename) {
       try {
-        await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedPhotoFilename)}`, { method: 'DELETE' });
+        await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedPhotoFilename)}`, {
+        credentials: 'same-origin', method: 'DELETE' });
       } catch { /* ignore */ }
     }
     setProfileData(prev => ({ ...prev, photo: '' }));
@@ -256,16 +256,12 @@ function AdminContent() {
     setProfileLoading(true);
 
     try {
-      const token = getToken();
       const headers: any = {
         'Content-Type': 'application/json',
       };
 
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       const response = await fetch(`/api/users/${user.id}`, {
+        credentials: 'same-origin',
         method: 'PUT',
         headers,
         body: JSON.stringify({
@@ -315,16 +311,12 @@ function AdminContent() {
     setPasswordLoading(true);
 
     try {
-      const token = getToken();
       const headers: any = {
         'Content-Type': 'application/json',
       };
 
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       const response = await fetch(`/api/users/${user.id}`, {
+        credentials: 'same-origin',
         method: 'PUT',
         headers,
         body: JSON.stringify({
@@ -391,14 +383,10 @@ function AdminContent() {
     try {
       setLoading(true);
       
-      const token = getToken();
       const headers: any = { 'Content-Type': 'application/json' };
       
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await fetch('/api/actualites', { 
+      const response = await fetch('/api/actualites', {
+        credentials: 'same-origin', 
         headers,
         cache: 'no-store'
       });
@@ -423,14 +411,10 @@ function AdminContent() {
     try {
       setLoading(true);
       
-      const token = getToken();
       const headers: any = { 'Content-Type': 'application/json' };
       
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await fetch('/api/users', { 
+      const response = await fetch('/api/users', {
+        credentials: 'same-origin', 
         headers,
         cache: 'no-store'
       });
@@ -475,19 +459,15 @@ function AdminContent() {
     if (!itemToDelete || !deleteType) return;
 
     try {
-      const token = getToken();
       const headers: any = {};
       
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       const endpoint = deleteType === 'article' 
         ? `/api/actualites/${itemToDelete.id}`
         : `/api/users/${itemToDelete.id}`;
         
       const response = await fetch(endpoint, {
         method: 'DELETE',
+        credentials: 'same-origin',
         headers
       });
       

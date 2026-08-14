@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 const AuthContext = createContext();
@@ -18,165 +18,104 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    initializeAuth();
-  }, []);
-
-  const initializeAuth = () => {
+  // 🔐 La session vit dans un cookie HttpOnly : le JavaScript ne peut ni le lire ni
+  // l'écrire. L'identité de l'utilisateur est donc demandée au serveur au montage,
+  // et non plus relue depuis localStorage (qui était exfiltrable par XSS et, en prime,
+  // modifiable par l'utilisateur pour se donner un faux rôle côté affichage).
+  const refreshSession = useCallback(async () => {
     try {
-      if (typeof window === 'undefined') {
-        setLoading(false);
-        return;
-      }
+      const res = await fetch('/api/auth/me', {
+        credentials: 'same-origin',
+        cache: 'no-store',
+      });
+      const data = await res.json();
 
-      // Vérifier d'abord localStorage (se souvenir de moi activé)
-      let storedUser = localStorage.getItem('user');
-      let storedToken = localStorage.getItem('token');
-      let storageType = 'localStorage';
-
-      // Si pas trouvé dans localStorage, vérifier sessionStorage
-      if (!storedUser || !storedToken) {
-        storedUser = sessionStorage.getItem('user');
-        storedToken = sessionStorage.getItem('token');
-        storageType = 'sessionStorage';
+      if (res.ok && data.authenticated && data.user) {
+        setUser(data.user);
+        return data.user;
       }
-
-      if (storedUser && storedToken) {
-        const userData = JSON.parse(storedUser);
-        userData.token = storedToken;
-        userData.storageType = storageType;
-        setUser(userData);
-        console.log(`✅ Utilisateur restauré depuis ${storageType}:`, userData.email, '| Rôle:', userData.role);
-      }
+      setUser(null);
+      return null;
     } catch (error) {
-      console.error('❌ Erreur lors de l\'initialisation de l\'auth:', error);
-      clearAuthData();
+      console.error('❌ Erreur lors de la récupération de la session:', error);
+      setUser(null);
+      return null;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const clearAuthData = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('token');
-    }
-    setUser(null);
-  };
+  useEffect(() => {
+    refreshSession();
+  }, [refreshSession]);
 
   const login = async (email, password, rememberMe = false) => {
     try {
-      console.log('🔐 Tentative de connexion pour:', email, '| Se souvenir:', rememberMe);
-      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ email: email.trim(), password }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        const userWithToken = { ...data.user, token: data.token };
-        
-        setUser(userWithToken);
-        
-        if (typeof window !== 'undefined') {
-          if (rememberMe) {
-            localStorage.setItem('user', JSON.stringify(userWithToken));
-            localStorage.setItem('token', data.token);
-            console.log('💾 Données stockées dans localStorage (persistant)');
-          } else {
-            sessionStorage.setItem('user', JSON.stringify(userWithToken));
-            sessionStorage.setItem('token', data.token);
-            console.log('💾 Données stockées dans sessionStorage (temporaire)');
-          }
-        }
-        
-        console.log('✅ Connexion réussie:', userWithToken.email, '| Rôle:', userWithToken.role);
+        // Le token n'est plus renvoyé au client : il est posé par le serveur dans
+        // un cookie HttpOnly. On ne conserve ici que le profil affichable.
+        setUser(data.user);
+        setLoading(false);
+        console.log('✅ Connexion réussie:', data.user.email, '| Rôle:', data.user.role);
         router.push('/administrateur');
         return { success: true };
-      } else {
-        console.error('❌ Erreur de connexion:', data.error);
-        return { success: false, error: data.error || 'Identifiants incorrects' };
       }
+
+      console.error('❌ Erreur de connexion:', data.error);
+      return { success: false, error: data.error || 'Identifiants incorrects' };
     } catch (error) {
       console.error('❌ Erreur réseau lors de la connexion:', error);
       return { success: false, error: 'Erreur de connexion au serveur' };
     }
   };
 
-  // Mise à jour des données utilisateur
+  // Mise à jour locale du profil affiché (après édition de son propre compte).
+  // Ne touche pas à la session : celle-ci reste portée par le cookie.
   const updateUser = (updatedData) => {
     if (!user) return;
+    setUser((prev) => ({ ...prev, ...updatedData }));
+  };
 
+  // 🔐 Le cookie étant HttpOnly, seul le serveur peut l'expirer.
+  const logout = async () => {
     try {
-      const updatedUser = { ...user, ...updatedData };
-      setUser(updatedUser);
-      
-      if (typeof window !== 'undefined') {
-        // Déterminer quel type de stockage utiliser
-        const useLocalStorage = localStorage.getItem('user') !== null;
-        const storage = useLocalStorage ? localStorage : sessionStorage;
-        
-        // Mettre à jour les données stockées
-        storage.setItem('user', JSON.stringify(updatedUser));
-        
-        console.log('✅ Données utilisateur mises à jour dans le contexte');
-      }
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
     } catch (error) {
-      console.error('❌ Erreur lors de la mise à jour des données utilisateur:', error);
+      console.error('❌ Erreur lors de la déconnexion:', error);
+    } finally {
+      setUser(null);
+      router.push('/se-connecter');
     }
   };
 
-  const logout = () => {
-    console.log('🚪 Déconnexion utilisateur');
-    clearAuthData();
-    router.push('/se-connecter');
-  };
+  const isAuthenticated = () => !!user;
 
-  const isAuthenticated = () => {
-    return !!user && !!user.token;
-  };
+  const isAdmin = () => isAuthenticated() && user.role === 'Administrateur';
 
-  // ✅ CORRIGÉ : Vérifier le rôle réel de l'utilisateur
-  const isAdmin = () => {
-    if (!isAuthenticated()) return false;
-    return user.role === 'Administrateur';
-  };
-
-  // ✅ CORRIGÉ : Vérifier le rôle spécifique
-  const hasRole = (role) => {
-    if (!isAuthenticated()) return false;
-    return user.role === role;
-  };
-
-  const getToken = () => {
-    if (user?.token) {
-      return user.token;
-    }
-    
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('token') || sessionStorage.getItem('token');
-    }
-    
-    return null;
-  };
+  const hasRole = (role) => isAuthenticated() && user.role === role;
 
   const value = {
     user,
     loading,
     login,
     logout,
-    updateUser, 
+    updateUser,
+    refreshSession,
     isAuthenticated,
     hasRole,
     isAdmin,
-    getToken
   };
 
   return (

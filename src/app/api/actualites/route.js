@@ -1,6 +1,7 @@
 // src/app/api/actualites/route.js - VERSION POSTGRESQL
 export const runtime = 'nodejs';
 import { query } from '../../../lib/db';
+import { requireEditor, ROLES } from '../../../lib/auth';
 
 // GET - Récupérer toutes les actualités
 export async function GET(request) {
@@ -103,7 +104,7 @@ export async function GET(request) {
         type: row.type,
         statut: row.statut,
         status: row.statut,
-        image: row.image || '/images/actualites/default.jpg',
+        image: row.image || null,
         date_creation: row.date_creation,
         date: row.date_creation ? new Date(row.date_creation).toLocaleDateString('fr-FR') : '',
         date_publication: row.date_publication,
@@ -153,8 +154,12 @@ export async function GET(request) {
 // POST - Créer une nouvelle actualité
 export async function POST(request) {
   try {
+    // 🔐 Réservé aux rôles éditoriaux (Administrateur / Rédacteur)
+    const { user, error } = requireEditor(request);
+    if (error) return error;
+
     const body = await request.json();
-    
+
     const {
       titre,
       description,
@@ -170,10 +175,10 @@ export async function POST(request) {
       inscription_requise = false
     } = body;
 
-    // Validation des champs requis
-    if (!titre || !description || !contenu || !type || !auteur_id) {
+    // Validation des champs requis (auteur_id est déduit du token, pas exigé du client)
+    if (!titre || !description || !contenu || !type) {
       return Response.json(
-        { error: 'Les champs titre, description, contenu, type et auteur_id sont requis' },
+        { error: 'Les champs titre, description, contenu et type sont requis' },
         { status: 400 }
       );
     }
@@ -187,8 +192,21 @@ export async function POST(request) {
       );
     }
 
-    const auteurIdNum = parseInt(auteur_id, 10);
-    if (isNaN(auteurIdNum) || auteurIdNum <= 0) {
+    // 🔐 L'auteur provient du token vérifié, jamais du body : empêche de publier
+    // sous l'identité d'un tiers. Seul un Administrateur peut désigner un autre auteur.
+    let auteurIdNum = user.userId;
+    if (auteur_id !== undefined && user.role === ROLES.ADMIN) {
+      const demande = parseInt(auteur_id, 10);
+      if (isNaN(demande) || demande <= 0) {
+        return Response.json(
+          { error: 'ID auteur invalide' },
+          { status: 400 }
+        );
+      }
+      auteurIdNum = demande;
+    }
+
+    if (!auteurIdNum || isNaN(auteurIdNum) || auteurIdNum <= 0) {
       return Response.json(
         { error: 'ID auteur invalide' },
         { status: 400 }
@@ -302,7 +320,7 @@ export async function POST(request) {
       contenu: newActualite.contenu,
       type: newActualite.type,
       statut: newActualite.statut,
-      image: newActualite.image || '/images/actualites/default.jpg',
+      image: newActualite.image || null,
       date_creation: newActualite.date_creation,
       date_publication: newActualite.date_publication,
       date_modification: newActualite.date_modification,

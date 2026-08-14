@@ -1,6 +1,7 @@
 // src/app/api/actualites/[id]/route.js - VERSION POSTGRESQL CORRIGÉE
 export const runtime = 'nodejs';
 import { query } from '../../../../lib/db';
+import { requireEditor } from '../../../../lib/auth';
 
 // ✅ Helper : parse tags JSONB proprement
 function parseTags(raw) {
@@ -95,6 +96,11 @@ export async function GET(request, { params }) {
 
 // PUT - Mettre à jour une actualité
 export async function PUT(request, { params }) {
+  // 🔐 Réservé aux rôles éditoriaux (Administrateur / Rédacteur)
+  {
+    const { error } = requireEditor(request);
+    if (error) return error;
+  }
   try {
     const resolvedParams = await params;
     const id = parseInt(resolvedParams.id);
@@ -285,6 +291,11 @@ export async function PUT(request, { params }) {
 
 // DELETE - Supprimer une actualité
 export async function DELETE(request, { params }) {
+  // 🔐 Réservé aux rôles éditoriaux (Administrateur / Rédacteur)
+  {
+    const { error } = requireEditor(request);
+    if (error) return error;
+  }
   try {
     const resolvedParams = await params;
     const id = parseInt(resolvedParams.id);

@@ -1,8 +1,10 @@
 // src/app/api/auth/login/route.js
 export const runtime = 'nodejs';
+import { NextResponse } from 'next/server';
 import { query } from '../../../../lib/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { AUTH_COOKIE, authCookieOptions } from '../../../../lib/auth';
 
 export async function POST(request) {
   try {
@@ -153,11 +155,15 @@ export async function POST(request) {
     // Log de connexion réussie (sans données sensibles)
     console.log(`✅ Connexion réussie pour l'utilisateur: ${user.email} (${user.role})`);
 
-    return Response.json({
+    // 🔐 Le token est posé dans un cookie HttpOnly et n'est PLUS renvoyé dans le
+    // corps de la réponse : le JavaScript de la page n'y a jamais accès, donc une
+    // faille XSS ne peut pas l'exfiltrer (contrairement à localStorage).
+    const response = NextResponse.json({
       success: true,
       user: userData,
-      token: token
     });
+    response.cookies.set(AUTH_COOKIE, token, authCookieOptions());
+    return response;
 
   } catch (error) {
     console.error('❌ Erreur générale lors de la connexion:', error);

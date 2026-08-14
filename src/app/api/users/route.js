@@ -2,27 +2,16 @@
 export const runtime = 'nodejs';
 import { query } from '../../../lib/db';
 import bcrypt from 'bcryptjs';
-import nodemailer from 'nodemailer';
-
-// Configuration du transporteur email
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_PORT === '465',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false
-    }
-  });
-};
+import { requireAdmin } from '../../../lib/auth';
+import { createMailTransport, MAIL_FROM } from '../../../lib/mailer';
 
 // GET - Récupérer tous les utilisateurs
 export async function GET(request) {
   try {
+    // 🔐 La liste des utilisateurs (emails inclus) est réservée aux Administrateurs
+    const { error } = requireAdmin(request);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -66,6 +55,11 @@ export async function GET(request) {
 // POST - Créer un nouvel utilisateur avec envoi d'email
 export async function POST(request) {
   try {
+    // 🔐 Création de comptes (potentiellement Administrateur) réservée aux Administrateurs.
+    // L'inscription publique du grand public passe par /api/register (rôle forcé "Utilisateur").
+    const { error } = requireAdmin(request);
+    if (error) return error;
+
     console.log('🔄 Début de la création d\'utilisateur...');
     const body = await request.json();
     console.log('📝 Données reçues:', { ...body, password: '[MASQUÉ]' });
@@ -189,12 +183,12 @@ export async function POST(request) {
     let emailSent = false;
     try {
       console.log('📧 Envoi de l\'email de bienvenue...');
-      const transporter = createTransporter();
+      const transporter = createMailTransport();
       
       const siteUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://maison-dactions-solidaires.fr';
 
       const mailOptions = {
-        from: `"Maison d'Actions Solidaires" <${process.env.SMTP_USER}>`,
+        from: MAIL_FROM,
         to: userCreated.email,
         subject: 'Vos identifiants de connexion',
         html: `

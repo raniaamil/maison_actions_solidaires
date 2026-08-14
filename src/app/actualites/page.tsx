@@ -168,7 +168,7 @@ const Page: React.FC = () => {
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    e.currentTarget.src = '/images/actualites/default.jpg';
+    e.currentTarget.style.display = 'none';
   };
 
   const resetFilters = () => {
@@ -319,12 +319,14 @@ const Page: React.FC = () => {
                 <article key={article.id} className={styles.articleCard}>
                   <Link href={`/actualites/${article.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                     <div className={styles.imageContainer}>
-                      <img 
-                        src={article.image || '/images/actualites/default.jpg'} 
-                        alt={article.titre || article.title}
-                        className={styles.articleImage}
-                        onError={handleImageError}
-                      />
+                      {article.image && (
+                        <img
+                          src={article.image}
+                          alt={article.titre || article.title}
+                          className={styles.articleImage}
+                          onError={handleImageError}
+                        />
+                      )}
                       <span className={`${styles.typeTag} ${getTypeColor(article.type)}`}>
                         {article.type}
                       </span>

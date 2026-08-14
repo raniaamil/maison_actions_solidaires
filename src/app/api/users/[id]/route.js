@@ -2,10 +2,15 @@
 export const runtime = 'nodejs';
 import { query } from '../../../../lib/db';
 import bcrypt from 'bcryptjs';
+import { requireAdmin, ROLES } from '../../../../lib/auth';
 
 // GET - Récupérer un utilisateur par ID
 export async function GET(request, { params }) {
   try {
+    // 🔐 Consultation d'une fiche utilisateur réservée aux Administrateurs
+    const { error } = requireAdmin(request);
+    if (error) return error;
+
     const { id } = await params;
     const userId = parseInt(id);
 
@@ -62,6 +67,10 @@ export async function GET(request, { params }) {
 // PUT - Mettre à jour un utilisateur
 export async function PUT(request, { params }) {
   try {
+    // 🔐 Modification d'un compte réservée aux Administrateurs
+    const { user: currentUser, error } = requireAdmin(request);
+    if (error) return error;
+
     const { id } = await params;
     const userId = parseInt(id);
     const body = await request.json();
@@ -99,15 +108,35 @@ export async function PUT(request, { params }) {
 
     const existingUser = existingResult.rows[0];
 
+    // 🔐 Élévation de privilèges : seul un Administrateur authentifié peut changer un rôle,
+    // que ce soit le sien ou celui d'un tiers. La route entière est déjà réservée aux
+    // Administrateurs (requireAdmin ci-dessus) ; ce contrôle explicite documente la règle
+    // et protège si les conditions d'accès à la route venaient à être assouplies.
+    if (role !== undefined && currentUser.role !== ROLES.ADMIN) {
+      return Response.json(
+        { error: 'Seul un Administrateur peut modifier un rôle' },
+        { status: 403 }
+      );
+    }
+
     // Validation du rôle si fourni — inclut 'Utilisateur' pour les inscriptions publiques
     if (role) {
-      const rolesAutorises = ['Administrateur', 'Rédacteur', 'Utilisateur'];
+      const rolesAutorises = [ROLES.ADMIN, ROLES.REDACTEUR, ROLES.UTILISATEUR];
       if (!rolesAutorises.includes(role)) {
         return Response.json(
           { error: 'Rôle non valide' },
           { status: 400 }
         );
       }
+    }
+
+    // 🔐 Empêcher un Administrateur de se retirer à lui-même son propre rôle admin :
+    // évite de se verrouiller hors du back-office (et le cas du dernier admin).
+    if (role && role !== ROLES.ADMIN && userId === currentUser.userId) {
+      return Response.json(
+        { error: 'Vous ne pouvez pas retirer votre propre rôle Administrateur' },
+        { status: 400 }
+      );
     }
 
     // Validation de l'email si fourni
@@ -267,6 +296,10 @@ export async function PUT(request, { params }) {
 // DELETE - Supprimer un utilisateur
 export async function DELETE(request, { params }) {
   try {
+    // 🔐 Suppression d'un compte réservée aux Administrateurs
+    const { error } = requireAdmin(request);
+    if (error) return error;
+
     const { id } = await params;
     const userId = parseInt(id);
 

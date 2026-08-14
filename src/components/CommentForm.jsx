@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function CommentForm({ articleId, onCommentAdded, editMode = false, initialValue = '', commentId = null, onCancel = null }) {
-  const { getToken } = useAuth();
+  const { user } = useAuth();
   const [contenu, setContenu] = useState(initialValue);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -27,13 +27,10 @@ export default function CommentForm({ articleId, onCommentAdded, editMode = fals
     setError(null);
 
     try {
-      const token = getToken();
-      
-      if (!token) {
+      if (!user) {
         setError('Vous devez être connecté pour commenter');
         return;
       }
-
       const url = editMode 
         ? `/api/comments/${commentId}` 
         : '/api/comments';
@@ -42,9 +39,9 @@ export default function CommentForm({ articleId, onCommentAdded, editMode = fals
 
       const response = await fetch(url, {
         method,
+        credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           article_id: articleId,

@@ -2,24 +2,7 @@
 export const runtime = 'nodejs';
 import { query } from '../../../../lib/db';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
-
-// Configuration du transporteur email
-const createTransport = () => {
-  const port = parseInt(process.env.SMTP_PORT || '587');
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port,
-    secure: port === 465, // true uniquement pour le port 465
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false
-    }
-  });
-};
+import { createMailTransport, MAIL_FROM } from '../../../../lib/mailer';
 
 export async function POST(request) {
   try {
@@ -82,10 +65,10 @@ export async function POST(request) {
 
     // Envoyer l'email de réinitialisation
     try {
-      const transport = createTransport();
+      const transport = createMailTransport();
       
       const mailOptions = {
-        from: `"Maison d'Actions Solidaires" <${process.env.SMTP_USER}>`,
+        from: MAIL_FROM,
         to: user.email,
         subject: 'Réinitialisation de votre mot de passe - Maison d\'Actions Solidaires',
         html: `

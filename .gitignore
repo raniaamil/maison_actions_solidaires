@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...sauf le modele sans secret, qui documente les variables attendues
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +41,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# fichiers televerses depuis le back-office (contenu, pas du code).
+# Les nouveaux uploads vont vers Supabase Storage ; ce dossier ne conserve que
+# quelques fichiers historiques encore references par la base.
+/public/uploads/**
+!/public/uploads/images/1760057723860-20f15123-710f-41cb-8263-4be1da4c12e1.png
+!/public/uploads/images/1760121454848-d464aa04-5693-486f-9353-37448401280d.png
+
+# scripts et donnees temporaires d'audit / de test
+.tmp-*

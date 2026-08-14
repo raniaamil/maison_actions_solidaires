@@ -30,7 +30,7 @@ const HomePage: React.FC = () => {
   const [loadingArticles, setLoadingArticles] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Animation au scroll
+  // Animation au scroll — relancée aussi quand les articles sont chargés
   useEffect(() => {
     const observerOptions = {
       threshold: 0.1,
@@ -72,7 +72,7 @@ const HomePage: React.FC = () => {
         anchor.removeEventListener('click', handleSmoothScroll);
       });
     };
-  }, []);
+  }, [latestArticles]);
 
   // Récupérer les actualités
   useEffect(() => {
@@ -90,21 +90,7 @@ const HomePage: React.FC = () => {
           const data = await response.json();
 
           if (Array.isArray(data) && data.length > 0) {
-            const validArticles = data.filter((article: Article) => {
-              const hasTitle = !!(article.titre || article.title);
-              const hasDescription = !!article.description;
-              return hasTitle && hasDescription;
-            });
-
-            const sorted = validArticles
-              .sort((a: Article, b: Article) => {
-                const dateA = new Date(a.date_creation || a.date || '1970-01-01').getTime();
-                const dateB = new Date(b.date_creation || b.date || '1970-01-01').getTime();
-                return dateB - dateA;
-              })
-              .slice(0, 3);
-
-            setLatestArticles(sorted);
+            setLatestArticles(data.slice(0, 3));
           } else {
             setLatestArticles([]);
           }
@@ -264,14 +250,18 @@ const HomePage: React.FC = () => {
                   className={`${styles.newsCard} ${styles.animateOnScroll}`}
                 >
                   <div className={styles.newsImage}>
-                    <img
-                      src={article.image || '/images/actualites/default.jpg'}
-                      alt={article.titre || article.title || 'Article'}
-                      className={styles.newsImg}
-                      onError={(e) => {
-                        e.currentTarget.src = '/images/actualites/default.jpg';
-                      }}
-                    />
+                    {article.image ? (
+                      <img
+                        src={article.image}
+                        alt={article.titre || article.title || 'Article'}
+                        className={styles.newsImg}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className={styles.newsImgPlaceholder} />
+                    )}
                     {article.type && (
                       <span className={`${styles.newsCategory} ${getTypeColor(article.type)}`}>
                         {article.type}

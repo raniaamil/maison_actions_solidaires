@@ -1,6 +1,8 @@
-// src/middleware.js — Auth simplifiée + CSRF (Origin/Referer) + Rate limiting login
+// src/middleware.js — Auth (vérification de signature JWT) + CSRF (Origin/Referer) + Rate limiting login
 // Compatible Edge Runtime (Vercel) : pas de Buffer, pas de setInterval, pas de Node.js APIs
+// `jose` est utilisé car `jsonwebtoken` dépend du module crypto de Node, indisponible en Edge.
 import { NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
 
 const isStateChangingMethod = (m) =>
   m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE';
@@ -74,7 +76,14 @@ function getAllowedOrigins(request) {
 const CSRF_EXCLUDE_PATHS = [];
 const ALLOW_NO_ORIGIN = process.env.CSRF_ALLOW_NO_ORIGIN === 'true';
 
-export function middleware(request) {
+// Clé de signature encodée une seule fois (Edge : TextEncoder est disponible nativement)
+const getJwtKey = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return null;
+  return new TextEncoder().encode(secret);
+};
+
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
   const method = request.method;
 
@@ -116,20 +125,21 @@ export function middleware(request) {
     }
   }
 
-  // --- 3) Vérification basique de la présence du token ---
-  
-  // Routes publiques (pas d'auth requise)
+  // --- 3) Vérification de la signature du token ---
+
+  // Routes publiques (pas d'auth requise), par méthode.
+  // ⚠️ /api/contact est public en POST (formulaire de contact du site) mais PAS en GET :
+  // la lecture expose les données personnelles des visiteurs (cf. protectedWriteRoutes).
   const publicRoutes = [
-    '/api/test-db',
-    '/api/auth/login',
-    '/api/auth/forgot-password',
-    '/api/auth/verify-reset-token',
-    '/api/auth/reset-password',
-    '/api/register',
-    '/api/contact',
+    { pattern: '/api/auth/login', methods: ['POST'] },
+    { pattern: '/api/auth/forgot-password', methods: ['POST'] },
+    { pattern: '/api/auth/verify-reset-token', methods: ['POST'] },
+    { pattern: '/api/auth/reset-password', methods: ['POST'] },
+    { pattern: '/api/register', methods: ['GET', 'POST'] },
+    { pattern: '/api/contact', methods: ['POST'] },
   ];
 
-  if (publicRoutes.includes(pathname)) {
+  if (publicRoutes.some((r) => r.pattern === pathname && r.methods.includes(method))) {
     console.log('✅ Route publique autorisée');
     return NextResponse.next();
   }
@@ -146,18 +156,21 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  // Inscription autorisée sans token (POST /api/users sans sous-chemin)
-  if (pathname === '/api/users' && method === 'POST') {
-    console.log('✅ Inscription utilisateur autorisée sans token');
-    return NextResponse.next();
-  }
+  // ⚠️ POST /api/users n'est PLUS public : cette route crée des comptes avec le rôle
+  // "Administrateur" par défaut. L'inscription du grand public passe par /api/register,
+  // qui force le rôle "Utilisateur".
 
-  // Routes protégées - vérifier la PRÉSENCE du token
+  // Routes protégées — le middleware vérifie la signature du token ;
+  // le contrôle de RÔLE est fait dans chaque route handler (runtime Node, cf. src/lib/auth.js)
   const protectedWriteRoutes = [
     { pattern: /^\/api\/actualites(?:\/.*)?$/, methods: ['POST', 'PUT', 'DELETE'] },
-    // ✅ CORRIGÉ : Protéger aussi GET /api/users (liste) ET /api/users/:id
-    { pattern: /^\/api\/users(?:\/.*)?$/, methods: ['GET', 'PUT', 'DELETE'] },
+    // ✅ Protéger aussi GET /api/users (liste) ET /api/users/:id
+    { pattern: /^\/api\/users(?:\/.*)?$/, methods: ['GET', 'POST', 'PUT', 'DELETE'] },
     { pattern: /^\/api\/comments(?:\/.*)?$/, methods: ['POST', 'PUT', 'DELETE'] },
+    // ✅ GET /api/contact expose les données personnelles des visiteurs (RGPD)
+    { pattern: /^\/api\/contact$/, methods: ['GET'] },
+    // ✅ Upload réservé aux utilisateurs authentifiés
+    { pattern: /^\/api\/upload(?:\/.*)?$/, methods: ['POST', 'DELETE'] },
   ];
 
   const needsAuth = protectedWriteRoutes.some(
@@ -169,39 +182,33 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  console.log('🔐 Route protégée, vérification de la présence du token...');
+  console.log('🔐 Route protégée, vérification de la signature du token...');
 
   const authHeader = request.headers.get('authorization') || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
 
   if (!token) {
     console.log('❌ Token manquant');
     return NextResponse.json({ error: "Token d'authentification requis" }, { status: 401 });
   }
 
-  // Vérification basique du format JWT
-  const parts = token.split('.');
-  if (parts.length !== 3) {
-    console.log('❌ Format de token invalide');
-    return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+  const key = getJwtKey();
+  if (!key) {
+    console.error('❌ JWT_SECRET non défini — refus par défaut');
+    return NextResponse.json({ error: 'Configuration serveur manquante' }, { status: 500 });
   }
 
-  // Vérification d'expiration avec atob() (disponible en Edge Runtime, pas Buffer)
+  // Vérification cryptographique réelle : signature + expiration (exp) + algorithme imposé.
+  // `algorithms` explicite empêche une attaque par confusion d'algorithme (ex. alg:none).
   try {
-    const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const payloadJson = atob(payloadBase64);
-    const payload = JSON.parse(payloadJson);
-
-    if (payload.exp && payload.exp < Date.now() / 1000) {
-      console.log('❌ Token expiré');
-      return NextResponse.json({ error: 'Token expiré' }, { status: 401 });
-    }
-  } catch (e) {
-    console.error('❌ Erreur décodage token:', e.message || e);
-    return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    await jwtVerify(token, key, { algorithms: ['HS256'] });
+  } catch {
+    // Pas de log du détail : évite de fuiter de la matière exploitable
+    console.log('❌ Token invalide ou expiré');
+    return NextResponse.json({ error: 'Token invalide ou expiré' }, { status: 401 });
   }
 
-  console.log('✅ Token présent et non expiré, redirection vers la route API');
+  console.log('✅ Token vérifié, transmission à la route API');
   return NextResponse.next();
 }
 

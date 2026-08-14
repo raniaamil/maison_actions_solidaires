@@ -11,8 +11,46 @@ export const ROLES = {
   UTILISATEUR: 'Utilisateur',
 };
 
+/** Nom du cookie de session. Partagé avec le middleware (Edge). */
+export const AUTH_COOKIE = 'mas_session';
+
+/** Durée de vie du cookie, alignée sur l'expiration du JWT (7 jours). */
+export const AUTH_MAX_AGE = 7 * 24 * 60 * 60;
+
 /**
- * Extrait et vérifie le JWT porté par l'en-tête Authorization.
+ * Options du cookie de session.
+ * - httpOnly : inaccessible au JavaScript, donc non exfiltrable par XSS.
+ * - sameSite 'strict' : le cookie n'est jamais envoyé en navigation cross-site.
+ *   Le site n'a aucun flux de retour externe (pas d'OAuth, paiement PayPal ouvert
+ *   dans un onglet séparé), donc 'strict' ne casse aucun parcours ; il ajoute une
+ *   défense CSRF en profondeur, en plus du contrôle Origin/Referer du middleware.
+ * - secure : uniquement en production, sinon le cookie ne serait pas posé en HTTP local.
+ */
+export function authCookieOptions(maxAge = AUTH_MAX_AGE) {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    maxAge,
+  };
+}
+
+/**
+ * Extrait le JWT de la requête : cookie de session en priorité.
+ * Le header Authorization reste accepté pour les clients non navigateur
+ * (tests d'intégration, outillage), mais l'application n'en dépend plus.
+ */
+export function getTokenFromRequest(request) {
+  const fromCookie = request.cookies?.get?.(AUTH_COOKIE)?.value;
+  if (fromCookie) return fromCookie.trim();
+
+  const authHeader = request.headers.get('authorization') || '';
+  return authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+}
+
+/**
+ * Extrait et vérifie le JWT de la requête (cookie de session, ou header Authorization).
  * Vérifie la signature ET l'expiration (jwt.verify échoue sur un token expiré).
  *
  * @returns {object|null} le payload vérifié, ou null si absent/invalide/expiré.
@@ -24,8 +62,7 @@ export function getVerifiedUser(request) {
     return null;
   }
 
-  const authHeader = request.headers.get('authorization') || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+  const token = getTokenFromRequest(request);
   if (!token) return null;
 
   try {

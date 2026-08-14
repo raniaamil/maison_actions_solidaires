@@ -4,6 +4,11 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
+// ⚠️ Doit rester synchronisé avec AUTH_COOKIE dans src/lib/auth.js.
+// Ce fichier tourne en Edge Runtime : il ne peut pas importer lib/auth.js,
+// qui dépend de `jsonwebtoken` (module crypto de Node).
+const AUTH_COOKIE = 'mas_session';
+
 const isStateChangingMethod = (m) =>
   m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE';
 
@@ -132,6 +137,12 @@ export async function middleware(request) {
   // la lecture expose les données personnelles des visiteurs (cf. protectedWriteRoutes).
   const publicRoutes = [
     { pattern: '/api/auth/login', methods: ['POST'] },
+    // Le logout se contente d'expirer le cookie : pas besoin d'un token valide
+    // (permet de se déconnecter proprement même avec une session déjà expirée).
+    { pattern: '/api/auth/logout', methods: ['POST'] },
+    // /api/auth/me répond {authenticated:false} plutôt qu'une erreur quand la session
+    // est absente : c'est le handler qui décide, pas le middleware.
+    { pattern: '/api/auth/me', methods: ['GET'] },
     { pattern: '/api/auth/forgot-password', methods: ['POST'] },
     { pattern: '/api/auth/verify-reset-token', methods: ['POST'] },
     { pattern: '/api/auth/reset-password', methods: ['POST'] },
@@ -184,8 +195,16 @@ export async function middleware(request) {
 
   console.log('🔐 Route protégée, vérification de la signature du token...');
 
+  // 🔐 Le token vient du cookie de session HttpOnly. Le header Authorization reste
+  // accepté en repli pour les clients non navigateur (tests, outillage) ; le front
+  // de l'application ne l'utilise plus.
+  const cookieToken = request.cookies.get(AUTH_COOKIE)?.value;
   const authHeader = request.headers.get('authorization') || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+  const token = cookieToken
+    ? cookieToken.trim()
+    : authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7).trim()
+      : null;
 
   if (!token) {
     console.log('❌ Token manquant');

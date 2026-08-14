@@ -24,7 +24,7 @@ type Errors = {
 
 const NouvelleActualite: React.FC = () => {
   const router = useRouter();
-  const { user, getToken } = useAuth();
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     titre: '',
@@ -139,11 +139,8 @@ Conseil: compressez l’image (JPEG/WebP) ou réduisez sa résolution, puis rée
 
           form.append(fieldName, file, file.name);
 
-          const token = getToken?.();
           const headers: Record<string, string> = {};
-          if (token) headers['Authorization'] = `Bearer ${token}`;
-
-          const res = await fetch(endpoint, { method: 'POST', body: form, headers });
+          const res = await fetch(endpoint, { method: 'POST', body: form, headers, credentials: 'same-origin' });
           const data = await res.json();
 
           if (!res.ok) {
@@ -169,8 +166,7 @@ Conseil: compressez l’image (JPEG/WebP) ou réduisez sa résolution, puis rée
         }
       };
       input.click();
-    },
-    [getToken]
+    }, []
   );
 
   // ✅ Upload de l'image principale (sans URL)
@@ -192,7 +188,8 @@ Conseil: compressez l’image (JPEG/WebP) ou réduisez sa résolution, puis rée
         // Optionnel: supprimer l’ancienne image du serveur si on en avait uploadé une dans cette session
         if (uploadedCoverFilename) {
           try {
-            await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedCoverFilename)}`, { method: 'DELETE' });
+            await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedCoverFilename)}`, {
+        credentials: 'same-origin', method: 'DELETE' });
           } catch {
             /* ignore */
           }
@@ -201,11 +198,9 @@ Conseil: compressez l’image (JPEG/WebP) ou réduisez sa résolution, puis rée
         const form = new FormData();
         form.append('image', file, file.name);
 
-        const token = getToken?.();
         const headers: Record<string, string> = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const res = await fetch('/api/upload/image', { method: 'POST', body: form, headers });
+        const res = await fetch('/api/upload/image', {
+        credentials: 'same-origin', method: 'POST', body: form, headers });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || `Upload échoué (${res.status})`);
 
@@ -217,7 +212,7 @@ Conseil: compressez l’image (JPEG/WebP) ou réduisez sa résolution, puis rée
         setIsUploadingCover(false);
       }
     },
-    [getToken, uploadedCoverFilename]
+    [uploadedCoverFilename]
   );
 
   const onClickSelectCover = useCallback(() => {
@@ -239,7 +234,8 @@ Conseil: compressez l’image (JPEG/WebP) ou réduisez sa résolution, puis rée
     // Tentative de suppression côté serveur (si on connaît le filename renvoyé par l’API)
     if (uploadedCoverFilename) {
       try {
-        await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedCoverFilename)}`, { method: 'DELETE' });
+        await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedCoverFilename)}`, {
+        credentials: 'same-origin', method: 'DELETE' });
       } catch {
         /* ignore */
       }
@@ -381,10 +377,8 @@ Conseil: compressez l’image (JPEG/WebP) ou réduisez sa résolution, puis rée
       };
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const token = getToken();
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
       const response = await fetch('/api/actualites', {
+        credentials: 'same-origin',
         method: 'POST',
         headers,
         body: JSON.stringify(payload),

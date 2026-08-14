@@ -135,6 +135,7 @@ export default function CreateUserPage() {
 
       const response = await fetch('/api/users', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });

@@ -13,7 +13,7 @@ export default function CommentItem({
   onReplyAdded,
   isReply = false 
 }) {
-  const { getToken, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -60,18 +60,15 @@ export default function CommentItem({
     setIsSubmittingEdit(true);
 
     try {
-      const token = getToken();
-      
-      if (!token) {
+      if (!user) {
         alert('Vous devez être connecté');
         return;
       }
-
       const response = await fetch(`/api/comments/${comment.id}`, {
+        credentials: 'same-origin',
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ contenu: editContent.trim() }),
       });
@@ -102,17 +99,14 @@ export default function CommentItem({
     setIsDeleting(true);
 
     try {
-      const token = getToken();
-      
-      if (!token) {
+      if (!user) {
         alert('Vous devez être connecté');
         return;
       }
-
       const response = await fetch(`/api/comments/${comment.id}`, {
+        credentials: 'same-origin',
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -146,18 +140,15 @@ export default function CommentItem({
     setIsSubmittingReply(true);
 
     try {
-      const token = getToken();
-      
-      if (!token) {
+      if (!user) {
         alert('Vous devez être connecté');
         return;
       }
-
       const response = await fetch('/api/comments', {
+        credentials: 'same-origin',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           article_id: comment.article_id,

@@ -24,7 +24,7 @@ type Errors = {
 const ModifierActualite: React.FC = () => {
   const params = useParams();
   const router = useRouter();
-  const { getToken } = useAuth();
+  useAuth();
   const actualiteId = params.id as string;
 
   const [formData, setFormData] = useState({
@@ -130,11 +130,8 @@ const ModifierActualite: React.FC = () => {
 
           form.append(fieldName, file, file.name);
 
-          const token = getToken?.();
           const headers: Record<string, string> = {};
-          if (token) headers['Authorization'] = `Bearer ${token}`;
-
-          const res = await fetch(endpoint, { method: 'POST', body: form, headers });
+          const res = await fetch(endpoint, { method: 'POST', body: form, headers, credentials: 'same-origin' });
           const data = await res.json();
           if (!res.ok) throw new Error(data?.error || `Upload échoué (${res.status})`);
 
@@ -153,8 +150,7 @@ const ModifierActualite: React.FC = () => {
         }
       };
       input.click();
-    },
-    [getToken]
+    }, []
   );
 
   // ---- Config Jodit (identique à la création) ----
@@ -255,17 +251,16 @@ const ModifierActualite: React.FC = () => {
     try {
       // si on avait déjà une image uploadée pendant cette session, on tente de la supprimer
       if (uploadedCoverFilename) {
-        try { await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedCoverFilename)}`, { method: 'DELETE' }); } catch {}
+        try { await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedCoverFilename)}`, {
+        credentials: 'same-origin', method: 'DELETE' }); } catch {}
       }
 
       const form = new FormData();
       form.append('image', file, file.name);
 
-      const token = getToken?.();
       const headers: Record<string, string> = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch('/api/upload/image', { method: 'POST', body: form, headers });
+      const res = await fetch('/api/upload/image', {
+        credentials: 'same-origin', method: 'POST', body: form, headers });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || `Upload échoué (${res.status})`);
 
@@ -276,7 +271,7 @@ const ModifierActualite: React.FC = () => {
     } finally {
       setIsUploadingCover(false);
     }
-  }, [getToken, uploadedCoverFilename]);
+  }, [uploadedCoverFilename]);
 
   const onCoverChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -287,7 +282,8 @@ const ModifierActualite: React.FC = () => {
   const handleRemoveCover = useCallback(async () => {
     if (!formData.image) return;
     if (uploadedCoverFilename) {
-      try { await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedCoverFilename)}`, { method: 'DELETE' }); } catch {}
+      try { await fetch(`/api/upload/image?filename=${encodeURIComponent(uploadedCoverFilename)}`, {
+        credentials: 'same-origin', method: 'DELETE' }); } catch {}
       setUploadedCoverFilename(null);
     }
     setFormData(prev => ({ ...prev, image: '' }));
@@ -297,7 +293,7 @@ const ModifierActualite: React.FC = () => {
   useEffect(() => {
     const loadActualite = async () => {
       try {
-        const response = await fetch(`/api/actualites/${actualiteId}`);
+        const response = await fetch(`/api/actualites/${actualiteId}`, { credentials: 'same-origin' });
         if (!response.ok) throw new Error('Chargement impossible');
         const data = await response.json();
 
@@ -371,10 +367,8 @@ const ModifierActualite: React.FC = () => {
       };
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const token = getToken?.();
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
       const res = await fetch(`/api/actualites/${actualiteId}`, {
+        credentials: 'same-origin',
         method: 'PUT',
         headers,
         body: JSON.stringify(payload),

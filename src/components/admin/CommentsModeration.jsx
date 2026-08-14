@@ -10,7 +10,7 @@ import Pagination from '../ui/Pagination';
 const ITEMS_PER_PAGE = 20;
 
 export default function CommentsModeration() {
-  const { getToken } = useAuth();
+  const { user } = useAuth();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,15 +25,12 @@ export default function CommentsModeration() {
   const fetchAllComments = async () => {
     try {
       setLoading(true);
-      const token = getToken();
-      
-      if (!token) {
+      if (!user) {
         throw new Error('Non authentifié');
       }
-
       const response = await fetch('/api/comments', {
+        credentials: 'same-origin',
         headers: {
-          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -63,16 +60,13 @@ export default function CommentsModeration() {
     }
 
     try {
-      const token = getToken();
-      
-      if (!token) {
+      if (!user) {
         throw new Error('Non authentifié');
       }
-
       const response = await fetch(`/api/comments/${commentId}`, {
+        credentials: 'same-origin',
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -110,17 +104,14 @@ export default function CommentsModeration() {
     setIsSubmitting(true);
 
     try {
-      const token = getToken();
-      
-      if (!token) {
+      if (!user) {
         throw new Error('Non authentifié');
       }
-
       const response = await fetch(`/api/comments/${commentId}`, {
+        credentials: 'same-origin',
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ contenu: editContent.trim() }),
       });

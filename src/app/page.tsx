@@ -88,12 +88,10 @@ const HomePage: React.FC = () => {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('[Actualités] Réponse API:', data);
 
           if (Array.isArray(data) && data.length > 0) {
             setLatestArticles(data.slice(0, 3));
           } else {
-            console.log('[Actualités] Tableau vide ou non-array:', data);
             setLatestArticles([]);
           }
         } else {

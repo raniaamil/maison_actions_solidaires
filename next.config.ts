@@ -3,29 +3,61 @@ import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
 
-// CSP "non bloquante" (Report-Only) — assez permissive pour éviter les cassements,
-// tout en vous montrant ce qui violerait une CSP stricte dans la console du navigateur.
+// Origine Supabase (Storage) — dérivée de la variable d'env pour ne pas coder en dur
+// un identifiant de projet. Fallback vide si non définie (les directives restent valides).
+const supabaseOrigin = (() => {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!raw) return "";
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return "";
+  }
+})();
+
+// CSP BLOQUANTE (Content-Security-Policy, plus Report-Only).
+//
+// Choix documentés, établis en analysant ce que les pages chargent réellement :
+//
+// - script-src 'unsafe-inline' : Next.js émet ~17 <script> inline par page pour le
+//   streaming RSC et l'hydratation (self.__next_f.push(...)), SANS nonce. Les supprimer
+//   est impossible ; générer des nonces imposerait au middleware de les injecter à chaque
+//   requête, ce qui force le rendu 100% dynamique et supprime la génération statique du
+//   site. Compromis retenu : garder 'unsafe-inline' sur script-src, mais verrouiller tout
+//   le reste (object-src 'none', base-uri 'self', form-action 'self'), ce qui neutralise
+//   les vecteurs d'exploitation les plus courants. Aucun handler inline (onclick=) ni URL
+//   javascript: n'est présent dans le rendu, donc rien d'autre n'en dépend.
+//
+// - style-src 'unsafe-inline' : React/Tailwind injectent des attributs style="" (34 relevés).
+//
+// - img-src https: : le contenu déjà publié référence des images hébergées sur plusieurs
+//   origines (Supabase Storage, images.unsplash.com, imgix.bustle.com). Restreindre à la
+//   seule origine Supabase casserait des articles existants ; une image ne s'exécutant pas,
+//   le risque résiduel est faible.
+//
+// - connect-src : restreint à 'self' + Supabase (au lieu de tout https:), car les appels
+//   XHR/fetch sont le vecteur d'exfiltration de données le plus direct.
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "form-action 'self'",
   "img-src 'self' data: blob: https:",
-  "media-src 'self' https: blob:",
-  "font-src 'self' data: https:",
-  // Next en dev a parfois besoin d'unsafe-eval ; on le limite au dev
+  "media-src 'self' blob: https:",
+  // next/font/google auto-héberge les polices au build : pas d'origine externe nécessaire
+  "font-src 'self' data:",
+  // Next en dev a besoin d'unsafe-eval (react-refresh) ; strictement limité au dev
   `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
-  // API / websockets
-  `connect-src 'self' https:${isProd ? "" : " ws:"}`,
-  // iframes YouTube (classique + nocookie)
+  // Resserré : API interne + Supabase uniquement (websockets HMR en dev)
+  `connect-src 'self'${supabaseOrigin ? ` ${supabaseOrigin}` : ""}${isProd ? "" : " ws: http://localhost:* http://127.0.0.1:*"}`,
+  // iframes YouTube (extension Tiptap disponible, classique + nocookie)
   "frame-src 'self' https://*.youtube.com https://*.youtube-nocookie.com",
-  // empêcher que VOTRE site soit embarqué ailleurs
+  // empêcher que le site soit embarqué ailleurs (clickjacking)
   "frame-ancestors 'none'",
-  // workers (éditeur, upload, etc.)
   "worker-src 'self' blob:",
   "manifest-src 'self'",
-  // en prod : forcer https sur les sous-requêtes (non bloquant pour vous)
+  // en prod : forcer https sur les sous-requêtes
   ...(isProd ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
@@ -43,8 +75,8 @@ const securityHeaders = [
   ...(isProd
     ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]
     : []),
-  // ⚠️ CSP en mode Report-Only pour commencer (non bloquant)
-  { key: "Content-Security-Policy-Report-Only", value: csp },
+  // ✅ CSP ACTIVE (bloquante). Voir les choix documentés au-dessus de `csp`.
+  { key: "Content-Security-Policy", value: csp },
 ];
 
 const nextConfig: NextConfig = {

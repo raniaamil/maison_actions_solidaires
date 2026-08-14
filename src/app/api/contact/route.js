@@ -1,24 +1,8 @@
 // src/app/api/contact/route.js
 export const runtime = 'nodejs';
 import { query } from '../../../lib/db';
-import nodemailer from 'nodemailer';
 import { requireEditor } from '../../../lib/auth';
-
-// Configuration du transporteur email
-const createTransport = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_PORT === '465',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false
-    }
-  });
-};
+import { createMailTransport, MAIL_FROM } from '../../../lib/mailer';
 
 // POST - Traiter le formulaire de contact
 export async function POST(request) {
@@ -127,11 +111,11 @@ export async function POST(request) {
 
     // Envoi de l'email de notification
     try {
-      const transport = createTransport();
+      const transport = createMailTransport();
       
       // Email de notification à l'association
       const mailOptions = {
-        from: `"Maison d'Actions Solidaires" <${process.env.SMTP_USER}>`,
+        from: MAIL_FROM,
         to: process.env.CONTACT_EMAIL || process.env.SMTP_USER,
         subject: `Nouveau message: ${subject.trim()}`,
         html: `
@@ -165,7 +149,7 @@ export async function POST(request) {
 
       // Email de confirmation à l'expéditeur
       const confirmationOptions = {
-        from: `"Maison d'Actions Solidaires" <${process.env.SMTP_USER}>`,
+        from: MAIL_FROM,
         to: email,
         subject: 'Confirmation de réception de votre message - Maison d\'Actions Solidaires',
         html: `

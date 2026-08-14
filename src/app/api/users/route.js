@@ -2,24 +2,8 @@
 export const runtime = 'nodejs';
 import { query } from '../../../lib/db';
 import bcrypt from 'bcryptjs';
-import nodemailer from 'nodemailer';
 import { requireAdmin } from '../../../lib/auth';
-
-// Configuration du transporteur email
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_PORT === '465',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false
-    }
-  });
-};
+import { createMailTransport, MAIL_FROM } from '../../../lib/mailer';
 
 // GET - Récupérer tous les utilisateurs
 export async function GET(request) {
@@ -199,12 +183,12 @@ export async function POST(request) {
     let emailSent = false;
     try {
       console.log('📧 Envoi de l\'email de bienvenue...');
-      const transporter = createTransporter();
+      const transporter = createMailTransport();
       
       const siteUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://maison-dactions-solidaires.fr';
 
       const mailOptions = {
-        from: `"Maison d'Actions Solidaires" <${process.env.SMTP_USER}>`,
+        from: MAIL_FROM,
         to: userCreated.email,
         subject: 'Vos identifiants de connexion',
         html: `

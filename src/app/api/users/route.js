@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import { query } from '../../../lib/db';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
+import { requireAdmin } from '../../../lib/auth';
 
 // Configuration du transporteur email
 const createTransporter = () => {
@@ -23,6 +24,10 @@ const createTransporter = () => {
 // GET - Récupérer tous les utilisateurs
 export async function GET(request) {
   try {
+    // 🔐 La liste des utilisateurs (emails inclus) est réservée aux Administrateurs
+    const { error } = requireAdmin(request);
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -66,6 +71,11 @@ export async function GET(request) {
 // POST - Créer un nouvel utilisateur avec envoi d'email
 export async function POST(request) {
   try {
+    // 🔐 Création de comptes (potentiellement Administrateur) réservée aux Administrateurs.
+    // L'inscription publique du grand public passe par /api/register (rôle forcé "Utilisateur").
+    const { error } = requireAdmin(request);
+    if (error) return error;
+
     console.log('🔄 Début de la création d\'utilisateur...');
     const body = await request.json();
     console.log('📝 Données reçues:', { ...body, password: '[MASQUÉ]' });

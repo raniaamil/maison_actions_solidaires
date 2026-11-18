@@ -100,7 +100,7 @@ const HomePage: React.FC = () => {
           console.error('Erreur API:', response.status, response.statusText, errorText);
         }
       } catch (error) {
-        console.error('Erreur réseau:', error);
+        console.error('Erreur réseau:', (error as Error)?.message);
         setFetchError('Erreur de connexion au serveur');
       } finally {
         setLoadingArticles(false);

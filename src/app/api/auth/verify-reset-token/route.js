@@ -1,6 +1,7 @@
 // src/app/api/auth/verify-reset-token/route.js
 export const runtime = 'nodejs';
 import { query } from '../../../../lib/db';
+import { hashResetToken } from '../../../../lib/reset-token';
 
 export async function POST(request) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request) {
       );
     }
 
-    // Vérifier le token dans la base de données - PostgreSQL
+    // Vérifier le token dans la base de données - PostgreSQL (comparaison par empreinte SHA-256)
     const result = await query(`
       SELECT 
         prt.id, 
@@ -28,7 +29,7 @@ export async function POST(request) {
       FROM password_reset_tokens prt
       JOIN users u ON prt.user_id = u.id
       WHERE prt.token = $1 AND prt.used = false
-    `, [token.trim()]);
+    `, [hashResetToken(token.trim())]);
 
     if (result.rows.length === 0) {
       return Response.json(
@@ -78,7 +79,7 @@ export async function POST(request) {
     );
 
   } catch (error) {
-    console.error('❌ Erreur lors de la vérification du token:', error);
+    console.error('❌ Erreur lors de la vérification du token:', error?.message);
     return Response.json(
       { 
         error: 'Erreur serveur lors de la vérification du token',

@@ -1,7 +1,8 @@
 // src/app/api/auth/reset-password/route.js
 export const runtime = 'nodejs';
-import { query } from '../../../../lib/db';
+import db, { query } from '../../../../lib/db';
 import bcrypt from 'bcryptjs';
+import { hashResetToken } from '../../../../lib/reset-token';
 
 export async function POST(request) {
   try {
@@ -29,7 +30,7 @@ export async function POST(request) {
       );
     }
 
-    // Vérifier le token dans la base de données - PostgreSQL
+    // Vérifier le token dans la base de données - PostgreSQL (comparaison par empreinte SHA-256)
     const result = await query(`
       SELECT 
         prt.id, 
@@ -43,7 +44,7 @@ export async function POST(request) {
       FROM password_reset_tokens prt
       JOIN users u ON prt.user_id = u.id
       WHERE prt.token = $1 AND prt.used = false
-    `, [token.trim()]);
+    `, [hashResetToken(token.trim())]);
 
     if (result.rows.length === 0) {
       return Response.json(
@@ -79,35 +80,49 @@ export async function POST(request) {
       );
     }
 
-    try {
-      // PostgreSQL utilise BEGIN/COMMIT/ROLLBACK pour les transactions
-      await query('BEGIN');
+    // Hacher le nouveau mot de passe avant d'ouvrir la transaction (bcrypt est lent)
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-      // Hacher le nouveau mot de passe
-      const hashedPassword = await bcrypt.hash(password, 12);
+    // 🔐 Transaction sur UN client dédié : `query()` prend un client différent du pool à
+    // chaque appel, BEGIN/COMMIT n'y forment donc pas une vraie transaction.
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Marquer le token comme utilisé AVANT de changer le mot de passe, en une seule
+      // requête conditionnelle : si deux requêtes arrivent en même temps avec le même
+      // jeton, une seule obtient la ligne (usage unique), et l'expiration est revérifiée.
+      const claimResult = await client.query(
+        `UPDATE password_reset_tokens SET used = true
+         WHERE id = $1 AND used = false AND expires_at > NOW()
+         RETURNING id`,
+        [tokenData.id]
+      );
+
+      if (claimResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return Response.json(
+          { error: 'Token de réinitialisation invalide ou déjà utilisé' },
+          { status: 400 }
+        );
+      }
 
       // Mettre à jour le mot de passe de l'utilisateur - PostgreSQL
-      await query(
+      await client.query(
         'UPDATE users SET mot_de_passe = $1, date_modification = NOW() WHERE id = $2',
         [hashedPassword, tokenData.user_id]
       );
 
-      // Marquer le token comme utilisé
-      await query(
-        'UPDATE password_reset_tokens SET used = true WHERE id = $1',
-        [tokenData.id]
-      );
-
       // Supprimer tous les autres tokens de réinitialisation pour cet utilisateur
-      await query(
+      await client.query(
         'DELETE FROM password_reset_tokens WHERE user_id = $1 AND id != $2',
         [tokenData.user_id, tokenData.id]
       );
 
       // Valider la transaction
-      await query('COMMIT');
+      await client.query('COMMIT');
 
-      console.log(`✅ Mot de passe réinitialisé pour l'utilisateur: ${tokenData.email}`);
+      console.log('✅ Mot de passe réinitialisé');
 
       return Response.json(
         { 
@@ -123,12 +138,14 @@ export async function POST(request) {
 
     } catch (updateError) {
       // Annuler la transaction en cas d'erreur
-      await query('ROLLBACK');
+      await client.query('ROLLBACK').catch(() => {});
       throw updateError;
+    } finally {
+      client.release();
     }
 
   } catch (error) {
-    console.error('❌ Erreur lors de la réinitialisation du mot de passe:', error);
+    console.error('❌ Erreur lors de la réinitialisation du mot de passe:', error?.message);
     
     // Gestion des erreurs spécifiques PostgreSQL
     let errorMessage = 'Erreur serveur lors de la réinitialisation du mot de passe';

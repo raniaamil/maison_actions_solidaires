@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { email, password, prenom, nom, firstName, lastName } = body;
+    const { email, password, prenom, nom, firstName, lastName, acceptTerms } = body;
 
     const first = (prenom || firstName || '').trim();
     const last  = (nom || lastName || '').trim();
@@ -15,6 +15,10 @@ export async function POST(request) {
     // Validation des champs
     if (!emailNorm || !password || !first || !last) {
       return Response.json({ success: false, message: 'Tous les champs sont requis' }, { status: 400 });
+    }
+    // Case obligatoire du formulaire : acceptation des CGU et de la politique de confidentialité
+    if (acceptTerms !== true) {
+      return Response.json({ success: false, message: "Vous devez accepter les conditions générales d'utilisation et la politique de confidentialité" }, { status: 400 });
     }
     if (!/\S+@\S+\.\S+/.test(emailNorm)) {
       return Response.json({ success: false, message: 'Veuillez entrer une adresse email valide' }, { status: 400 });
@@ -66,7 +70,7 @@ export async function POST(request) {
     }, { status: 201 });
 
   } catch (error) {
-    console.error('💥 Erreur inscription:', error);
+    console.error('💥 Erreur inscription:', error?.message);
     if (error.code === '23505') {
       return Response.json({ success: false, message: 'Cette adresse email est déjà utilisée' }, { status: 409 });
     }

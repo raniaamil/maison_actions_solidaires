@@ -395,7 +395,7 @@ Conseil: compressez l’image (JPEG/WebP) ou réduisez sa résolution, puis rée
         else alert(`Erreur ${response.status}: Une erreur est survenue`);
       }
     } catch (error) {
-      console.error('Erreur réseau:', error);
+      console.error('Erreur réseau:', (error as Error)?.message);
       alert('Erreur de connexion au serveur');
     } finally {
       setIsLoading(false);

@@ -11,7 +11,7 @@ interface CreateUserFormData {
   nom: string;
   email: string;
   bio: string;
-  role: string; // 'Administrateur' | 'Rédacteur' | string
+  role: string; // 'Utilisateur' | 'Rédacteur' | 'Administrateur'
 }
 type FieldName = keyof CreateUserFormData;
 type ErrorKeys = FieldName | 'password';
@@ -25,7 +25,7 @@ export default function CreateUserPage() {
     nom: '',
     email: '',
     bio: '',
-    role: 'Administrateur',
+    role: 'Utilisateur',
   });
 
   const [tempPassword, setTempPassword] = useState('');
@@ -143,10 +143,10 @@ export default function CreateUserPage() {
       const data = await response.json();
 
       if (response.ok) {
-        console.log('✅ Utilisateur créé avec succès:', data);
+        console.log('✅ Utilisateur créé avec succès');
         setShowSuccessModal(true);
       } else {
-        console.log('❌ Erreur du serveur:', data);
+        console.log('❌ Erreur du serveur:', data?.message || data?.error);
         if (data.errors) {
           setErrors(data.errors as Errors);
         } else {
@@ -154,7 +154,7 @@ export default function CreateUserPage() {
         }
       }
     } catch (error) {
-      console.error('❌ Erreur réseau:', error);
+      console.error('❌ Erreur réseau:', (error as Error)?.message);
       alert('Erreur de connexion au serveur. Veuillez réessayer.');
     } finally {
       setIsCreating(false);
@@ -168,7 +168,7 @@ export default function CreateUserPage() {
       nom: '',
       email: '',
       bio: '',
-      role: 'Administrateur',
+      role: 'Utilisateur',
     });
     setTempPassword('');
     setPasswordCopied(false);
@@ -275,14 +275,19 @@ export default function CreateUserPage() {
                     </p>
                   </div>
                   <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-2">Rôle</label>
-                    <input
-                      type="text"
+                    <label htmlFor="role" className="text-sm font-medium text-gray-700 mb-2">Rôle</label>
+                    <select
+                      id="role"
                       name="role"
                       value={formData.role}
-                      readOnly
-                      className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-100 cursor-not-allowed"
-                    />
+                      onChange={handleInputChange}
+                      className="px-3 py-3 border border-gray-300 rounded-md text-base bg-gray-50 transition-all duration-200 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-3 focus:ring-blue-100"
+                      disabled={isCreating}
+                    >
+                      <option value="Utilisateur">Utilisateur</option>
+                      <option value="Rédacteur">Rédacteur</option>
+                      <option value="Administrateur">Administrateur</option>
+                    </select>
                   </div>
                 </div>
 

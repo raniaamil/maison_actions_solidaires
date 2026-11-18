@@ -136,7 +136,7 @@ export async function GET(request) {
     return Response.json(actualites);
     
   } catch (error) {
-    console.error('❌ Erreur lors de la récupération des actualités:', error);
+    console.error('❌ Erreur lors de la récupération des actualités:', error?.message);
     
     return Response.json(
       { 
@@ -345,7 +345,7 @@ export async function POST(request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('❌ Erreur lors de la création de l\'actualité:', error);
+    console.error('❌ Erreur lors de la création de l\'actualité:', error?.message);
     
     let errorMessage = 'Erreur serveur lors de la création de l\'actualité';
     let statusCode = 500;

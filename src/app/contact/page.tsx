@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import styles from './contact.module.css';
 import { FaFacebookF } from 'react-icons/fa';
 
@@ -12,7 +13,7 @@ interface ContactForm {
   email: string;
   subject: string;
   message: string;
-  notRobot: boolean;
+  website: string; // champ piège (honeypot), doit rester vide
 }
 
 type Errors = Partial<Record<keyof ContactForm, string>>;
@@ -24,24 +25,22 @@ const Contact: React.FC = () => {
     email: '',
     subject: '',
     message: '',
-    notRobot: false,
+    website: '',
   });
 
   const [errors, setErrors] = useState<Errors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>(null); // 'success', 'error', null
+  const [serverMessage, setServerMessage] = useState<string | null>(null);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    // Narrowing explicite pour pouvoir lire "checked" uniquement sur les checkbox
+    // Tous les champs sont des textes (la case à cocher a été retirée)
     const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
     const key = target.name as keyof ContactForm;
 
-    const nextValue =
-      target instanceof HTMLInputElement && target.type === 'checkbox'
-        ? (target.checked as ContactForm[typeof key])
-        : (target.value as ContactForm[typeof key]);
+    const nextValue = target.value;
 
     setFormData(prev => {
       const updated = { ...prev, [key]: nextValue } as ContactForm;
@@ -82,10 +81,6 @@ const Contact: React.FC = () => {
       newErrors.message = 'Le message est requis';
     }
 
-    if (!formData.notRobot) {
-      newErrors.notRobot = "Veuillez confirmer que vous n'êtes pas un robot";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -97,6 +92,7 @@ const Contact: React.FC = () => {
 
     setIsSubmitting(true);
     setSubmitStatus(null);
+    setServerMessage(null);
 
     try {
       console.log('📤 Envoi du formulaire de contact...');
@@ -120,19 +116,21 @@ const Contact: React.FC = () => {
           email: '',
           subject: '',
           message: '',
-          notRobot: false,
+          website: '',
         });
         setErrors({});
       } else {
         console.error("❌ Erreur lors de l'envoi:", data);
         setSubmitStatus('error');
+        // 429 : limitation des envois, on affiche le message du serveur
+        if (response.status === 429 && data?.message) setServerMessage(data.message);
 
         if (data?.errors) {
           setErrors(data.errors as Errors);
         }
       }
     } catch (error) {
-      console.error('❌ Erreur réseau:', error);
+      console.error('❌ Erreur réseau:', (error as Error)?.message);
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
@@ -208,7 +206,7 @@ const Contact: React.FC = () => {
                 textAlign: 'center',
               }}
             >
-              ❌ Une erreur est survenue lors de l&apos;envoi de votre message. Veuillez réessayer.
+              ❌ {serverMessage || "Une erreur est survenue lors de l'envoi de votre message. Veuillez réessayer."}
             </div>
           )}
 
@@ -302,35 +300,19 @@ const Contact: React.FC = () => {
               </span>
             )}
 
-            <div className={styles.captcha}>
+            {/* Champ piège (honeypot) : hors écran et ignoré des lecteurs d'écran.
+                Un humain ne le voit pas ; s'il est rempli, le serveur ignore le message. */}
+            <div className={styles.honeypot} aria-hidden="true">
+              <label htmlFor="website">Ne pas remplir ce champ</label>
               <input
-                type="checkbox"
-                className={styles.checkbox}
-                id="notRobot"
-                name="notRobot"
-                checked={formData.notRobot}
+                type="text"
+                id="website"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={formData.website}
                 onChange={handleInputChange}
-                disabled={isSubmitting}
-                required
               />
-              <label htmlFor="notRobot" className={styles.checkboxText}>
-                Je ne suis pas un robot
-              </label>
-              <img src="/images/contact/recaptcha_sans_fond-removebg-preview.png" alt="image recaptcha" />
-              {errors.notRobot && (
-                <span
-                  style={{
-                    color: '#dc2626',
-                    fontSize: '0.875rem',
-                    marginTop: '4px',
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'center',
-                  }}
-                >
-                  {errors.notRobot}
-                </span>
-              )}
             </div>
 
             <button
@@ -342,6 +324,14 @@ const Contact: React.FC = () => {
               {isSubmitting ? 'Envoi en cours...' : 'Envoyer le message'}
             </button>
           </form>
+
+          <p className={styles.privacyNotice}>
+            Les informations saisies servent uniquement à répondre à votre demande et sont conservées 12 mois.
+            Responsable : Maison d&apos;Actions Solidaires. En savoir plus et exercer vos droits :{' '}
+            <Link href="/politiquedeconfidentialite">politique de confidentialité</Link>.
+            <br />
+            Merci de ne pas indiquer d&apos;informations très sensibles (santé, situation administrative) dans ce message.
+          </p>
         </div>
       </section>
     </div>

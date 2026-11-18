@@ -53,7 +53,7 @@ export async function GET(request, { params }) {
 
     return Response.json(user);
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+    console.error('Erreur lors de la récupération de l\'utilisateur:', error?.message);
     return Response.json(
       { 
         error: 'Erreur serveur lors de la récupération de l\'utilisateur',
@@ -119,8 +119,10 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Validation du rôle si fourni — inclut 'Utilisateur' pour les inscriptions publiques
-    if (role) {
+    // Validation du rôle si fourni — inclut 'Utilisateur' pour les inscriptions publiques.
+    // `!== undefined` (et non un test de vérité) : une chaîne vide ou null est refusée
+    // au lieu d'être écrite telle quelle en base.
+    if (role !== undefined) {
       const rolesAutorises = [ROLES.ADMIN, ROLES.REDACTEUR, ROLES.UTILISATEUR];
       if (!rolesAutorises.includes(role)) {
         return Response.json(
@@ -267,7 +269,7 @@ export async function PUT(request, { params }) {
       user: userUpdated
     });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de l\'utilisateur:', error);
+    console.error('Erreur lors de la mise à jour de l\'utilisateur:', error?.message);
     
     let errorMessage = 'Erreur serveur lors de la mise à jour de l\'utilisateur';
     let statusCode = 500;
@@ -346,7 +348,7 @@ export async function DELETE(request, { params }) {
       message: 'Utilisateur supprimé avec succès'
     });
   } catch (error) {
-    console.error('Erreur lors de la suppression de l\'utilisateur:', error);
+    console.error('Erreur lors de la suppression de l\'utilisateur:', error?.message);
     return Response.json(
       { 
         error: 'Erreur serveur lors de la suppression de l\'utilisateur',

@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       return null;
     } catch (error) {
-      console.error('❌ Erreur lors de la récupération de la session:', error);
+      console.error('❌ Erreur lors de la récupération de la session:', error?.message);
       setUser(null);
       return null;
     } finally {
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
         // un cookie HttpOnly. On ne conserve ici que le profil affichable.
         setUser(data.user);
         setLoading(false);
-        console.log('✅ Connexion réussie:', data.user.email, '| Rôle:', data.user.role);
+        console.log('✅ Connexion réussie');
         router.push('/administrateur');
         return { success: true };
       }
@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }) => {
       console.error('❌ Erreur de connexion:', data.error);
       return { success: false, error: data.error || 'Identifiants incorrects' };
     } catch (error) {
-      console.error('❌ Erreur réseau lors de la connexion:', error);
+      console.error('❌ Erreur réseau lors de la connexion:', error?.message);
       return { success: false, error: 'Erreur de connexion au serveur' };
     }
   };
@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }) => {
         credentials: 'same-origin',
       });
     } catch (error) {
-      console.error('❌ Erreur lors de la déconnexion:', error);
+      console.error('❌ Erreur lors de la déconnexion:', error?.message);
     } finally {
       setUser(null);
       router.push('/se-connecter');

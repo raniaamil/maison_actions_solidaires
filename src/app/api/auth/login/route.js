@@ -65,7 +65,7 @@ export async function POST(request) {
     try {
       isValidPassword = await bcrypt.compare(password, user.mot_de_passe);
     } catch (error) {
-      console.error('Erreur lors de la vérification du mot de passe:', error);
+      console.error('Erreur lors de la vérification du mot de passe:', error?.message);
       return Response.json(
         { error: 'Erreur lors de la vérification du mot de passe' },
         { status: 500 }
@@ -124,7 +124,7 @@ export async function POST(request) {
       console.log('✅ Token créé avec succès');
 
     } catch (jwtError) {
-      console.error('❌ Erreur lors de la création du token JWT:', jwtError);
+      console.error('❌ Erreur lors de la création du token JWT:', jwtError?.message);
       
       // Gestion spécifique des erreurs JWT
       if (jwtError.message.includes('secretOrPrivateKey')) {
@@ -153,7 +153,7 @@ export async function POST(request) {
     };
 
     // Log de connexion réussie (sans données sensibles)
-    console.log(`✅ Connexion réussie pour l'utilisateur: ${user.email} (${user.role})`);
+    console.log('✅ Connexion réussie');
 
     // 🔐 Le token est posé dans un cookie HttpOnly et n'est PLUS renvoyé dans le
     // corps de la réponse : le JavaScript de la page n'y a jamais accès, donc une
@@ -166,7 +166,7 @@ export async function POST(request) {
     return response;
 
   } catch (error) {
-    console.error('❌ Erreur générale lors de la connexion:', error);
+    console.error('❌ Erreur générale lors de la connexion:', error?.message);
     
     // Gestion des erreurs spécifiques PostgreSQL
     if (error.code === '28000') { // Invalid authorization specification

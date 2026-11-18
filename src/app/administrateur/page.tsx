@@ -285,7 +285,7 @@ function AdminContent() {
         });
         
         showSuccessMessage('Profil mis à jour avec succès !');
-        console.log('✅ Profil mis à jour:', data);
+        console.log('✅ Profil mis à jour');
       } else {
         if (response.status === 401) {
           alert('Session expirée. Veuillez vous reconnecter.');
@@ -295,7 +295,7 @@ function AdminContent() {
         }
       }
     } catch (error) {
-      console.error('❌ Erreur lors de la sauvegarde du profil:', error);
+      console.error('❌ Erreur lors de la sauvegarde du profil:', (error as Error)?.message);
       alert('Erreur de connexion. Veuillez réessayer.');
     } finally {
       setProfileLoading(false);
@@ -344,7 +344,7 @@ function AdminContent() {
         }
       }
     } catch (error) {
-      console.error('❌ Erreur lors du changement de mot de passe:', error);
+      console.error('❌ Erreur lors du changement de mot de passe:', (error as Error)?.message);
       alert('Erreur de connexion. Veuillez réessayer.');
     } finally {
       setPasswordLoading(false);
@@ -399,7 +399,7 @@ function AdminContent() {
         console.error('❌ Erreur lors du chargement des actualités:', response.status, errorText);
       }
     } catch (error) {
-      console.error('❌ Erreur réseau lors du chargement des actualités:', error);
+      console.error('❌ Erreur réseau lors du chargement des actualités:', (error as Error)?.message);
     } finally {
       setLoading(false);
     }
@@ -426,7 +426,7 @@ function AdminContent() {
         console.error('❌ Erreur lors du chargement des utilisateurs');
       }
     } catch (error) {
-      console.error('❌ Erreur réseau:', error);
+      console.error('❌ Erreur réseau:', (error as Error)?.message);
     } finally {
       setLoading(false);
     }
@@ -481,7 +481,7 @@ function AdminContent() {
         console.error('❌ Erreur lors de la suppression');
       }
     } catch (error) {
-      console.error('❌ Erreur réseau:', error);
+      console.error('❌ Erreur réseau:', (error as Error)?.message);
     } finally {
       setShowDeleteModal(false);
       setItemToDelete(null);

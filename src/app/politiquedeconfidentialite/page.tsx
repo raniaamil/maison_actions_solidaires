@@ -5,95 +5,112 @@ import styles from './politiquedeconfidentialite.module.css';
 export default function PolitiqueConfidentialite() {
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Politique de Confidentialité</h1>
-      <p className={styles.date}>Dernière mise à jour : 30/07/2025</p>
+      <h1 className={styles.title}>Politique de confidentialité</h1>
 
+      <h2 className={styles.heading}>1. Qui est responsable de vos données ?</h2>
       <p className={styles.paragraph}>
-        L’Association Maison d’Actions Solidaires (MAACSO), dont le siège est situé au 12 rue de la Corne de Bœuf – 94500 Champigny-sur-Marne,
-        s’engage à protéger votre vie privée et à assurer la sécurité des données personnelles que vous nous confiez.
-        La présente politique de confidentialité a pour but de vous informer de la manière dont nous collectons, utilisons,
-        partageons et protégeons vos données personnelles dans le cadre de votre utilisation de notre site Internet.
+        Maison d&apos;Actions Solidaires, association, représentée par sa présidente.<br />
+        Contact : maisondactionsolidaire@gmail.com. Adresse postale : 12 rue de la Corne de Bœuf, 94500 Champigny-sur-Marne.
       </p>
 
-      <h2 className={styles.heading}>1. Responsable du traitement</h2>
+      <h2 className={styles.heading}>2. Quelles données, pourquoi et combien de temps ?</h2>
+      <div className={styles.tableWrapper}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th scope="col">Ce que vous faites</th>
+              <th scope="col">Données utilisées</th>
+              <th scope="col">Pourquoi</th>
+              <th scope="col">Base légale</th>
+              <th scope="col">Conservation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Créer un compte</td>
+              <td>Prénom, nom, e-mail, mot de passe (stocké sous forme hachée), photo et biographie (facultatives)</td>
+              <td>Gérer votre compte et vous permettre de commenter</td>
+              <td>Intérêt légitime de l&apos;association</td>
+              <td>Tant que le compte existe ; suppression sur simple demande</td>
+            </tr>
+            <tr>
+              <td>Commenter un article</td>
+              <td>Contenu du commentaire, nom et prénom affichés</td>
+              <td>Permettre la discussion</td>
+              <td>Intérêt légitime</td>
+              <td>Tant que le compte et l&apos;article existent</td>
+            </tr>
+            <tr>
+              <td>Réinitialiser votre mot de passe</td>
+              <td>Un lien temporaire envoyé par e-mail</td>
+              <td>Sécuriser votre compte</td>
+              <td>Intérêt légitime</td>
+              <td>1 heure</td>
+            </tr>
+            <tr>
+              <td>Nous écrire (formulaire de contact)</td>
+              <td>Prénom, nom, e-mail, sujet, message</td>
+              <td>Répondre à votre demande</td>
+              <td>Intérêt légitime</td>
+              <td>12 mois</td>
+            </tr>
+            <tr>
+              <td>Faire un don</td>
+              <td>
+                Aucune donnée n&apos;est conservée par ce site : vous êtes redirigé vers PayPal ou HelloAsso, qui appliquent
+                leur propre politique de confidentialité
+              </td>
+              <td>Permettre le don</td>
+              <td>Sans objet</td>
+              <td>Sans objet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <p className={styles.paragraph}>
-        Le responsable du traitement des données personnelles est :<br />
-        Maison d’Actions Solidaires (MAACSO)<br />
-        12 rue de la Corne de Bœuf, 94500 Champigny-sur-Marne<br />
-        Email : maisondactionsolidaire@gmail.com<br />
-        Téléphone : 07 82 16 90 08
+        Pour limiter le spam du formulaire de contact, une empreinte de votre adresse IP est conservée au plus une heure en mémoire du serveur, sans être enregistrée.
+      </p>
+      <p className={styles.paragraph}>
+        Nous n&apos;envoyons pas de newsletter et nous n&apos;utilisons aucun outil de mesure d&apos;audience.
       </p>
 
-      <h2 className={styles.heading}>2. Données personnelles collectées</h2>
+      <h2 className={styles.heading}>3. Cookies</h2>
+      <p className={styles.paragraph}>
+        Ce site utilise un seul cookie, nécessaire à la connexion (<code>mas_session</code>, 7 jours). Il ne sert ni à la
+        publicité ni au suivi.
+      </p>
+
+      <h2 className={styles.heading}>4. Qui reçoit vos données ?</h2>
       <ul className={styles.list}>
-        <li className={styles.listItem}>Données d'identité : nom, prénom</li>
-        <li className={styles.listItem}>Coordonnées : adresse email, numéro de téléphone, adresse postale</li>
-        <li className={styles.listItem}>Données de connexion : adresse IP, type de navigateur, pages visitées</li>
-        <li className={styles.listItem}>Données relatives à l’adhésion ou au don : montant, moyen de paiement, date</li>
+        <li className={styles.listItem}>Les administrateurs de l&apos;association, dans la limite de leurs fonctions.</li>
+        <li className={styles.listItem}>
+          Nos prestataires techniques : Vercel (hébergement du site), Supabase (base de données, située à Paris), Google
+          (envoi des e-mails), OVH (nom de domaine).
+        </li>
       </ul>
-      <p className={styles.paragraph}>Aucune donnée sensible n’est collectée sans votre consentement explicite.</p>
+      <p className={styles.paragraph}>Ils n&apos;utilisent pas vos données pour leurs propres besoins.</p>
 
-      <h2 className={styles.heading}>3. Finalités du traitement</h2>
-      <ul className={styles.list}>
-        <li className={styles.listItem}>Gestion des adhésions, dons et participations à nos actions</li>
-        <li className={styles.listItem}>Réponse aux demandes envoyées via nos formulaires de contact</li>
-        <li className={styles.listItem}>Envoi de communications d’information et de sensibilisation sur nos activités (newsletter)</li>
-        <li className={styles.listItem}>Statistiques de fréquentation anonymisées</li>
-        <li className={styles.listItem}>Respect de nos obligations légales et réglementaires</li>
-      </ul>
-
-      <h2 className={styles.heading}>4. Base légale des traitements</h2>
-      <ul className={styles.list}>
-        <li className={styles.listItem}>Sur votre consentement (newsletter, formulaire de contact)</li>
-        <li className={styles.listItem}>Sur l’exécution d’un contrat (adhésion ou don)</li>
-        <li className={styles.listItem}>Sur notre intérêt légitime à promouvoir nos actions solidaires</li>
-        <li className={styles.listItem}>Ou sur une obligation légale (comptabilité, gestion des dons)</li>
-      </ul>
-
-      <h2 className={styles.heading}>5. Destinataires des données</h2>
+      <h2 className={styles.heading}>5. Vos données sortent-elles de l&apos;Union européenne ?</h2>
       <p className={styles.paragraph}>
-        Vos données sont exclusivement destinées à MAACSO et ne sont jamais vendues ni cédées à des tiers.
-        Elles peuvent toutefois être transmises à nos prestataires techniques (hébergement web, outil de newsletter),
-        strictement encadrés par contrat et situés dans l’Union européenne.
+        Notre base de données est en France. Certains prestataires sont des sociétés américaines ; leurs engagements de
+        protection sont décrits dans leurs accords de traitement.
       </p>
 
-      <h2 className={styles.heading}>6. Durée de conservation</h2>
-      <ul className={styles.list}>
-        <li className={styles.listItem}>Pour les demandes de contact : 12 mois après le dernier échange</li>
-        <li className={styles.listItem}>Pour les dons et adhésions : 6 ans (obligations comptables)</li>
-        <li className={styles.listItem}>Pour les abonnements à la newsletter : jusqu’au retrait de votre consentement</li>
-      </ul>
-
-      <h2 className={styles.heading}>7. Sécurité des données</h2>
+      <h2 className={styles.heading}>6. Vos droits</h2>
       <p className={styles.paragraph}>
-        Nous mettons en œuvre toutes les mesures techniques et organisationnelles appropriées pour assurer la sécurité
-        et la confidentialité de vos données personnelles, notamment contre la perte, la mauvaise utilisation ou l’accès non autorisé.
+        Vous pouvez demander l&apos;accès à vos données, leur correction, leur effacement, la limitation ou l&apos;opposition
+        à leur traitement, et la portabilité de celles que vous nous avez fournies. Écrivez à maisondactionsolidaire@gmail.com :
+        nous répondons sous un mois. Si vous estimez ne pas avoir obtenu satisfaction, vous pouvez saisir la CNIL (cnil.fr).
       </p>
 
-      <h2 className={styles.heading}>8. Vos droits</h2>
-      <ul className={styles.list}>
-        <li className={styles.listItem}>Droit d’accès à vos données</li>
-        <li className={styles.listItem}>Droit de rectification ou de suppression</li>
-        <li className={styles.listItem}>Droit d’opposition ou de limitation du traitement</li>
-        <li className={styles.listItem}>Droit à la portabilité de vos données</li>
-        <li className={styles.listItem}>Droit de retrait de votre consentement à tout moment</li>
-      </ul>
+      <h2 className={styles.heading}>7. Sécurité</h2>
       <p className={styles.paragraph}>
-        Vous pouvez exercer ces droits en nous contactant par email à maisondactionsolidaire@gmail.com, en joignant une pièce d’identité.<br />
-        En cas de non-respect de vos droits, vous avez également la possibilité de déposer une réclamation auprès de la CNIL (www.cnil.fr).
+        Les mots de passe sont stockés sous forme hachée (illisibles, même pour nous), l&apos;accès aux données est limité selon les rôles et la base de données est
+        protégée. Aucun système n&apos;est infaillible : en cas de fuite de données vous concernant, nous vous informerons
+        selon la loi.
       </p>
 
-      <h2 className={styles.heading}>9. Cookies</h2>
-      <p className={styles.paragraph}>
-        Notre site utilise des cookies strictement nécessaires au fonctionnement du site, ainsi que des cookies de mesure d’audience.
-        Vous pouvez les gérer à tout moment via la bannière de gestion des cookies lors de votre première visite.
-      </p>
-
-      <h2 className={styles.heading}>10. Modifications de la politique</h2>
-      <p className={styles.paragraph}>
-        Cette politique est susceptible d’être modifiée à tout moment en fonction des évolutions légales ou des services proposés par le site.
-        La date de la dernière mise à jour sera indiquée en haut de cette page.
-      </p>
+      <p className={styles.date}>Dernière mise à jour : 18/11/2026.</p>
     </div>
   );
 }

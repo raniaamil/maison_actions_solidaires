@@ -90,7 +90,7 @@ export async function POST(request) {
       });
 
     if (uploadError) {
-      console.error('❌ Erreur Supabase Storage:', uploadError);
+      console.error('❌ Erreur Supabase Storage:', uploadError?.message);
       return NextResponse.json({ error: 'Erreur lors de l\'upload vers le stockage' }, { status: 500 });
     }
 
@@ -108,7 +108,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('❌ Erreur upload vidéo:', error);
+    console.error('❌ Erreur upload vidéo:', error?.message);
     return NextResponse.json(
       { error: 'Erreur serveur lors de l\'upload de la vidéo', details: process.env.NODE_ENV === 'development' ? error.message : undefined },
       { status: 500 }
@@ -136,14 +136,14 @@ export async function DELETE(request) {
     const { error } = await supabase.storage.from(BUCKET).remove([filename]);
 
     if (error) {
-      console.error('❌ Erreur suppression Supabase:', error);
+      console.error('❌ Erreur suppression Supabase:', error?.message);
       return NextResponse.json({ error: 'Erreur lors de la suppression' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, message: 'Vidéo supprimée avec succès' });
 
   } catch (error) {
-    console.error('❌ Erreur suppression vidéo:', error);
+    console.error('❌ Erreur suppression vidéo:', error?.message);
     return NextResponse.json(
       { error: 'Erreur serveur lors de la suppression de la vidéo', details: process.env.NODE_ENV === 'development' ? error.message : undefined },
       { status: 500 }

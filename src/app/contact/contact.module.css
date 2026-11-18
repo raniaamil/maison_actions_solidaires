@@ -467,3 +467,25 @@
         color: #333 !important;
     }
 }
+/* Champ piège (honeypot) : hors écran, invisible pour un humain */
+.honeypot {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+/* Mention d'information sous le formulaire */
+.privacyNotice {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 15px;
+    line-height: 1.5;
+}
+
+.privacyNotice a {
+    color: #838C58;
+    text-decoration: underline;
+}

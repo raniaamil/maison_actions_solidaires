@@ -13,7 +13,7 @@ function getUserFromToken(request) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     return decoded;
   } catch (error) {
-    console.error('Erreur de vérification du token:', error);
+    console.error('Erreur de vérification du token:', error?.message);
     return null;
   }
 }
@@ -30,7 +30,6 @@ export async function GET(request) {
         u.id as user_id,
         u.prenom as user_prenom,
         u.nom as user_nom,
-        u.email as user_email,
         u.photo as user_photo,
         u.role as user_role,
         a.id as article_id,
@@ -73,7 +72,6 @@ export async function GET(request) {
           id: row.user_id,
           prenom: row.user_prenom,
           nom: row.user_nom,
-          email: row.user_email,
           photo_profil: row.user_photo,
           role: row.user_role
         },
@@ -103,7 +101,7 @@ export async function GET(request) {
 
     return Response.json({ comments: rootComments });
   } catch (error) {
-    console.error('Erreur serveur:', error);
+    console.error('Erreur serveur:', error?.message);
     return Response.json(
       { error: 'Erreur serveur lors de la récupération des commentaires' },
       { status: 500 }
@@ -248,7 +246,7 @@ export async function POST(request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Erreur serveur:', error);
+    console.error('Erreur serveur:', error?.message);
     return Response.json(
       { error: 'Erreur serveur lors de la création du commentaire' },
       { status: 500 }

@@ -69,7 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_comments_parent ON comments (parent_id);
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token VARCHAR(255) NOT NULL UNIQUE,
+  token VARCHAR(255) NOT NULL UNIQUE, -- empreinte SHA-256 (hex) du jeton, jamais le jeton en clair
   expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
   used BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -86,8 +86,6 @@ CREATE TABLE IF NOT EXISTS contact_messages (
   email VARCHAR(255) NOT NULL,
   sujet VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
-  ip_address VARCHAR(45) DEFAULT NULL,
-  user_agent TEXT DEFAULT NULL,
   date_creation TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   statut VARCHAR(10) DEFAULT 'nouveau' CHECK (statut IN ('nouveau', 'lu', 'traite'))
 );

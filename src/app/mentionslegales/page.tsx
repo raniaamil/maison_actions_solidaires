@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import styles from './mentionslegales.module.css';
 
 export default function MentionsLegales() {
@@ -15,29 +16,35 @@ export default function MentionsLegales() {
       <p className={styles.paragraph}>
         Nom de l'association : Maison d’Actions Solidaires (MAACSO)<br />
         Forme juridique : Association déclarée régie par la loi du 1er juillet 1901<br />
-        SIREN : [à compléter si disponible]<br />
         Adresse du siège social :<br />
         12 rue de la Corne de Bœuf,<br />
         94500 Champigny-sur-Marne, France<br />
         Téléphone : 07 82 16 90 08<br />
-        Adresse e-mail : maisondactionsolidaire@gmail.com
+        Adresse e-mail : maisondactionsolidaire@gmail.com<br />
+        Directrice de la publication : Marie Flore Alvine NGUEMCHE, présidente de l’association
       </p>
 
-      <h2 className={styles.heading}>2. Hébergeur</h2>
+      <h2 className={styles.heading}>2. Hébergeurs</h2>
       <p className={styles.paragraph}>
+        Hébergement du site :<br />
         Nom de l’hébergeur : Vercel Inc.<br />
         Raison sociale : Vercel Inc.<br />
         Adresse : 340 S Lemon Ave #4133, Walnut, CA 91789, United States<br />
         Téléphone : +1 (559) 288-7060<br />
         Site web : https://vercel.com
       </p>
+      <p className={styles.paragraph}>
+        Hébergement de la base de données et des fichiers (images, vidéos) :<br />
+        Nom de l’hébergeur : Supabase Inc.<br />
+        Adresse : Supabase, Inc., c/o Incorporating Services, Ltd., 3500 S. DuPont Highway, Dover, Delaware, États-Unis<br />
+        Contact : privacy@supabase.com<br />
+        Site web : https://supabase.com
+      </p>
 
       <h2 className={styles.heading}>3. Développement et maintenance du site</h2>
       <p className={styles.paragraph}>
         Le site a été développé par : Rania AMIL<br />
-        Adresse : 26/ rue de l’abbé glatz, 92600 Asnières-sur-Seine<br />
-        Email : mademoiselleamil@gmail.com<br />
-        Téléphone : 07 61 39 90 82
+        Email : mademoiselleamil@gmail.com
       </p>
 
       <h2 className={styles.heading}>4. Propriété intellectuelle</h2>
@@ -48,20 +55,21 @@ export default function MentionsLegales() {
         une contrefaçon sanctionnée par les articles L.335-2 et suivants du Code de la propriété intellectuelle.
       </p>
 
-      {/* <h2 className={styles.heading}>5. Données personnelles</h2>
+      <h2 className={styles.heading}>5. Données personnelles</h2>
       <p className={styles.paragraph}>
         Les données personnelles collectées via le site sont traitées dans le respect du Règlement Général sur la Protection des Données (RGPD).
-        Pour plus d’informations, consultez notre Politique de confidentialité.
-        Vous disposez d’un droit d’accès, de rectification, de suppression, d’opposition, et de portabilité de vos données.
-      </p> */}
-
-      <h2 className={styles.heading}>5. Cookies</h2>
-      <p className={styles.paragraph}>
-        Le site peut utiliser des cookies pour améliorer l’expérience utilisateur et mesurer l’audience.
-        Lors de votre première visite, un bandeau vous informe et vous permet de gérer vos préférences.
+        Pour savoir quelles données sont utilisées, pourquoi, combien de temps elles sont conservées et comment exercer vos droits,
+        consultez notre <Link href="/politiquedeconfidentialite">politique de confidentialité</Link>.
       </p>
 
-      <h2 className={styles.heading}>6. Limitation de responsabilité</h2>
+      <h2 className={styles.heading}>6. Cookies</h2>
+      <p className={styles.paragraph}>
+        Le site utilise un seul cookie : le cookie de session <code>mas_session</code>, déposé uniquement lorsque vous vous connectez
+        et nécessaire au maintien de votre connexion (7 jours).
+        Le site n’utilise aucun cookie de mesure d’audience ni de publicité ; aucun bandeau de cookies n’est donc affiché.
+      </p>
+
+      <h2 className={styles.heading}>7. Limitation de responsabilité</h2>
       <p className={styles.paragraph}>MAACSO s’efforce de fournir des informations fiables et à jour, mais ne peut garantir l’absence d’erreurs.</p>
       <p className={styles.paragraph}>Elle ne saurait être tenue pour responsable en cas :</p>
       <ul className={styles.list}>
@@ -70,7 +78,7 @@ export default function MentionsLegales() {
         <li className={styles.listItem}>De dommages liés à l’utilisation du site</li>
       </ul>
 
-      <h2 className={styles.heading}>7. Droit applicable</h2>
+      <h2 className={styles.heading}>8. Droit applicable</h2>
       <p className={styles.paragraph}>
         Les présentes mentions légales sont régies par le droit français.
         Tout litige relatif à l’utilisation du site est soumis à la compétence exclusive des juridictions françaises.

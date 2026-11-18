@@ -83,7 +83,7 @@ export async function GET(request, { params }) {
 
     return Response.json(actualite);
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'actualité:', error);
+    console.error('Erreur lors de la récupération de l\'actualité:', error?.message);
     return Response.json(
       { 
         error: 'Erreur serveur lors de la récupération de l\'actualité',
@@ -267,7 +267,7 @@ export async function PUT(request, { params }) {
       actualite: actualiteUpdated
     });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de l\'actualité:', error);
+    console.error('Erreur lors de la mise à jour de l\'actualité:', error?.message);
     
     let errorMessage = 'Erreur serveur lors de la mise à jour de l\'actualité';
     let statusCode = 500;
@@ -313,7 +313,7 @@ export async function DELETE(request, { params }) {
 
     return Response.json({ message: 'Actualité supprimée avec succès' });
   } catch (error) {
-    console.error('Erreur lors de la suppression de l\'actualité:', error);
+    console.error('Erreur lors de la suppression de l\'actualité:', error?.message);
     return Response.json(
       { 
         error: 'Erreur serveur lors de la suppression de l\'actualité',

@@ -129,7 +129,7 @@ export default function UserComments() {
       }
 
       const data = await response.json();
-      console.log('✅ Commentaire modifié:', data);
+      console.log('✅ Commentaire modifié');
       
       // Mettre à jour le commentaire dans la liste
       setComments(comments.map(c => 

@@ -2,8 +2,9 @@
 export const runtime = 'nodejs';
 import { query } from '../../../lib/db';
 import bcrypt from 'bcryptjs';
-import { requireAdmin } from '../../../lib/auth';
+import { requireAdmin, ROLES } from '../../../lib/auth';
 import { createMailTransport, MAIL_FROM } from '../../../lib/mailer';
+import { createResetToken } from '../../../lib/reset-token';
 
 // GET - Récupérer tous les utilisateurs
 export async function GET(request) {
@@ -41,7 +42,7 @@ export async function GET(request) {
 
     return Response.json(users);
   } catch (error) {
-    console.error('❌ Erreur lors de la récupération des utilisateurs:', error);
+    console.error('❌ Erreur lors de la récupération des utilisateurs:', error?.message);
     return Response.json(
       { 
         error: 'Erreur serveur lors de la récupération des utilisateurs',
@@ -57,12 +58,12 @@ export async function POST(request) {
   try {
     // 🔐 Création de comptes (potentiellement Administrateur) réservée aux Administrateurs.
     // L'inscription publique du grand public passe par /api/register (rôle forcé "Utilisateur").
-    const { error } = requireAdmin(request);
+    const { user: currentUser, error } = requireAdmin(request);
     if (error) return error;
 
     console.log('🔄 Début de la création d\'utilisateur...');
     const body = await request.json();
-    console.log('📝 Données reçues:', { ...body, password: '[MASQUÉ]' });
+    console.log('📝 Création d’utilisateur : requête reçue');
 
     const { 
       firstName, 
@@ -73,8 +74,27 @@ export async function POST(request) {
       password, 
       photo, 
       bio,
-      role = 'Administrateur'
+      role = ROLES.UTILISATEUR
     } = body;
+
+    // 🔐 Liste blanche des rôles ; défaut "Utilisateur" si aucun rôle n'est fourni
+    const rolesAutorises = [ROLES.ADMIN, ROLES.REDACTEUR, ROLES.UTILISATEUR];
+    if (!rolesAutorises.includes(role)) {
+      return Response.json(
+        { message: 'Rôle non valide', errors: { role: 'Rôle non valide' } },
+        { status: 400 }
+      );
+    }
+
+    // 🔐 Seul un Administrateur authentifié peut attribuer un rôle privilégié. La route est
+    // déjà réservée aux Administrateurs (requireAdmin ci-dessus) ; ce contrôle explicite
+    // protège si les conditions d'accès à la route venaient à être assouplies.
+    if (role !== ROLES.UTILISATEUR && currentUser.role !== ROLES.ADMIN) {
+      return Response.json(
+        { message: 'Seul un Administrateur peut attribuer ce rôle' },
+        { status: 403 }
+      );
+    }
 
     const finalFirstName = firstName || prenom;
     const finalLastName = lastName || nom;
@@ -187,10 +207,15 @@ export async function POST(request) {
       
       const siteUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://maison-dactions-solidaires.fr';
 
+      // 🔐 Aucun mot de passe dans l'e-mail : on envoie un lien de définition du mot de
+      // passe qui réutilise le flux de réinitialisation (jeton haché en base, 1 h, usage unique).
+      const setupToken = await createResetToken(userCreated.id);
+      const setupUrl = `${siteUrl}/reset-password?token=${setupToken}`;
+
       const mailOptions = {
         from: MAIL_FROM,
         to: userCreated.email,
-        subject: 'Vos identifiants de connexion',
+        subject: 'Bienvenue - définissez votre mot de passe',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #8b9467 0%, #a4b070 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
@@ -205,14 +230,13 @@ export async function POST(request) {
               </p>
               
               <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8b9467;">
-                <h3 style="color: #8b9467; margin-top: 0;">Vos identifiants de connexion :</h3>
+                <h3 style="color: #8b9467; margin-top: 0;">Votre compte :</h3>
                 <p style="margin: 10px 0;"><strong>Email :</strong> ${userCreated.email}</p>
-                <p style="margin: 10px 0;"><strong>Mot de passe temporaire :</strong> <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${password}</span></p>
                 <p style="margin: 10px 0;"><strong>Rôle :</strong> ${userCreated.role}</p>
               </div>
-              
+
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${siteUrl}/se-connecter" 
+                <a href="${setupUrl}"
                    style="background: linear-gradient(135deg, #8b9467 0%, #a4b070 100%); 
                           color: white; 
                           text-decoration: none; 
@@ -221,13 +245,14 @@ export async function POST(request) {
                           font-weight: bold; 
                           display: inline-block;
                           font-size: 16px;">
-                  Se connecter à la plateforme
+                  Définir mon mot de passe
                 </a>
               </div>
-              
+
               <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
                 <p style="margin: 0; color: #856404; font-size: 14px;">
-                  <strong>Important :</strong> Nous vous recommandons de changer ce mot de passe temporaire lors de votre première connexion.
+                  <strong>Important :</strong> ce lien est valable 1 heure et ne fonctionne qu'une seule fois.
+                  S'il a expiré, utilisez « Mot de passe oublié » sur la page de connexion : ${siteUrl}/se-connecter
                 </p>
               </div>
               
@@ -243,14 +268,14 @@ export async function POST(request) {
 
       await transporter.sendMail(mailOptions);
       emailSent = true;
-      console.log('✅ Email de bienvenue envoyé à:', userCreated.email);
+      console.log('✅ Email de bienvenue envoyé');
 
     } catch (emailError) {
-      console.error('❌ Erreur lors de l\'envoi de l\'email:', emailError);
+      console.error('❌ Erreur lors de l\'envoi de l\'email:', emailError?.message);
       // On ne fait pas échouer la création si l'email ne peut pas être envoyé
     }
 
-    console.log('✅ Utilisateur créé avec succès:', userCreated.email);
+    console.log('✅ Utilisateur créé avec succès');
 
     return Response.json({
       message: 'Utilisateur créé avec succès',
@@ -259,7 +284,7 @@ export async function POST(request) {
     }, { status: 201 });
 
   } catch (error) {
-    console.error('❌ Erreur lors de la création de l\'utilisateur:', error);
+    console.error('❌ Erreur lors de la création de l\'utilisateur:', error?.message);
     
     let errorMessage = 'Erreur serveur lors de la création de l\'utilisateur';
     let statusCode = 500;

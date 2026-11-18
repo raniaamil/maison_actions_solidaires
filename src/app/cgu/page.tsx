@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import styles from './cgu.module.css';
 
 export default function ConditionsUtilisation() {
@@ -10,7 +11,8 @@ export default function ConditionsUtilisation() {
 
       <p className={styles.paragraph}>
         Les présentes Conditions Générales d’Utilisation (CGU) ont pour objet de définir les modalités d’accès et d’utilisation du site internet
-        de l’Association Maison d’Actions Solidaires (MAACSO), accessible à l’adresse : [adresse du site à compléter].
+        {/* AJOUT audit RGPD : adresse du site, domaine relevé dans src/middleware.js */}
+        de l’Association Maison d’Actions Solidaires (MAACSO), accessible à l’adresse : https://maison-dactions-solidaires.fr.
         En accédant au site, l’utilisateur accepte sans réserve les présentes CGU.
       </p>
 
@@ -21,14 +23,20 @@ export default function ConditionsUtilisation() {
         Association déclarée selon la loi du 1er juillet 1901<br />
         Siège social : 12 rue de la Corne de Bœuf, 94500 Champigny-sur-Marne<br />
         Email : maisondactionsolidaire@gmail.com<br />
-        Téléphone : 07 82 16 90 08<br />
-        SIREN (si disponible) : [à compléter]
+        Téléphone : 07 82 16 90 08
       </p>
+      {/* AJOUT audit RGPD : hébergeurs repris des mentions légales (Vercel) et de la politique de confidentialité (Supabase) */}
       <p className={styles.paragraph}>
         Le site est hébergé par :<br />
-        [Nom de l’hébergeur]<br />
-        Adresse : [à compléter]<br />
-        Email : [à compléter]
+        Vercel Inc.<br />
+        Adresse : 340 S Lemon Ave #4133, Walnut, CA 91789, United States<br />
+        Email : privacy@vercel.com
+      </p>
+      <p className={styles.paragraph}>
+        La base de données et les fichiers (images, vidéos) sont hébergés par :<br />
+        Supabase Inc.<br />
+        Adresse : Supabase, Inc., c/o Incorporating Services, Ltd., 3500 S. DuPont Highway, Dover, Delaware, États-Unis<br />
+        Contact : privacy@supabase.com
       </p>
 
       <h2 className={styles.heading}>2. Objet du site</h2>
@@ -68,19 +76,43 @@ export default function ConditionsUtilisation() {
         L’utilisateur reste seul responsable de l’usage qu’il fait des informations et contenus disponibles.
       </p>
 
-      {/* <h2 className={styles.heading}>6. Données personnelles</h2>
-      <p className={styles.paragraph}>
-        La collecte et le traitement de vos données personnelles sont régis par notre [Politique de Confidentialité] accessible ici : [lien à insérer].
-        Conformément au RGPD, vous disposez d’un droit d’accès, de rectification, de suppression, de limitation et d’opposition concernant vos données.
-      </p> */}
+      {/* AJOUT audit RGPD : section « Comptes et commentaires » */}
+      <h2 className={styles.heading}>6. Comptes et commentaires</h2>
+      <ul className={styles.list}>
+        <li className={styles.listItem}>
+          La création d’un compte est nécessaire pour commenter les articles. L’utilisateur fournit des informations exactes
+          et garde son mot de passe confidentiel : il ne le communique à personne et prévient l’association en cas d’utilisation
+          non autorisée de son compte.
+        </li>
+        <li className={styles.listItem}>
+          Les commentaires sont publics et affichés avec le prénom et le nom de leur auteur. Ils doivent rester courtois et en
+          rapport avec l’article. Sont interdits notamment les propos injurieux, diffamatoires, discriminatoires ou haineux, la
+          publicité et les informations personnelles concernant d’autres personnes.
+        </li>
+        <li className={styles.listItem}>
+          L’auteur d’un commentaire peut le modifier ou le supprimer. Les administrateurs de l’association peuvent supprimer
+          tout commentaire contraire aux présentes CGU, sans préavis.
+        </li>
+        <li className={styles.listItem}>
+          En cas de manquement aux présentes CGU, l’association peut suspendre ou supprimer le compte concerné.
+        </li>
+      </ul>
 
-      <h2 className={styles.heading}>6. Liens hypertextes</h2>
+      {/* AJOUT audit RGPD : section réactivée, renvoi vers la politique de confidentialité */}
+      <h2 className={styles.heading}>7. Données personnelles</h2>
+      <p className={styles.paragraph}>
+        La collecte et le traitement de vos données personnelles sont régis par notre{' '}
+        <Link href="/politiquedeconfidentialite">politique de confidentialité</Link>.
+        Conformément au RGPD, vous disposez d’un droit d’accès, de rectification, de suppression, de limitation et d’opposition concernant vos données.
+      </p>
+
+      <h2 className={styles.heading}>8. Liens hypertextes</h2>
       <p className={styles.paragraph}>
         Le site peut contenir des liens vers d’autres sites internet. MAACSO décline toute responsabilité quant au contenu de ces sites externes, sur lesquels elle n’a aucun contrôle.
         Tout lien vers le site de MAACSO depuis un site tiers doit faire l’objet d’une autorisation écrite préalable.
       </p>
 
-      <h2 className={styles.heading}>7. Engagements de l’utilisateur</h2>
+      <h2 className={styles.heading}>9. Engagements de l’utilisateur</h2>
       <ul className={styles.list}>
         <li className={styles.listItem}>Utiliser le site dans le respect des lois et règlements en vigueur</li>
         <li className={styles.listItem}>Ne pas porter atteinte aux droits de tiers ou à l’intégrité du site</li>
@@ -90,13 +122,13 @@ export default function ConditionsUtilisation() {
         En cas de non-respect, MAACSO se réserve le droit de prendre toute mesure appropriée, y compris de restreindre l’accès au site.
       </p>
 
-      <h2 className={styles.heading}>8. Modification des CGU</h2>
+      <h2 className={styles.heading}>10. Modification des CGU</h2>
       <p className={styles.paragraph}>
         MAACSO se réserve le droit de modifier les présentes CGU à tout moment. Les nouvelles conditions entreront en vigueur dès leur publication sur le site.
         L’utilisateur est invité à les consulter régulièrement.
       </p>
 
-      <h2 className={styles.heading}>9. Droit applicable et juridiction compétente</h2>
+      <h2 className={styles.heading}>11. Droit applicable et juridiction compétente</h2>
       <p className={styles.paragraph}>
         Les présentes CGU sont régies par le droit français.
         En cas de litige, et après échec de toute tentative amiable, compétence exclusive est attribuée aux tribunaux français.

@@ -1,8 +1,8 @@
 // src/app/api/auth/forgot-password/route.js
 export const runtime = 'nodejs';
 import { query } from '../../../../lib/db';
-import crypto from 'crypto';
 import { createMailTransport, MAIL_FROM } from '../../../../lib/mailer';
+import { createResetToken, hashResetToken } from '../../../../lib/reset-token';
 
 export async function POST(request) {
   try {
@@ -34,7 +34,7 @@ export async function POST(request) {
 
     // Pour des raisons de sécurité, on renvoie toujours le même message
     if (result.rows.length === 0) {
-      console.log(`⚠️ Tentative de réinitialisation pour email inexistant: ${emailTrimmed}`);
+      console.log('⚠️ Demande de réinitialisation pour une adresse inconnue');
       return Response.json(
         { message: 'Si cette adresse e-mail existe, vous recevrez un lien de réinitialisation' },
         { status: 200 }
@@ -43,21 +43,8 @@ export async function POST(request) {
 
     const user = result.rows[0];
 
-    // Générer un token de réinitialisation sécurisé
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 heure
-
-    // Supprimer les anciens tokens pour cet utilisateur et les tokens expirés
-    await query(
-      'DELETE FROM password_reset_tokens WHERE user_id = $1 OR expires_at < NOW()',
-      [user.id]
-    );
-
-    // Insérer le nouveau token
-    await query(
-      'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
-      [user.id, resetToken, resetTokenExpiry]
-    );
+    // Générer un token (1 heure) : seule son empreinte SHA-256 est stockée en base
+    const resetToken = await createResetToken(user.id);
 
     // Créer le lien de réinitialisation
     const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://maison-dactions-solidaires.fr';
@@ -117,15 +104,15 @@ export async function POST(request) {
       };
 
       await transport.sendMail(mailOptions);
-      console.log(`✅ Email de réinitialisation envoyé à: ${user.email}`);
+      console.log('✅ Email de réinitialisation envoyé');
 
     } catch (emailError) {
-      console.error('❌ Erreur lors de l\'envoi de l\'email:', emailError);
+      console.error('❌ Erreur lors de l\'envoi de l\'email:', emailError?.message);
       
       // Supprimer le token si l'email n'a pas pu être envoyé
       await query(
         'DELETE FROM password_reset_tokens WHERE token = $1',
-        [resetToken]
+        [hashResetToken(resetToken)]
       );
       
       return Response.json(
@@ -140,7 +127,7 @@ export async function POST(request) {
     );
 
   } catch (error) {
-    console.error('❌ Erreur lors de la demande de réinitialisation:', error);
+    console.error('❌ Erreur lors de la demande de réinitialisation:', error?.message);
     return Response.json(
       { 
         error: 'Erreur serveur lors de la demande de réinitialisation',

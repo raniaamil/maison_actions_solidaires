@@ -13,7 +13,7 @@ interface FormData {
   confirmPassword: string;
 }
 
-type FormErrors = Partial<Record<keyof FormData | 'general', string>>;
+type FormErrors = Partial<Record<keyof FormData | 'acceptTerms' | 'general', string>>;
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState<FormData>({
@@ -28,6 +28,8 @@ export default function RegisterPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // Case obligatoire : acceptation des CGU et de la politique de confidentialité
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -57,6 +59,9 @@ export default function RegisterPage() {
     if (!formData.confirmPassword) newErrors.confirmPassword = 'La confirmation du mot de passe est requise';
     else if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
 
+    if (!acceptTerms)
+      newErrors.acceptTerms = "Vous devez accepter les conditions générales d'utilisation et la politique de confidentialité";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -77,6 +82,7 @@ export default function RegisterPage() {
           lastName: formData.lastName.trim(),
           email: formData.email.toLowerCase().trim(),
           password: formData.password,
+          acceptTerms,
         }),
       });
 
@@ -96,6 +102,7 @@ export default function RegisterPage() {
           password: '',
           confirmPassword: '',
         });
+        setAcceptTerms(false);
         setErrors({});
       } else {
         setErrors({
@@ -192,6 +199,30 @@ export default function RegisterPage() {
               </div>
               {errors.confirmPassword && <p className={styles.errorText}>{errors.confirmPassword}</p>}
             </div>
+          </div>
+
+          <div className={styles.consentGroup}>
+            <label htmlFor="acceptTerms" className={styles.consentLabel}>
+              <input id="acceptTerms" name="acceptTerms" type="checkbox"
+                checked={acceptTerms} disabled={isLoading} required
+                aria-invalid={!!errors.acceptTerms}
+                aria-describedby={errors.acceptTerms ? 'acceptTerms-error' : undefined}
+                onChange={(e) => {
+                  setAcceptTerms(e.target.checked);
+                  if (errors.acceptTerms) setErrors(prev => ({ ...prev, acceptTerms: undefined }));
+                }} />
+              <span>
+                J&apos;ai lu et j&apos;accepte les{' '}
+                <Link href="/cgu" target="_blank" rel="noopener noreferrer" className={styles.link}>conditions générales d&apos;utilisation</Link>{' '}
+                et la{' '}
+                <Link href="/politiquedeconfidentialite" target="_blank" rel="noopener noreferrer" className={styles.link}>politique de confidentialité</Link>.
+              </span>
+            </label>
+            {errors.acceptTerms && <p id="acceptTerms-error" className={styles.errorText}>{errors.acceptTerms}</p>}
+            <p className={styles.consentInfo}>
+              Maison d&apos;Actions Solidaires utilise vos données pour gérer votre compte. Vous pouvez exercer vos droits en
+              écrivant à maisondactionsolidaire@gmail.com.
+            </p>
           </div>
 
           <button type="submit" disabled={isLoading} className={styles.submitButton}>

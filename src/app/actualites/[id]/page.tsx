@@ -55,7 +55,7 @@ const Page: React.FC = () => {
           setError('Erreur lors du chargement de l\'article');
         }
       } catch (error) {
-        console.error('Erreur:', error);
+        console.error('Erreur:', (error as Error)?.message);
         setError('Erreur de connexion');
       } finally {
         setLoading(false);

@@ -59,7 +59,7 @@ export default function EditUserPage() {
           router.push('/administrateur?tab=utilisateurs');
         }
       } catch (error) {
-        console.error('Erreur lors du chargement:', error);
+        console.error('Erreur lors du chargement:', (error as Error)?.message);
         router.push('/administrateur?tab=utilisateurs');
       } finally {
         if (mounted) setLoading(false);
@@ -107,7 +107,7 @@ export default function EditUserPage() {
         alert(data.error || 'Erreur lors de la mise à jour');
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Erreur:', (error as Error)?.message);
       alert('Erreur de connexion');
     } finally {
       setSaving(false);

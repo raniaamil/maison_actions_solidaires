@@ -287,6 +287,7 @@ async function runTests() {
         lastName: 'Inscription',
         email: randomEmail,
         password: 'TestPass123',
+        acceptTerms: true,
       }),
     });
     // 201 = créé, 409 = email déjà utilisé (si re-exécuté)
@@ -305,6 +306,7 @@ async function runTests() {
         lastName: 'Short',
         email: 'short@test.com',
         password: '123',
+        acceptTerms: true,
       }),
     });
     assertEqual(status, 400, `Expected 400, got ${status}`);
@@ -318,6 +320,20 @@ async function runTests() {
         lastName: 'Weak',
         email: 'weak@test.com',
         password: 'abcdefgh',
+        acceptTerms: true,
+      }),
+    });
+    assertEqual(status, 400, `Expected 400, got ${status}`);
+  });
+
+  await test('POST /api/register — case CGU / politique non cochée rejetée', async () => {
+    const { status } = await fetchJSON('/api/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        firstName: 'Test',
+        lastName: 'NoTerms',
+        email: `noterms-${Date.now()}@test-delete-me.com`,
+        password: 'TestPass123',
       }),
     });
     assertEqual(status, 400, `Expected 400, got ${status}`);

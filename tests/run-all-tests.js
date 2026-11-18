@@ -533,6 +533,137 @@ async function runTests() {
       assertEqual(status, 404, `Expected 404, got ${status}`);
     });
 
+    // ---- Commentaires : authentification par cookie, réponses, modération ----
+    // Compte utilisateur fictif + article de test ; uniquement le cookie mas_session
+    // (aucun en-tête Authorization), comme le navigateur.
+    const adminCookie = { Cookie: `mas_session=${adminToken}` };
+    const noEmail = (body) => !/"email"|@/.test(JSON.stringify(body));
+    const cm = { userCookie: null, userId: null, articleId: null, rootId: null, replyId: null };
+
+    await test('Commentaires — préparation (utilisateur fictif + article)', async () => {
+      const email = `test-comments-${Date.now()}@test-delete-me.com`;
+      const reg = await fetchJSON('/api/register', {
+        method: 'POST',
+        body: JSON.stringify({ firstName: 'Test', lastName: 'Commentaire', email, password: 'TestPass123', acceptTerms: true }),
+      });
+      assertEqual(reg.status, 201, `Register ${reg.status}`);
+      const login = await fetchJSON('/api/auth/login', {
+        method: 'POST',
+        // IP distincte : la limite de connexion (5 / 15 min / IP) est déjà entamée par la suite
+        headers: { 'x-forwarded-for': `10.77.${Date.now() % 250}.${Math.floor(Math.random() * 250)}` },
+        body: JSON.stringify({ email, password: 'TestPass123' }),
+      });
+      assertEqual(login.status, 200, `Login utilisateur ${login.status}`);
+      const setCookie = (login.headers.getSetCookie?.() || [login.headers.get('set-cookie') || '']).join('; ');
+      const match = setCookie.match(/mas_session=([^;]+)/);
+      assert(match, 'Cookie mas_session absent');
+      cm.userCookie = { Cookie: `mas_session=${match[1]}` };
+      cm.userId = login.body.user.id;
+
+      const art = await fetchJSON('/api/actualites', {
+        method: 'POST',
+        headers: adminCookie,
+        body: JSON.stringify({ titre: '[TEST] Article commentaires', description: 'Test auto', contenu: '<p>x</p>', type: 'numérique', statut: 'Brouillon', tags: ['test'] }),
+      });
+      assertEqual(art.status, 201, `Article ${art.status}: ${JSON.stringify(art.body)}`);
+      cm.articleId = art.body.actualite.id;
+    });
+
+    if (cm.articleId && cm.userCookie) {
+      await test('POST commentaire racine (utilisateur, cookie) → 201 sans e-mail', async () => {
+        const { status, body } = await fetchJSON('/api/comments', {
+          method: 'POST', headers: cm.userCookie,
+          body: JSON.stringify({ article_id: cm.articleId, contenu: 'Commentaire racine de test' }),
+        });
+        assertEqual(status, 201, `Status ${status}`);
+        assert(noEmail(body), 'La réponse contient un e-mail');
+        cm.rootId = body.comment.id;
+      });
+
+      await test('POST réponse (administrateur, cookie) → 201 sans e-mail', async () => {
+        const { status, body } = await fetchJSON('/api/comments', {
+          method: 'POST', headers: adminCookie,
+          body: JSON.stringify({ article_id: cm.articleId, contenu: 'Réponse de test', parent_id: cm.rootId }),
+        });
+        assertEqual(status, 201, `Status ${status}`);
+        assert(noEmail(body), 'La réponse contient un e-mail');
+        cm.replyId = body.comment.id;
+      });
+
+      await test('GET /api/comments?articleId — 1 racine + 1 réponse, totaux aplatis = 2 commentaires / 2 auteurs', async () => {
+        const { status, body } = await fetchJSON(`/api/comments?articleId=${cm.articleId}`);
+        assertEqual(status, 200, `Status ${status}`);
+        assert(noEmail(body), 'La liste contient un e-mail');
+        assertEqual(body.comments.length, 1, `Racines attendues 1, obtenu ${body.comments.length}`);
+        // Même aplatissement que CommentsModeration.jsx
+        const flatten = (list) => list.flatMap(({ replies = [], ...c }) => [c, ...flatten(replies)]);
+        const flat = flatten(body.comments);
+        assertEqual(flat.length, 2, `Total attendu 2, obtenu ${flat.length}`);
+        assertEqual(new Set(flat.map((c) => c.user_id)).size, 2, 'Utilisateurs actifs attendus : 2');
+      });
+
+      await test('GET /api/comments?mine=1 sans cookie → 401', async () => {
+        const { status } = await fetchJSON('/api/comments?mine=1');
+        assertEqual(status, 401, `Expected 401, got ${status}`);
+      });
+
+      await test('GET /api/comments?mine=1 (utilisateur) → uniquement ses commentaires, sans e-mail', async () => {
+        const { status, body } = await fetchJSON('/api/comments?mine=1', { headers: cm.userCookie });
+        assertEqual(status, 200, `Status ${status}`);
+        assert(noEmail(body), 'La liste contient un e-mail');
+        assert(body.comments.length >= 1, 'Aucun commentaire renvoyé');
+        assert(body.comments.every((c) => c.user_id === cm.userId), 'Commentaire d’un autre compte renvoyé');
+        assert(body.comments.some((c) => c.id === cm.rootId), 'Commentaire racine absent');
+      });
+
+      await test('GET /api/comments?mine=1 (administrateur) → inclut sa réponse', async () => {
+        const { status, body } = await fetchJSON('/api/comments?mine=1', { headers: adminCookie });
+        assertEqual(status, 200, `Status ${status}`);
+        assert(body.comments.some((c) => c.id === cm.replyId), 'Réponse absente');
+        assert(!body.comments.some((c) => c.id === cm.rootId), 'Commentaire d’un autre compte renvoyé');
+      });
+
+      await test('PUT son commentaire (utilisateur, cookie) → 200 sans e-mail, titre de l’article conservé', async () => {
+        const { status, body } = await fetchJSON(`/api/comments/${cm.rootId}`, {
+          method: 'PUT', headers: cm.userCookie, body: JSON.stringify({ contenu: 'Commentaire modifié' }),
+        });
+        assertEqual(status, 200, `Status ${status}`);
+        assert(noEmail(body), 'La réponse contient un e-mail');
+        assertEqual(body.comment.contenu, 'Commentaire modifié');
+        assertEqual(body.comment.actualites?.titre, '[TEST] Article commentaires');
+      });
+
+      await test('PUT / DELETE la réponse d’un autre (utilisateur) → 403', async () => {
+        const put = await fetchJSON(`/api/comments/${cm.replyId}`, {
+          method: 'PUT', headers: cm.userCookie, body: JSON.stringify({ contenu: 'Tentative' }),
+        });
+        assertEqual(put.status, 403, `PUT ${put.status}`);
+        const del = await fetchJSON(`/api/comments/${cm.replyId}`, { method: 'DELETE', headers: cm.userCookie });
+        assertEqual(del.status, 403, `DELETE ${del.status}`);
+      });
+
+      await test('PUT le commentaire d’un utilisateur (administrateur, modération) → 200', async () => {
+        const { status, body } = await fetchJSON(`/api/comments/${cm.rootId}`, {
+          method: 'PUT', headers: adminCookie, body: JSON.stringify({ contenu: 'Modéré par un administrateur' }),
+        });
+        assertEqual(status, 200, `Status ${status}`);
+        assert(noEmail(body), 'La réponse contient un e-mail');
+      });
+
+      await test('DELETE la réponse (administrateur) puis son commentaire (utilisateur) → 200', async () => {
+        const a = await fetchJSON(`/api/comments/${cm.replyId}`, { method: 'DELETE', headers: adminCookie });
+        assertEqual(a.status, 200, `DELETE admin ${a.status}`);
+        const u = await fetchJSON(`/api/comments/${cm.rootId}`, { method: 'DELETE', headers: cm.userCookie });
+        assertEqual(u.status, 200, `DELETE utilisateur ${u.status}`);
+        const { body } = await fetchJSON(`/api/comments?articleId=${cm.articleId}`);
+        assertEqual(body.comments.length, 0, 'Des commentaires restent');
+      });
+    }
+
+    // Nettoyage (même en cas d'échec)
+    if (cm.articleId) await fetchJSON(`/api/actualites/${cm.articleId}`, { method: 'DELETE', headers: adminCookie });
+    if (cm.userId) await fetchJSON(`/api/users/${cm.userId}`, { method: 'DELETE', headers: adminCookie });
+
   } else {
     skip('Tests CRUD authentifiés', 'Token admin non disponible');
   }

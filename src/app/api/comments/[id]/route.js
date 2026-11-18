@@ -176,10 +176,11 @@ export async function PUT(request, context) {
         u.id as user_id,
         u.prenom as user_prenom,
         u.nom as user_nom,
-        u.email as user_email,
-        u.photo as user_photo
+        u.photo as user_photo,
+        a.titre as article_titre
       FROM comments c
       LEFT JOIN users u ON c.user_id = u.id
+      LEFT JOIN actualites a ON c.article_id = a.id
       WHERE c.id = $1`,
       [commentId]
     );
@@ -189,6 +190,7 @@ export async function PUT(request, context) {
       id: row.id,
       article_id: row.article_id,
       user_id: row.user_id,
+      parent_id: row.parent_id,
       contenu: row.contenu,
       created_at: row.created_at,
       updated_at: row.updated_at,
@@ -196,8 +198,11 @@ export async function PUT(request, context) {
         id: row.user_id,
         prenom: row.user_prenom,
         nom: row.user_nom,
-        email: row.user_email,
         photo_profil: row.user_photo
+      },
+      actualites: {
+        id: row.article_id,
+        titre: row.article_titre
       }
     };
 

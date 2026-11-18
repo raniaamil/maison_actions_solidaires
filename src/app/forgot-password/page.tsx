@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
       } else {
         const errorData = await response.json();
         setErrors({
-          email: errorData?.message || 'Une erreur est survenue',
+          email: errorData?.error || 'Une erreur est survenue',
         });
       }
     } catch {

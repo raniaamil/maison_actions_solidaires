@@ -77,7 +77,7 @@ function ResetPasswordContent() {
           setTokenValid(true);
         } else {
           const data = await response.json();
-          setMessage(data.message || 'Lien de réinitialisation invalide ou expiré');
+          setMessage(data.error || 'Lien de réinitialisation invalide ou expiré');
           setMessageType('error');
           setTokenValid(false);
         }
@@ -139,11 +139,11 @@ function ResetPasswordContent() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage('Mot de passe réinitialisé avec succès ! Vous pouvez maintenant vous connecter.');
+        setMessage('Mot de passe enregistré ! Vous pouvez maintenant vous connecter.');
         setMessageType('success');
         setFormData({ password: '', confirmPassword: '' });
       } else {
-        setMessage(data.message || 'Erreur lors de la réinitialisation du mot de passe');
+        setMessage(data.error || 'Erreur lors de l’enregistrement du mot de passe');
         setMessageType('error');
       }
     } catch {
@@ -166,7 +166,7 @@ function ResetPasswordContent() {
           <div className={styles.errorMessage}>{message}</div>
           <div className={styles.backToLogin}>
             <Link href="/forgot-password" className={styles.link}>
-              Demander un nouveau lien de réinitialisation
+              Demander un nouveau lien
             </Link>
           </div>
           <div className={styles.backToLogin}>
@@ -183,8 +183,8 @@ function ResetPasswordContent() {
   return (
     <div className={styles.container}>
       <div className={styles.formCard}>
-        <h1 className={styles.title}>Nouveau mot de passe</h1>
-        <p className={styles.description}>Choisissez un nouveau mot de passe sécurisé pour votre compte.</p>
+        <h1 className={styles.title}>Définir votre mot de passe</h1>
+        <p className={styles.description}>Choisissez un mot de passe sécurisé pour votre compte.</p>
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
           {message && (
@@ -258,7 +258,7 @@ function ResetPasswordContent() {
               </div>
 
               <button type="submit" disabled={isLoading} className={styles.submitButton}>
-                {isLoading ? 'Réinitialisation en cours...' : 'Mettre à jour le mot de passe'}
+                {isLoading ? 'Enregistrement en cours...' : 'Enregistrer le mot de passe'}
               </button>
             </>
           )}

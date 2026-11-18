@@ -65,18 +65,8 @@ export async function POST(request) {
       );
     }
 
-    // Token valide
-    return Response.json(
-      { 
-        message: 'Token valide',
-        user: {
-          email: tokenData.email,
-          prenom: tokenData.prenom,
-          nom: tokenData.nom
-        }
-      },
-      { status: 200 }
-    );
+    // Token valide — aucune donnée du compte dans la réponse
+    return Response.json({ valid: true }, { status: 200 });
 
   } catch (error) {
     console.error('❌ Erreur lors de la vérification du token:', error?.message);

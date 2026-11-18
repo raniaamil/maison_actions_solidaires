@@ -32,12 +32,24 @@ export async function GET(request) {
     `;
 
     const queryParams = [];
-    
+
+    // ?mine=1 : commentaires ET réponses de l'utilisateur connecté, identifié par le
+    // cookie de session côté serveur (le navigateur ne lit plus aucun jeton).
+    const mine = searchParams.get('mine') === '1';
+    if (mine) {
+      const user = getUserFromToken(request);
+      if (!user) {
+        return Response.json({ error: 'Authentification requise' }, { status: 401 });
+      }
+      queryParams.push(user.userId);
+      queryText += ` AND c.user_id = $${queryParams.length}`;
+    }
+
     if (articleId) {
       const articleIdNum = parseInt(articleId);
       if (!isNaN(articleIdNum)) {
-        queryText += ` AND c.article_id = $1`;
         queryParams.push(articleIdNum);
+        queryText += ` AND c.article_id = $${queryParams.length}`;
       }
     }
 
@@ -75,6 +87,12 @@ export async function GET(request) {
       
       commentsMap.set(comment.id, comment);
     });
+
+    // Liste plate pour « Mes commentaires » : les parents d'une réponse peuvent
+    // appartenir à d'autres comptes et ne sont donc pas dans le résultat.
+    if (mine) {
+      return Response.json({ comments: [...commentsMap.values()] });
+    }
 
     // Deuxième passe : organiser en arbre
     commentsMap.forEach(comment => {
@@ -198,7 +216,6 @@ export async function POST(request) {
         u.id as user_id,
         u.prenom as user_prenom,
         u.nom as user_nom,
-        u.email as user_email,
         u.photo as user_photo,
         u.role as user_role
       FROM comments c
@@ -220,7 +237,6 @@ export async function POST(request) {
         id: row.user_id,
         prenom: row.user_prenom,
         nom: row.user_nom,
-        email: row.user_email,
         photo_profil: row.user_photo,
         role: row.user_role
       },

@@ -26,15 +26,10 @@ export default function UserComments() {
       if (!user) {
         throw new Error('Non authentifié');
       }
-      // Récupérer l'ID utilisateur depuis le token
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const userId = payload.userId;
-
-      // Récupérer tous les commentaires puis filtrer côté client
-      const response = await fetch('/api/comments', {
+      // Le serveur identifie l'utilisateur par le cookie de session HttpOnly
+      // et renvoie ses commentaires et ses réponses (liste plate).
+      const response = await fetch('/api/comments?mine=1', {
         credentials: 'same-origin',
-        headers: {
-        },
       });
 
       if (!response.ok) {
@@ -42,10 +37,7 @@ export default function UserComments() {
       }
 
       const data = await response.json();
-      
-      // Filtrer les commentaires de l'utilisateur
-      const userComments = data.comments.filter(c => c.user_id === userId);
-      setComments(userComments);
+      setComments(data.comments || []);
       setError(null);
     } catch (err) {
       console.error('Erreur:', err);
@@ -81,7 +73,8 @@ export default function UserComments() {
         throw new Error(errorData.error || 'Erreur lors de la suppression');
       }
 
-      setComments(comments.filter(c => c.id !== commentId));
+      // Rechargement : la suppression d'un commentaire supprime aussi ses réponses (ON DELETE CASCADE)
+      await fetchUserComments();
     } catch (err) {
       console.error('❌ Erreur suppression:', err);
       alert(err.message);
@@ -133,7 +126,7 @@ export default function UserComments() {
       
       // Mettre à jour le commentaire dans la liste
       setComments(comments.map(c => 
-        c.id === commentId ? data.comment : c
+        c.id === commentId ? { ...c, ...data.comment } : c
       ));
       
       setEditingId(null);

@@ -39,7 +39,11 @@ export default function CommentsModeration() {
       }
 
       const data = await response.json();
-      setComments(data.comments || []);
+      // L'API renvoie un arbre (commentaires racines + replies) : on l'aplatit pour que
+      // les totaux, la liste et la modération incluent aussi les réponses.
+      const flatten = (list) =>
+        list.flatMap(({ replies = [], ...c }) => [c, ...flatten(replies)]);
+      setComments(flatten(data.comments || []));
       setError(null);
     } catch (err) {
       console.error('Erreur:', err);
@@ -75,7 +79,8 @@ export default function CommentsModeration() {
         throw new Error(errorData.error || 'Erreur lors de la suppression');
       }
 
-      setComments(comments.filter(c => c.id !== commentId));
+      // Rechargement : la suppression d'un commentaire supprime aussi ses réponses (ON DELETE CASCADE)
+      await fetchAllComments();
     } catch (err) {
       console.error('❌ Erreur suppression:', err);
       alert(err.message);
@@ -124,7 +129,7 @@ export default function CommentsModeration() {
       const data = await response.json();
       
       setComments(comments.map(c => 
-        c.id === commentId ? data.comment : c
+        c.id === commentId ? { ...c, ...data.comment } : c
       ));
       
       setEditingId(null);
@@ -420,7 +425,6 @@ function CommentCard({
               <p className="font-semibold text-gray-900">
                 {comment.users?.prenom} {comment.users?.nom}
               </p>
-              <p className="text-xs text-gray-500 truncate">{comment.users?.email}</p>
 
               {showArticle && (
                 <Link 

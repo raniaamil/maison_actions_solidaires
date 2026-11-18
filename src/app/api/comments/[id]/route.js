@@ -1,22 +1,13 @@
 // src/app/api/comments/[id]/route.js
 export const runtime = 'nodejs';
 import { query } from '../../../../lib/db';
-import jwt from 'jsonwebtoken';
+import { getVerifiedUser } from '../../../../lib/auth';
 
 // Fonction pour extraire et vérifier le token JWT
+// 🔐 Cookie de session HttpOnly (envoyé par le navigateur) en priorité, en-tête
+// Authorization en repli ; signature, expiration et algorithme HS256 vérifiés.
 function getUserFromToken(request) {
-  try {
-    const authHeader = request.headers.get('authorization') || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-    if (!token) return null;
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return decoded;
-  } catch (error) {
-    console.error('Erreur de vérification du token:', error?.message);
-    return null;
-  }
+  return getVerifiedUser(request);
 }
 
 // GET - Récupérer un commentaire spécifique (public)

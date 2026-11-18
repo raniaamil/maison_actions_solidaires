@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, ArrowLeft, Key, Send, Check, Copy, Eye, EyeOff } from 'lucide-react';
+import { User, ArrowLeft, Send, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '../../../../components/ProtectedRoute';
 
@@ -14,7 +14,7 @@ interface CreateUserFormData {
   role: string; // 'Utilisateur' | 'Rédacteur' | 'Administrateur'
 }
 type FieldName = keyof CreateUserFormData;
-type ErrorKeys = FieldName | 'password';
+type ErrorKeys = FieldName;
 type Errors = Partial<Record<ErrorKeys, string>>;
 
 export default function CreateUserPage() {
@@ -28,27 +28,10 @@ export default function CreateUserPage() {
     role: 'Utilisateur',
   });
 
-  const [tempPassword, setTempPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [emailSent, setEmailSent] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const [passwordCopied, setPasswordCopied] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
-
-  const generateTempPassword = () => {
-    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-    const specialChars = '!@#$%';
-    let password = '';
-    // au moins 1 majuscule, 1 minuscule, 1 chiffre, 1 spécial
-    password += chars.charAt(Math.floor(Math.random() * 26)); // Majuscule
-    password += chars.charAt(Math.floor(Math.random() * 26) + 26); // Minuscule
-    password += chars.charAt(Math.floor(Math.random() * 10) + 52); // Chiffre
-    password += specialChars.charAt(Math.floor(Math.random() * specialChars.length)); // Spécial
-    for (let i = 4; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password.split('').sort(() => Math.random() - 0.5).join('');
-  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -70,29 +53,6 @@ export default function CreateUserPage() {
     }
   };
 
-  const handleGeneratePassword = () => {
-    const newPassword = generateTempPassword();
-    setTempPassword(newPassword);
-    setPasswordCopied(false);
-    // efface l'erreur password si présente
-    if (errors.password) {
-      setErrors(prev => {
-        const { password: _removed, ...rest } = prev;
-        return rest;
-      });
-    }
-  };
-
-  const handleCopyPassword = async () => {
-    try {
-      await navigator.clipboard.writeText(tempPassword);
-      setPasswordCopied(true);
-      setTimeout(() => setPasswordCopied(false), 2000);
-    } catch {
-      console.log('Erreur lors de la copie');
-    }
-  };
-
   const validateForm = () => {
     const newErrors: Errors = {};
 
@@ -110,10 +70,6 @@ export default function CreateUserPage() {
       newErrors.email = "L'adresse e-mail n'est pas valide";
     }
 
-    if (!tempPassword) {
-      newErrors.password = 'Veuillez générer un mot de passe';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -128,7 +84,6 @@ export default function CreateUserPage() {
         prenom: formData.prenom,
         nom: formData.nom,
         email: formData.email,
-        password: tempPassword,
         bio: formData.bio || null,
         role: formData.role,
       };
@@ -144,6 +99,7 @@ export default function CreateUserPage() {
 
       if (response.ok) {
         console.log('✅ Utilisateur créé avec succès');
+        setEmailSent(data?.emailSent !== false);
         setShowSuccessModal(true);
       } else {
         console.log('❌ Erreur du serveur:', data?.message || data?.error);
@@ -170,8 +126,6 @@ export default function CreateUserPage() {
       bio: '',
       role: 'Utilisateur',
     });
-    setTempPassword('');
-    setPasswordCopied(false);
     setErrors({});
   };
 
@@ -182,8 +136,7 @@ export default function CreateUserPage() {
   const isFormValid =
     Boolean(formData.prenom) &&
     Boolean(formData.nom) &&
-    Boolean(formData.email) &&
-    Boolean(tempPassword);
+    Boolean(formData.email);
 
   return (
     <ProtectedRoute requiredRole="Administrateur">
@@ -203,7 +156,7 @@ export default function CreateUserPage() {
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Créer un nouvel utilisateur</h1>
             <p className="text-gray-600">
-              Ajoutez un nouveau membre à l'équipe. Un mot de passe temporaire sera généré et envoyé par email.
+              Ajoutez un nouveau membre. Il recevra par e-mail un lien pour définir lui-même son mot de passe.
             </p>
           </div>
 
@@ -271,7 +224,7 @@ export default function CreateUserPage() {
                     />
                     {errors.email && <span className="text-red-500 text-sm mt-1">{errors.email}</span>}
                     <p className="text-sm text-gray-600 mt-1">
-                      Les identifiants de connexion seront envoyés à cette adresse.
+                      Le lien de définition du mot de passe sera envoyé à cette adresse.
                     </p>
                   </div>
                   <div className="flex flex-col">
@@ -306,82 +259,6 @@ export default function CreateUserPage() {
                     L'utilisateur pourra modifier sa biographie après sa première connexion.
                   </p>
                 </div>
-              </div>
-
-              {/* Génération du mot de passe */}
-              <div className="mb-8 border-t pt-8 px-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <Key className="w-5 h-5 text-blue-600" />
-                  <h2 className="text-xl font-semibold text-gray-900">Mot de passe temporaire</h2>
-                </div>
-
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
-                  <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 text-yellow-600 mt-0.5">⚠️</div>
-                    <div>
-                      <h3 className="font-medium text-yellow-800 mb-1">Important</h3>
-                      <p className="text-sm text-yellow-700">
-                        Un mot de passe temporaire sera généré automatiquement et envoyé par email. L'utilisateur devra
-                        obligatoirement le changer lors de sa première connexion.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 items-end mb-4">
-                  <div className="flex-1">
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">Mot de passe généré</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={tempPassword}
-                        readOnly
-                        className={`w-full px-3 py-3 pr-20 border border-gray-300 rounded-md text-base bg-gray-100 font-mono ${
-                          errors.password ? 'border-red-500' : ''
-                        }`}
-                        placeholder="Cliquez sur 'Générer' pour créer un mot de passe"
-                      />
-                      {tempPassword && (
-                        <button
-                          type="button"
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      )}
-                    </div>
-                    {errors.password && <span className="text-red-500 text-sm mt-1">{errors.password}</span>}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleGeneratePassword}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 cursor-pointer"
-                    disabled={isCreating}
-                  >
-                    Générer
-                  </button>
-                  {tempPassword && (
-                    <button
-                      type="button"
-                      onClick={handleCopyPassword}
-                      className={`px-4 py-3 rounded-md transition-colors duration-200 ${
-                        passwordCopied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                      disabled={isCreating}
-                    >
-                      {passwordCopied ? <Check size={16} /> : <Copy size={16} />}
-                    </button>
-                  )}
-                </div>
-
-                {tempPassword && (
-                  <div className="text-sm text-gray-600">
-                    <p className="mb-1">✅ Mot de passe généré avec succès</p>
-                    <p>• Longueur : 12 caractères</p>
-                    <p>• Contient : majuscules, minuscules, chiffres et caractères spéciaux</p>
-                  </div>
-                )}
               </div>
 
               {/* Actions */}
@@ -438,19 +315,25 @@ export default function CreateUserPage() {
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                     <div className="flex items-center gap-2 mb-2">
                       <Send className="w-4 h-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-800">Email envoyé</span>
+                      <span className="text-sm font-medium text-green-800">
+                        {emailSent ? 'Email envoyé' : "Email non envoyé"}
+                      </span>
                     </div>
                     <p className="text-sm text-green-700">
-                      Un email contenant les identifiants de connexion a été envoyé à <strong>{formData.email}</strong>
+                      {emailSent ? (
+                        <>Un email contenant un lien pour définir son mot de passe a été envoyé à <strong>{formData.email}</strong>. Le lien est valable 1 heure.</>
+                      ) : (
+                        <>L&apos;email n&apos;a pas pu être envoyé. La personne peut utiliser « Mot de passe oublié » sur la page de connexion avec l&apos;adresse <strong>{formData.email}</strong>.</>
+                      )}
                     </p>
                   </div>
 
                   <div className="text-sm text-gray-600 mb-6">
                     <h4 className="font-medium mb-2">Prochaines étapes :</h4>
                     <ul className="space-y-1">
-                      <li>• L'utilisateur recevra ses identifiants par email</li>
-                      <li>• Il devra changer son mot de passe à la première connexion</li>
-                      <li>• Il pourra ensuite compléter son profil</li>
+                      <li>• La personne définit son mot de passe grâce au lien reçu par e-mail</li>
+                      <li>• Si le lien a expiré, elle utilise « Mot de passe oublié »</li>
+                      <li>• Elle pourra ensuite se connecter</li>
                     </ul>
                   </div>
 

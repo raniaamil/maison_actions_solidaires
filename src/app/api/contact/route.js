@@ -4,6 +4,7 @@ import { query } from '../../../lib/db';
 import { requireEditor } from '../../../lib/auth';
 import { createMailTransport, MAIL_FROM } from '../../../lib/mailer';
 import { createHash, randomBytes } from 'crypto';
+import { escapeHtml } from '../../../lib/escape-html';
 
 // 🛡️ Anti-spam sans service tiers (remplace la fausse case « Je ne suis pas un robot »).
 // 1) Champ piège `website` : invisible pour un humain, souvent rempli par les robots.
@@ -32,16 +33,6 @@ function clientOverLimit(key, now) {
   }
   return (recentByClient.get(key) || []).length >= MAX_PER_CLIENT;
 }
-
-// 🔐 Échappement HTML des saisies du visiteur avant insertion dans les e-mails : sans cela,
-// n'importe qui peut injecter du HTML (liens de hameçonnage) dans l'e-mail de confirmation,
-// envoyé depuis l'adresse de l'association à l'adresse saisie dans le formulaire.
-const escapeHtml = (value) => String(value)
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&#39;');
 
 const tooManyRequests = () => Response.json({
   success: false,

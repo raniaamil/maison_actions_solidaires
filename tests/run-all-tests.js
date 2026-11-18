@@ -76,7 +76,7 @@ async function fetchJSON(path, options = {}) {
   });
   let body;
   try { body = await res.json(); } catch { body = null; }
-  return { status: res.status, body, ok: res.ok };
+  return { status: res.status, body, ok: res.ok, headers: res.headers };
 }
 
 // Version SANS Origin (pour tester spécifiquement le blocage CSRF)
@@ -362,15 +362,19 @@ async function runTests() {
 
   if (ADMIN_EMAIL && ADMIN_PASSWORD) {
     await test('POST /api/auth/login — connexion admin', async () => {
-      const { status, body } = await fetchJSON('/api/auth/login', {
+      const { status, body, headers } = await fetchJSON('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
       });
-      assertEqual(status, 200, `Status ${status}: ${JSON.stringify(body)}`);
+      assertEqual(status, 200, `Status ${status}`);
       assert(body.success === true, 'Login should succeed');
-      assert(body.token, 'Token should be present');
+      assert(body.token === undefined, 'Token should NOT be in the body (cookie HttpOnly)');
       assert(body.user?.id, 'User ID should be present');
-      adminToken = body.token;
+      // Le jeton est posé dans le cookie HttpOnly mas_session
+      const setCookie = (headers.getSetCookie?.() || [headers.get('set-cookie') || '']).join('; ');
+      const match = setCookie.match(/mas_session=([^;]+)/);
+      assert(match, 'Cookie mas_session should be set');
+      adminToken = match[1];
     });
   } else {
     skip('POST /api/auth/login — connexion admin', 'Définir ADMIN_EMAIL et ADMIN_PASSWORD pour activer');
@@ -410,6 +414,32 @@ async function runTests() {
         assert(body[0].id !== undefined, 'User should have id');
         assert(body[0].mot_de_passe === undefined, 'Password should NOT be in response');
       }
+    });
+
+    await test('POST /api/users — création sans mot de passe connu de l’administrateur', async () => {
+      const email = `test-create-${Date.now()}@test-delete-me.com`;
+      const clientPassword = 'TestPass123';
+      const { status, body } = await fetchJSON('/api/users', {
+        method: 'POST',
+        headers: authHeaders,
+        // Un mot de passe envoyé par le client doit être ignoré
+        body: JSON.stringify({ prenom: 'Test', nom: '<b>Creation</b>', email, password: clientPassword }),
+      });
+      assertEqual(status, 201, `Status ${status}`);
+      const created = body.user;
+      assert(created?.id, 'Created user should have an id');
+      assertEqual(created.role, 'Utilisateur', `Default role should be Utilisateur, got ${created.role}`);
+      assert(created.mot_de_passe === undefined && created.password === undefined, 'No password in response');
+
+      // Le mot de passe proposé par le client ne permet pas de se connecter
+      const login = await fetchJSON('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password: clientPassword }),
+      });
+      assertEqual(login.status, 401, `Login with client password should fail, got ${login.status}`);
+
+      // Nettoyage
+      await fetchJSON(`/api/users/${created.id}`, { method: 'DELETE', headers: authHeaders });
     });
 
     await test('GET /api/actualites (toutes) avec token → inclut Brouillon', async () => {
@@ -541,6 +571,15 @@ async function runTests() {
       body: JSON.stringify({ token: 'faketoken123' }),
     });
     assertEqual(status, 400, `Expected 400, got ${status}`);
+  });
+
+  await test('POST /api/auth/reset-password — token invalide → 400 sans données du compte', async () => {
+    const { status, body } = await fetchJSON('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token: 'faketoken123', password: 'TestPass123' }),
+    });
+    assertEqual(status, 400, `Expected 400, got ${status}`);
+    assert(body?.user === undefined, 'Response should not contain user data');
   });
 
   await test('POST /api/auth/reset-password — validation mot de passe court', async () => {

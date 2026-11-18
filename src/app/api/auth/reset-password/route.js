@@ -124,17 +124,8 @@ export async function POST(request) {
 
       console.log('✅ Mot de passe réinitialisé');
 
-      return Response.json(
-        { 
-          message: 'Mot de passe réinitialisé avec succès',
-          user: {
-            email: tokenData.email,
-            prenom: tokenData.prenom,
-            nom: tokenData.nom
-          }
-        },
-        { status: 200 }
-      );
+      // Aucune donnée du compte dans la réponse
+      return Response.json({ success: true }, { status: 200 });
 
     } catch (updateError) {
       // Annuler la transaction en cas d'erreur

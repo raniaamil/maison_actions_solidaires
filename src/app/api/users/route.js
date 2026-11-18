@@ -5,6 +5,8 @@ import bcrypt from 'bcryptjs';
 import { requireAdmin, ROLES } from '../../../lib/auth';
 import { createMailTransport, MAIL_FROM } from '../../../lib/mailer';
 import { createResetToken } from '../../../lib/reset-token';
+import { escapeHtml } from '../../../lib/escape-html';
+import { randomBytes } from 'crypto';
 
 // GET - Récupérer tous les utilisateurs
 export async function GET(request) {
@@ -71,7 +73,6 @@ export async function POST(request) {
       prenom, 
       nom, 
       email, 
-      password, 
       photo, 
       bio,
       role = ROLES.UTILISATEUR
@@ -121,12 +122,6 @@ export async function POST(request) {
       }
     }
     
-    if (!password || !password.trim()) {
-      errors.password = 'Le mot de passe est requis';
-    } else if (password.length < 6) {
-      errors.password = 'Le mot de passe doit contenir au moins 6 caractères';
-    }
-
     if (Object.keys(errors).length > 0) {
       console.log('❌ Erreurs de validation:', errors);
       return Response.json({ 
@@ -150,9 +145,11 @@ export async function POST(request) {
       }, { status: 409 });
     }
 
-    // Hacher le mot de passe
-    console.log('🔐 Hachage du mot de passe...');
-    const hashedPassword = await bcrypt.hash(password, 12);
+    // 🔐 Mot de passe initial aléatoire, jamais communiqué à personne (ni à l'administrateur,
+    // ni par e-mail) : le compte est inutilisable tant que son titulaire n'a pas défini son
+    // mot de passe grâce au lien de l'e-mail de bienvenue. Un éventuel champ `password`
+    // envoyé par le client est ignoré.
+    const hashedPassword = await bcrypt.hash(randomBytes(32).toString('hex'), 12);
 
     // Insérer l'utilisateur
     console.log('💾 Insertion en base...');
@@ -223,7 +220,7 @@ export async function POST(request) {
             </div>
             
             <div style="background: white; padding: 30px; border: 1px solid #e1e5e9; border-top: none;">
-              <p style="color: #333; font-size: 16px; line-height: 1.6;">Bonjour ${userCreated.prenom} ${userCreated.nom},</p>
+              <p style="color: #333; font-size: 16px; line-height: 1.6;">Bonjour ${escapeHtml(userCreated.prenom)} ${escapeHtml(userCreated.nom)},</p>
               
               <p style="color: #333; font-size: 16px; line-height: 1.6;">
                 Votre compte a été créé avec succès sur la plateforme de Maison d'Actions Solidaires.
@@ -231,8 +228,8 @@ export async function POST(request) {
               
               <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8b9467;">
                 <h3 style="color: #8b9467; margin-top: 0;">Votre compte :</h3>
-                <p style="margin: 10px 0;"><strong>Email :</strong> ${userCreated.email}</p>
-                <p style="margin: 10px 0;"><strong>Rôle :</strong> ${userCreated.role}</p>
+                <p style="margin: 10px 0;"><strong>Email :</strong> ${escapeHtml(userCreated.email)}</p>
+                <p style="margin: 10px 0;"><strong>Rôle :</strong> ${escapeHtml(userCreated.role)}</p>
               </div>
 
               <div style="text-align: center; margin: 30px 0;">
